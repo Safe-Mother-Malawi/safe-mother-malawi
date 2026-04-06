@@ -189,17 +189,10 @@ class DistrictAnalytics extends StatelessWidget {
   BarChartGroupData _groupBar(int x, double district, double national) {
     return BarChartGroupData(
       x: x,
-      groupVertically: false,
       barRods: [
         BarChartRodData(
           toY: district,
           color: AppColors.primary,
-          width: 14,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-        ),
-        BarChartRodData(
-          toY: national,
-          color: AppColors.secondary.withValues(alpha: 0.4),
           width: 14,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
         ),
