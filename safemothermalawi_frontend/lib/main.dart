@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_colors.dart';
-import 'web/role_selector.dart';
+import 'web/admin/admin_overview.dart';
 
 void main() {
   runApp(const SafeMotherApp());
@@ -24,7 +24,7 @@ class SafeMotherApp extends StatelessWidget {
         textTheme: GoogleFonts.interTextTheme(),
         scaffoldBackgroundColor: AppColors.pageBg,
       ),
-      home: const RoleSelector(),
+      home: const AdminOverview(),
     );
   }
 }
