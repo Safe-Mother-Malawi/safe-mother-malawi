@@ -7,14 +7,12 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
   final UserRole role;
   final String userName;
   final String pageTitle;
-  final VoidCallback onLogout;
 
   const TopNavbar({
     super.key,
     required this.role,
     required this.userName,
     required this.pageTitle,
-    required this.onLogout,
   });
 
   @override
@@ -27,133 +25,66 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
         boxShadow: const [
-          BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: AppColors.shadowColor, blurRadius: 12, offset: Offset(0, 2)),
         ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
         children: [
-          // Page title
-          Text(
-            pageTitle,
-            style: GoogleFonts.publicSans(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: AppColors.headings,
-            ),
-          ),
-
+          Text(pageTitle,
+              style: GoogleFonts.publicSans(
+                  fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const Spacer(),
 
           // Search
           Container(
-            width: 240,
-            height: 38,
+            width: 240, height: 38,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(10),
-            ),
+                color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(10)),
             child: TextField(
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
               decoration: InputDecoration(
                 hintText: 'Search...',
-                hintStyle: GoogleFonts.inter(
-                    fontSize: 13, color: AppColors.mutedText),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    size: 18, color: AppColors.mutedText),
+                hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+                prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                 border: InputBorder.none,
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
             ),
           ),
-
           const SizedBox(width: 16),
 
           // Notifications
-          _IconBtn(
-            icon: Icons.notifications_none_rounded,
-            badge: '3',
-            onTap: () {},
-          ),
-
+          _IconBtn(icon: Icons.notifications_none_rounded, badge: '3', onTap: () {}),
           const SizedBox(width: 8),
 
-          // Profile
-          PopupMenuButton<String>(
-            offset: const Offset(0, 48),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12)),
-            color: AppColors.surfaceContainerLowest,
-            onSelected: (val) {
-              if (val == 'logout') onLogout();
-            },
-            itemBuilder: (_) => [
-              PopupMenuItem(
-                enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(userName,
-                        style: GoogleFonts.inter(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.headings)),
-                    Text(
-                      role == UserRole.admin
-                          ? 'System Admin'
-                          : 'District Health Officer',
-                      style: GoogleFonts.inter(
-                          fontSize: 11, color: AppColors.mutedText),
-                    ),
-                  ],
+          // Profile chip — no logout
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryContainer,
+                child: Text(
+                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                  style: GoogleFonts.inter(
+                      fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
               ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout_rounded,
-                        size: 16, color: AppColors.criticalText),
-                    const SizedBox(width: 8),
-                    Text('Logout',
-                        style: GoogleFonts.inter(
-                            fontSize: 13, color: AppColors.criticalText)),
-                  ],
-                ),
+              const SizedBox(width: 8),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(userName,
+                      style: GoogleFonts.inter(
+                          fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
+                  Text(
+                    role == UserRole.admin ? 'System Admin' : 'District Health Officer',
+                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText),
+                  ),
+                ],
               ),
             ],
-            child: Row(
-              children: [
-                CircleAvatar(
-                  radius: 16,
-                  backgroundColor: AppColors.primaryContainer,
-                  child: Text(
-                    userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  userName,
-                  style: GoogleFonts.inter(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.onSurface),
-                ),
-                const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down_rounded,
-                    size: 16, color: AppColors.mutedText),
-              ],
-            ),
           ),
         ],
       ),
@@ -178,29 +109,19 @@ class _IconBtn extends StatelessWidget {
           icon: Icon(icon, color: AppColors.secondary, size: 22),
           style: IconButton.styleFrom(
             backgroundColor: AppColors.surfaceContainerLow,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         ),
         if (badge != null)
           Positioned(
-            top: 4,
-            right: 4,
+            top: 4, right: 4,
             child: Container(
-              width: 16,
-              height: 16,
-              decoration: const BoxDecoration(
-                color: AppColors.criticalText,
-                shape: BoxShape.circle,
-              ),
+              width: 16, height: 16,
+              decoration: const BoxDecoration(color: AppColors.criticalText, shape: BoxShape.circle),
               child: Center(
-                child: Text(
-                  badge!,
-                  style: GoogleFonts.inter(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white),
-                ),
+                child: Text(badge!,
+                    style: GoogleFonts.inter(
+                        fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white)),
               ),
             ),
           ),
