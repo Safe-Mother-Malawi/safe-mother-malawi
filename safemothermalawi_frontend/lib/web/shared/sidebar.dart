@@ -32,7 +32,7 @@ const List<NavItem> _navItems = [
     allowedRoles: [UserRole.admin],
   ),
   NavItem(
-    label: 'Data Explorer',
+    label: 'Data Source',
     icon: Icons.storage_rounded,
     route: '/data-explorer',
     allowedRoles: [UserRole.admin],

@@ -66,7 +66,7 @@ class _AdminOverviewState extends State<AdminOverview> {
     const titles = {
       '/overview': 'Overview',
       '/clinicians': 'Clinician Management',
-      '/data-explorer': 'Data Explorer',
+      '/data-explorer': 'Data Source',
       '/generate-analytics': 'Generate Analytics',
       '/analytics': 'Analytics Dashboard',
       '/heatmaps': 'Heatmaps',

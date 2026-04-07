@@ -37,7 +37,7 @@ class _DataExplorerState extends State<DataExplorer>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Data Explorer',
+          Text('Data Source',
               style: GoogleFonts.publicSans(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
