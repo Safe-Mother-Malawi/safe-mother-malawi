@@ -7,19 +7,10 @@ import '../shared/sidebar.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/status_badge.dart';
 import '../shared/widgets/chart_card.dart';
-import 'clinician_management.dart';
-import 'analytics_dashboard.dart';
+import 'system_users.dart';
 import 'reports_screen.dart';
-import 'data_explorer.dart';
-import 'generate_analytics.dart';
-import 'heatmap_screen.dart';
-import 'rule_builder.dart';
-import 'insights_screen.dart';
-import 'activity_logs_screen.dart';
-import 'ivr_insights.dart';
-import 'question_insights.dart';
 import 'system_logs.dart';
-import 'task_analytics.dart';
+import 'audit_export.dart';
 
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});
@@ -38,29 +29,11 @@ class _AdminOverviewState extends State<AdminOverview> {
   Widget _buildPage() {
     switch (_currentRoute) {
       case '/clinicians':
-        return const ClinicianManagement();
-      case '/data-explorer':
-        return const DataExplorer();
-      case '/generate-analytics':
-        return const GenerateAnalytics();
-      case '/analytics':
-        return const AnalyticsDashboard();
-      case '/heatmaps':
-        return const HeatmapScreen();
-      case '/ivr-insights':
-        return const IvrInsights();
-      case '/question-insights':
-        return const QuestionInsights();
-      case '/insights':
-        return const InsightsScreen();
-      case '/task-analytics':
-        return const TaskAnalytics();
-      case '/rule-builder':
-        return const RuleBuilder();
+        return const SystemUsers();
       case '/system-logs':
         return const SystemLogs();
-      case '/activity-logs':
-        return const ActivityLogsScreen();
+      case '/audit-export':
+        return const AuditExport();
       case '/reports':
         return const ReportsScreen();
       default:
@@ -71,21 +44,12 @@ class _AdminOverviewState extends State<AdminOverview> {
   String get _pageTitle {
     const titles = {
       '/overview': 'Overview',
-      '/clinicians': 'Clinician Management',
-      '/data-explorer': 'Data Source',
-      '/generate-analytics': 'Generate Analytics',
-      '/analytics': 'Analytics Dashboard',
-      '/heatmaps': 'Heatmaps',
-      '/ivr-insights': 'IVR Insights',
-      '/question-insights': 'Question Insights',
-      '/insights': 'Insights',
-      '/task-analytics': 'Task Analytics',
-      '/rule-builder': 'Rule Builder',
+      '/clinicians': 'System Users',
       '/system-logs': 'System Logs',
-      '/activity-logs': 'Activity Logs',
+      '/audit-export': 'Audit Export',
       '/reports': 'Reports',
     };
-    return titles[_currentRoute] ?? 'Dashboard';
+    return titles[_currentRoute] ?? 'Admin Dashboard';
   }
 
   @override

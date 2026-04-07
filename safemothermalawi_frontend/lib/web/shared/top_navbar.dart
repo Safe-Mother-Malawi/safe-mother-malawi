@@ -58,33 +58,66 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
           _IconBtn(icon: Icons.notifications_none_rounded, badge: '3', onTap: () {}),
           const SizedBox(width: 8),
 
-          // Profile chip — no logout
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primaryContainer,
-                child: Text(
-                  userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
-                  style: GoogleFonts.inter(
-                      fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+          // Profile chip — logout UI only, no action (auth pending)
+          PopupMenuButton<String>(
+            offset: const Offset(0, 48),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: AppColors.surfaceContainerLowest,
+            onSelected: (_) {}, // logout functionality to be connected
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                enabled: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(userName,
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                    Text(
+                      role == UserRole.admin ? 'System Admin' : 'District Health Officer',
+                      style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(userName,
-                      style: GoogleFonts.inter(
-                          fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
-                  Text(
-                    role == UserRole.admin ? 'System Admin' : 'District Health Officer',
-                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText),
-                  ),
-                ],
+              const PopupMenuDivider(),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout_rounded, size: 16, color: AppColors.criticalText),
+                    const SizedBox(width: 8),
+                    Text('Logout', style: GoogleFonts.inter(fontSize: 13, color: AppColors.criticalText)),
+                  ],
+                ),
               ),
             ],
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: AppColors.primaryContainer,
+                  child: Text(
+                    userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                    style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(userName,
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
+                    Text(
+                      role == UserRole.admin ? 'System Admin' : 'District Health Officer',
+                      style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText),
+                    ),
+                  ],
+                ),
+                const SizedBox(width: 4),
+                const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.mutedText),
+              ],
+            ),
           ),
         ],
       ),

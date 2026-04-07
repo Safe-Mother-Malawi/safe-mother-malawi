@@ -20,26 +20,33 @@ class NavItem {
 
 // Flat nav items
 const List<NavItem> _flatItems = [
+  // Admin + DHO shared
   NavItem(label: 'Overview', icon: Icons.dashboard_rounded, route: '/overview', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Data Source', icon: Icons.storage_rounded, route: '/data-explorer', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Generate Analytics', icon: Icons.auto_graph_rounded, route: '/generate-analytics', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Analytics Dashboard', icon: Icons.bar_chart_rounded, route: '/analytics', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Heatmaps', icon: Icons.map_rounded, route: '/heatmaps', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Rule Builder', icon: Icons.account_tree_rounded, route: '/rule-builder', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports', allowedRoles: [UserRole.admin, UserRole.dho]),
-];
 
-// Insights group — each child navigates to its own individual screen
-const _insightsChildren = [
-  NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights', allowedRoles: [UserRole.admin, UserRole.dho]),
-];
-
-// Activity Logs group — each child navigates to its own individual screen
-const _activityChildren = [
+  // Admin only — national system management
+  NavItem(label: 'System Users', icon: Icons.manage_accounts_rounded, route: '/clinicians', allowedRoles: [UserRole.admin]),
   NavItem(label: 'System Logs', icon: Icons.receipt_long_rounded, route: '/system-logs', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Task Analytics', icon: Icons.task_alt_rounded, route: '/task-analytics', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Audit Export', icon: Icons.download_for_offline_rounded, route: '/audit-export', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports', allowedRoles: [UserRole.admin]),
+
+  // DHO only — district-specific
+  NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Data Source', icon: Icons.storage_rounded, route: '/data-explorer', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Generate Analytics', icon: Icons.auto_graph_rounded, route: '/generate-analytics', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Analytics Dashboard', icon: Icons.bar_chart_rounded, route: '/analytics', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports', allowedRoles: [UserRole.dho]),
+];
+
+// Insights group — DHO only
+const _insightsChildren = [
+  NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights', allowedRoles: [UserRole.dho]),
+];
+
+// Activity Logs group — Admin: system-wide | DHO: district logs
+const _activityChildren = [
+  NavItem(label: 'System Logs', icon: Icons.receipt_long_rounded, route: '/system-logs', allowedRoles: [UserRole.admin, UserRole.dho]),
+  NavItem(label: 'Task Analytics', icon: Icons.task_alt_rounded, route: '/task-analytics', allowedRoles: [UserRole.dho]),
 ];
 
 class AppSidebar extends StatefulWidget {
@@ -122,34 +129,35 @@ class _AppSidebarState extends State<AppSidebar> {
                 // Flat items before groups
                 ..._flatItems
                     .where((i) => i.allowedRoles.contains(widget.role))
-                    .where((i) => ['Overview', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard', 'Heatmaps'].contains(i.label))
+                    .where((i) => ['Overview', 'System Users', 'System Logs', 'Audit Export', 'Reports', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard'].contains(i.label))
                     .map((i) => _NavTile(item: i, isActive: widget.currentRoute == i.route, onTap: () => widget.onNavigate(i.route))),
 
-                // Insights group
-                _GroupHeader(
-                  label: 'Insights',
-                  icon: Icons.insights_rounded,
-                  isOpen: _insightsOpen,
-                  isActive: isInsightsActive,
-                  onTap: () => setState(() => _insightsOpen = !_insightsOpen),
-                ),
-                AnimatedCrossFade(
-                  duration: const Duration(milliseconds: 200),
-                  crossFadeState: _insightsOpen ? CrossFadeState.showFirst : CrossFadeState.showSecond,
-                  firstChild: Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Column(
-                      children: _insightsChildren
-                          .where((c) => c.allowedRoles.contains(widget.role))
-                          .map((c) => _NavTile(item: c, isActive: isInsightsActive, onTap: () => widget.onNavigate(c.route), isChild: true))
-                          .toList(),
-                    ),
+                // Insights group — DHO only
+                if (widget.role == UserRole.dho) ...[
+                  _GroupHeader(
+                    label: 'Insights',
+                    icon: Icons.insights_rounded,
+                    isOpen: _insightsOpen,
+                    isActive: isInsightsActive,
+                    onTap: () => setState(() => _insightsOpen = !_insightsOpen),
                   ),
-                  secondChild: const SizedBox.shrink(),
-                ),
+                  AnimatedCrossFade(
+                    duration: const Duration(milliseconds: 200),
+                    crossFadeState: _insightsOpen ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+                    firstChild: Padding(
+                      padding: const EdgeInsets.only(left: 12),
+                      child: Column(
+                        children: _insightsChildren
+                            .map((c) => _NavTile(item: c, isActive: isInsightsActive, onTap: () => widget.onNavigate(c.route), isChild: true))
+                            .toList(),
+                      ),
+                    ),
+                    secondChild: const SizedBox.shrink(),
+                  ),
+                ],
 
-                // Activity Logs group (admin only)
-                if (widget.role == UserRole.admin) ...[
+                // Activity Logs group — DHO only
+                if (widget.role == UserRole.dho) ...[
                   _GroupHeader(
                     label: 'Activity Logs',
                     icon: Icons.history_rounded,
@@ -164,6 +172,7 @@ class _AppSidebarState extends State<AppSidebar> {
                       padding: const EdgeInsets.only(left: 12),
                       child: Column(
                         children: _activityChildren
+                            .where((c) => c.allowedRoles.contains(widget.role))
                             .map((c) => _NavTile(item: c, isActive: isActivityActive, onTap: () => widget.onNavigate(c.route), isChild: true))
                             .toList(),
                       ),
@@ -175,7 +184,7 @@ class _AppSidebarState extends State<AppSidebar> {
                 // Remaining flat items
                 ..._flatItems
                     .where((i) => i.allowedRoles.contains(widget.role))
-                    .where((i) => ['Rule Builder', 'Reports'].contains(i.label))
+                    .where((i) => ['Reports'].contains(i.label))
                     .map((i) => _NavTile(item: i, isActive: widget.currentRoute == i.route, onTap: () => widget.onNavigate(i.route))),
               ],
             ),
