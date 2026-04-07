@@ -21,25 +21,25 @@ class NavItem {
 // Flat nav items
 const List<NavItem> _flatItems = [
   NavItem(label: 'Overview', icon: Icons.dashboard_rounded, route: '/overview', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Data Source', icon: Icons.storage_rounded, route: '/data-explorer', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Generate Analytics', icon: Icons.auto_graph_rounded, route: '/generate-analytics', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'System Users', icon: Icons.manage_accounts_rounded, route: '/clinicians', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians', allowedRoles: [UserRole.dho]),
+  NavItem(label: 'Data Source', icon: Icons.storage_rounded, route: '/data-explorer', allowedRoles: [UserRole.admin, UserRole.dho]),
+  NavItem(label: 'Generate Analytics', icon: Icons.auto_graph_rounded, route: '/generate-analytics', allowedRoles: [UserRole.admin, UserRole.dho]),
   NavItem(label: 'Analytics Dashboard', icon: Icons.bar_chart_rounded, route: '/analytics', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Heatmaps', icon: Icons.map_rounded, route: '/heatmaps', allowedRoles: [UserRole.admin, UserRole.dho]),
-  NavItem(label: 'Rule Builder', icon: Icons.account_tree_rounded, route: '/rule-builder', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Rule Builder', icon: Icons.account_tree_rounded, route: '/rule-builder', allowedRoles: [UserRole.admin, UserRole.dho]),
   NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports', allowedRoles: [UserRole.admin, UserRole.dho]),
 ];
 
-// Insights group — each child navigates to its own individual screen
+// Insights group
 const _insightsChildren = [
   NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights', allowedRoles: [UserRole.admin, UserRole.dho]),
   NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights', allowedRoles: [UserRole.admin, UserRole.dho]),
 ];
 
-// Activity Logs group — each child navigates to its own individual screen
+// Activity Logs group
 const _activityChildren = [
-  NavItem(label: 'System Logs', icon: Icons.receipt_long_rounded, route: '/system-logs', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Task Analytics', icon: Icons.task_alt_rounded, route: '/task-analytics', allowedRoles: [UserRole.admin]),
+  NavItem(label: 'System Logs', icon: Icons.receipt_long_rounded, route: '/system-logs', allowedRoles: [UserRole.admin, UserRole.dho]),
+  NavItem(label: 'Task Analytics', icon: Icons.task_alt_rounded, route: '/task-analytics', allowedRoles: [UserRole.admin, UserRole.dho]),
 ];
 
 class AppSidebar extends StatefulWidget {
@@ -122,7 +122,7 @@ class _AppSidebarState extends State<AppSidebar> {
                 // Flat items before groups
                 ..._flatItems
                     .where((i) => i.allowedRoles.contains(widget.role))
-                    .where((i) => ['Overview', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard', 'Heatmaps'].contains(i.label))
+                    .where((i) => ['Overview', 'System Users', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard'].contains(i.label))
                     .map((i) => _NavTile(item: i, isActive: widget.currentRoute == i.route, onTap: () => widget.onNavigate(i.route))),
 
                 // Insights group

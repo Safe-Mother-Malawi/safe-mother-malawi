@@ -7,12 +7,16 @@ import '../shared/sidebar.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
-import 'district_analytics.dart';
-import 'dho_heatmap.dart';
-import 'dho_ivr_insights.dart';
-import 'dho_question_insights.dart';
-import 'dho_task_performance.dart';
-import 'dho_reports.dart';
+import '../admin/clinician_management.dart';
+import '../admin/data_explorer.dart';
+import '../admin/generate_analytics.dart';
+import '../admin/analytics_dashboard.dart';
+import '../admin/ivr_insights.dart';
+import '../admin/question_insights.dart';
+import '../admin/system_logs.dart';
+import '../admin/task_analytics.dart';
+import '../admin/rule_builder.dart';
+import '../admin/reports_screen.dart';
 
 class DhoOverview extends StatefulWidget {
   const DhoOverview({super.key});
@@ -28,18 +32,26 @@ class _DhoOverviewState extends State<DhoOverview> {
 
   Widget _buildPage() {
     switch (_currentRoute) {
+      case '/clinicians':
+        return const ClinicianManagement();
+      case '/data-explorer':
+        return const DataExplorer();
+      case '/generate-analytics':
+        return const GenerateAnalytics();
       case '/analytics':
-        return const DistrictAnalytics();
-      case '/heatmaps':
-        return const DhoHeatmap();
+        return const AnalyticsDashboard();
       case '/ivr-insights':
-        return const DhoIvrInsights();
+        return const IvrInsights();
       case '/question-insights':
-        return const DhoQuestionInsights();
+        return const QuestionInsights();
       case '/task-analytics':
-        return const DhoTaskPerformance();
+        return const TaskAnalytics();
+      case '/system-logs':
+        return const SystemLogs();
+      case '/rule-builder':
+        return const RuleBuilder();
       case '/reports':
-        return const DhoReports();
+        return const ReportsScreen();
       default:
         return const _DhoOverviewBody();
     }
@@ -48,11 +60,15 @@ class _DhoOverviewState extends State<DhoOverview> {
   String get _pageTitle {
     const titles = {
       '/overview': 'Overview',
-      '/analytics': 'District Analytics',
-      '/heatmaps': 'Heatmaps',
+      '/clinicians': 'Clinician Management',
+      '/data-explorer': 'Data Source',
+      '/generate-analytics': 'Generate Analytics',
+      '/analytics': 'Analytics Dashboard',
       '/ivr-insights': 'IVR Insights',
       '/question-insights': 'Question Insights',
-      '/task-analytics': 'Task Performance',
+      '/task-analytics': 'Task Analytics',
+      '/system-logs': 'System Logs',
+      '/rule-builder': 'Rule Builder',
       '/reports': 'Reports',
     };
     return titles[_currentRoute] ?? 'DHO Dashboard';

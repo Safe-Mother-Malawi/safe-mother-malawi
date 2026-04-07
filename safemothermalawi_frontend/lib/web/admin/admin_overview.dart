@@ -7,13 +7,12 @@ import '../shared/sidebar.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/status_badge.dart';
 import '../shared/widgets/chart_card.dart';
-import 'clinician_management.dart';
+import 'system_users.dart';
 import 'analytics_dashboard.dart';
 import 'reports_screen.dart';
 import 'data_explorer.dart';
 import 'generate_analytics.dart';
-import 'heatmap_screen.dart';
-import 'rule_builder.dart';
+import 'rule_builder.dart';import 'rule_builder.dart';
 import 'insights_screen.dart';
 import 'activity_logs_screen.dart';
 import 'ivr_insights.dart';
@@ -38,7 +37,7 @@ class _AdminOverviewState extends State<AdminOverview> {
   Widget _buildPage() {
     switch (_currentRoute) {
       case '/clinicians':
-        return const ClinicianManagement();
+        return const SystemUsers();
       case '/data-explorer':
         return const DataExplorer();
       case '/generate-analytics':
@@ -46,7 +45,7 @@ class _AdminOverviewState extends State<AdminOverview> {
       case '/analytics':
         return const AnalyticsDashboard();
       case '/heatmaps':
-        return const HeatmapScreen();
+        return const _OverviewBody(); // heatmaps removed
       case '/ivr-insights':
         return const IvrInsights();
       case '/question-insights':
@@ -71,7 +70,7 @@ class _AdminOverviewState extends State<AdminOverview> {
   String get _pageTitle {
     const titles = {
       '/overview': 'Overview',
-      '/clinicians': 'Clinician Management',
+      '/clinicians': 'System Users',
       '/data-explorer': 'Data Source',
       '/generate-analytics': 'Generate Analytics',
       '/analytics': 'Analytics Dashboard',
