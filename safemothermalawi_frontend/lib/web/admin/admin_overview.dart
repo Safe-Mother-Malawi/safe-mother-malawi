@@ -10,15 +10,8 @@ import '../shared/widgets/chart_card.dart';
 import 'system_users.dart';
 import 'analytics_dashboard.dart';
 import 'reports_screen.dart';
-import 'data_explorer.dart';
-import 'generate_analytics.dart';
 import 'rule_builder.dart';
-import 'insights_screen.dart';
-import 'activity_logs_screen.dart';
-import 'ivr_insights.dart';
-import 'question_insights.dart';
 import 'system_logs.dart';
-import 'task_analytics.dart';
 
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});
@@ -38,28 +31,12 @@ class _AdminOverviewState extends State<AdminOverview> {
     switch (_currentRoute) {
       case '/clinicians':
         return const SystemUsers();
-      case '/data-explorer':
-        return const DataExplorer();
-      case '/generate-analytics':
-        return const GenerateAnalytics();
       case '/analytics':
         return const AnalyticsDashboard();
-      case '/heatmaps':
-        return const _OverviewBody(); // heatmaps removed
-      case '/ivr-insights':
-        return const IvrInsights();
-      case '/question-insights':
-        return const QuestionInsights();
-      case '/insights':
-        return const InsightsScreen();
-      case '/task-analytics':
-        return const TaskAnalytics();
       case '/rule-builder':
         return const RuleBuilder();
       case '/system-logs':
         return const SystemLogs();
-      case '/activity-logs':
-        return const ActivityLogsScreen();
       case '/reports':
         return const ReportsScreen();
       default:
@@ -71,19 +48,12 @@ class _AdminOverviewState extends State<AdminOverview> {
     const titles = {
       '/overview': 'Overview',
       '/clinicians': 'System Users',
-      '/data-explorer': 'Data Source',
-      '/generate-analytics': 'Generate Analytics',
-      '/analytics': 'Analytics Dashboard',
-      '/ivr-insights': 'IVR Insights',
-      '/question-insights': 'Question Insights',
-      '/insights': 'Insights',
-      '/task-analytics': 'Task Analytics',
+      '/analytics': 'National Analytics',
       '/rule-builder': 'Rule Builder',
       '/system-logs': 'System Logs',
-      '/activity-logs': 'Activity Logs',
       '/reports': 'Reports',
     };
-    return titles[_currentRoute] ?? 'Dashboard';
+    return titles[_currentRoute] ?? 'Admin Dashboard';
   }
 
   @override
