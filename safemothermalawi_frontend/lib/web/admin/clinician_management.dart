@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
 import '../shared/widgets/status_badge.dart';
-import '../shared/widgets/data_table_widget.dart';
 
 class ClinicianManagement extends StatefulWidget {
   const ClinicianManagement({super.key});
@@ -18,10 +17,15 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
 
   final List<Map<String, dynamic>> _clinicians = [
     {'name': 'Dr. Chisomo Banda', 'district': 'Blantyre', 'facility': 'Queen Elizabeth Central', 'role': 'Clinician', 'status': 'Active', 'lastActive': '2h ago'},
-    {'name': 'Nurse Thandiwe Phiri', 'district': 'Lilongwe', 'facility': 'Kamuzu Central', 'role': 'Nurse', 'status': 'Active', 'lastActive': '1d ago'},
+    {'name': 'Dr. Thandiwe Phiri', 'district': 'Lilongwe', 'facility': 'Kamuzu Central', 'role': 'Clinician', 'status': 'Active', 'lastActive': '1d ago'},
     {'name': 'Dr. Kondwani Mwale', 'district': 'Mzuzu', 'facility': 'Mzuzu Central', 'role': 'Clinician', 'status': 'Inactive', 'lastActive': '32d ago'},
-    {'name': 'Nurse Grace Chirwa', 'district': 'Zomba', 'facility': 'Zomba Central', 'role': 'Nurse', 'status': 'Active', 'lastActive': '4h ago'},
+    {'name': 'Dr. Grace Chirwa', 'district': 'Zomba', 'facility': 'Zomba Central', 'role': 'Midwife', 'status': 'Active', 'lastActive': '4h ago'},
     {'name': 'Dr. Mphatso Tembo', 'district': 'Mangochi', 'facility': 'Mangochi District', 'role': 'Clinician', 'status': 'Inactive', 'lastActive': '45d ago'},
+    {'name': 'Dr. Blessings Nyirenda', 'district': 'Kasungu', 'facility': 'Kasungu District', 'role': 'Clinician', 'status': 'Active', 'lastActive': '6h ago'},
+    {'name': 'Dr. Alinafe Kamanga', 'district': 'Salima', 'facility': 'Salima District', 'role': 'CHW', 'status': 'Active', 'lastActive': '3h ago'},
+    {'name': 'Dr. Tadala Msiska', 'district': 'Karonga', 'facility': 'Karonga District', 'role': 'Clinician', 'status': 'Active', 'lastActive': '12h ago'},
+    {'name': 'Dr. Chimwemwe Dube', 'district': 'Dedza', 'facility': 'Dedza District', 'role': 'Midwife', 'status': 'Inactive', 'lastActive': '20d ago'},
+    {'name': 'Dr. Yankho Phiri', 'district': 'Ntcheu', 'facility': 'Ntcheu District', 'role': 'Clinician', 'status': 'Active', 'lastActive': '1h ago'},
   ];
 
   @override
@@ -35,27 +39,24 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
       final matchSearch = _searchCtrl.text.isEmpty ||
           c['name'].toLowerCase().contains(_searchCtrl.text.toLowerCase()) ||
           c['district'].toLowerCase().contains(_searchCtrl.text.toLowerCase());
-      final matchStatus =
-          _filterStatus == 'All' || c['status'] == _filterStatus;
+      final matchStatus = _filterStatus == 'All' || c['status'] == _filterStatus;
       return matchSearch && matchStatus;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header row
+          // Header
           Row(
             children: [
               Text('Clinician Management',
                   style: GoogleFonts.publicSans(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.headings)),
+                      fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
               const Spacer(),
               _GradientButton(
                 label: 'Add Clinician',
@@ -64,44 +65,37 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
 
-          // Add form
+          // Add form (collapsible)
           if (_showForm) ...[
             _AddClinicianForm(
-              onSubmit: (data) {
-                setState(() {
-                  _clinicians.add({...data, 'lastActive': 'Just now'});
-                  _showForm = false;
-                });
-              },
+              onSubmit: (data) => setState(() {
+                _clinicians.add({...data, 'lastActive': 'Just now'});
+                _showForm = false;
+              }),
               onCancel: () => setState(() => _showForm = false),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
           ],
 
-          // Filters
+          // Filters bar
           Row(
             children: [
               SizedBox(
-                width: 280,
+                width: 300,
                 child: TextField(
                   controller: _searchCtrl,
                   onChanged: (_) => setState(() {}),
-                  style: GoogleFonts.inter(
-                      fontSize: 13, color: AppColors.onSurface),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Search by name or district...',
-                    hintStyle: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.mutedText),
-                    prefixIcon: const Icon(Icons.search_rounded,
-                        size: 18, color: AppColors.mutedText),
+                    hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+                    prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                     filled: true,
                     fillColor: AppColors.surfaceContainerLowest,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
+                        borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                 ),
@@ -115,76 +109,179 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                       onTap: () => setState(() => _filterStatus = s),
                     ),
                   )),
+              const Spacer(),
+              Text('${_filtered.length} records',
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // Table
-          AppDataTable(
-            showIndex: true,
-            columns: const [
-              'Name', 'District', 'Facility', 'Role', 'Status', 'Last Active', 'Actions'
-            ],
-            rows: _filtered.map((c) {
-              final isActive = c['status'] == 'Active';
-              return [
-                Text(c['name'],
-                    style: GoogleFonts.inter(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.onSurface)),
-                Text(c['district'],
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.bodyText)),
-                Text(c['facility'],
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.bodyText)),
-                Text(c['role'],
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.bodyText)),
-                StatusBadge(
-                  label: c['status'],
-                  type: isActive ? BadgeType.success : BadgeType.neutral,
-                ),
-                Text(c['lastActive'],
-                    style: GoogleFonts.inter(
-                        fontSize: 12, color: AppColors.mutedText)),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+          // Table — fills remaining space
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [
+                  BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Column(
                   children: [
-                    _ActionBtn(
-                      icon: isActive
-                          ? Icons.pause_circle_outline_rounded
-                          : Icons.play_circle_outline_rounded,
-                      color: isActive
-                          ? AppColors.warningText
-                          : AppColors.successText,
-                      tooltip: isActive ? 'Deactivate' : 'Activate',
-                      onTap: () => setState(() {
-                        c['status'] = isActive ? 'Inactive' : 'Active';
-                      }),
+                    // Table header
+                    Container(
+                      color: AppColors.pageBg,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                      child: Row(
+                        children: [
+                          _HeaderCell('#', flex: 1),
+                          _HeaderCell('Name', flex: 4),
+                          _HeaderCell('District', flex: 3),
+                          _HeaderCell('Facility', flex: 5),
+                          _HeaderCell('Role', flex: 2),
+                          _HeaderCell('Status', flex: 2),
+                          _HeaderCell('Last Active', flex: 2),
+                          _HeaderCell('Actions', flex: 3),
+                        ],
+                      ),
                     ),
-                    const SizedBox(width: 4),
-                    _ActionBtn(
-                      icon: Icons.edit_outlined,
-                      color: AppColors.primary,
-                      tooltip: 'Edit',
-                      onTap: () {},
-                    ),
-                    const SizedBox(width: 4),
-                    _ActionBtn(
-                      icon: Icons.delete_outline_rounded,
-                      color: AppColors.criticalText,
-                      tooltip: 'Delete',
-                      onTap: () => setState(() => _clinicians.remove(c)),
+                    // Table rows
+                    Expanded(
+                      child: _filtered.isEmpty
+                          ? Center(
+                              child: Text('No clinicians found',
+                                  style: GoogleFonts.inter(
+                                      fontSize: 14, color: AppColors.mutedText)),
+                            )
+                          : ListView.builder(
+                              itemCount: _filtered.length,
+                              itemBuilder: (context, index) {
+                                final c = _filtered[index];
+                                final isActive = c['status'] == 'Active';
+                                return Container(
+                                  color: index.isEven
+                                      ? AppColors.surfaceContainerLowest
+                                      : AppColors.pageBg.withValues(alpha: 0.4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 14),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        flex: 1,
+                                        child: Text('${index + 1}',
+                                            style: GoogleFonts.inter(
+                                                fontSize: 12, color: AppColors.mutedText)),
+                                      ),
+                                      Expanded(
+                                        flex: 4,
+                                        child: Text(c['name'],
+                                            style: GoogleFonts.inter(
+                                                fontSize: 13,
+                                                fontWeight: FontWeight.w500,
+                                                color: AppColors.onSurface)),
+                                      ),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Text(c['district'],
+                                            style: GoogleFonts.inter(
+                                                fontSize: 13, color: AppColors.bodyText)),
+                                      ),
+                                      Expanded(
+                                        flex: 5,
+                                        child: Text(c['facility'],
+                                            style: GoogleFonts.inter(
+                                                fontSize: 13, color: AppColors.bodyText)),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(c['role'],
+                                            style: GoogleFonts.inter(
+                                                fontSize: 13, color: AppColors.bodyText)),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: StatusBadge(
+                                          label: c['status'],
+                                          type: isActive
+                                              ? BadgeType.success
+                                              : BadgeType.neutral,
+                                        ),
+                                      ),
+                                      Expanded(
+                                        flex: 2,
+                                        child: Text(c['lastActive'],
+                                            style: GoogleFonts.inter(
+                                                fontSize: 12, color: AppColors.mutedText)),
+                                      ),
+                                      Expanded(
+                                        flex: 3,
+                                        child: Row(
+                                          children: [
+                                            _ActionBtn(
+                                              icon: isActive
+                                                  ? Icons.pause_circle_outline_rounded
+                                                  : Icons.play_circle_outline_rounded,
+                                              color: isActive
+                                                  ? AppColors.warningText
+                                                  : AppColors.successText,
+                                              tooltip: isActive ? 'Deactivate' : 'Activate',
+                                              onTap: () => setState(() {
+                                                c['status'] =
+                                                    isActive ? 'Inactive' : 'Active';
+                                              }),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            _ActionBtn(
+                                              icon: Icons.edit_outlined,
+                                              color: AppColors.primary,
+                                              tooltip: 'Edit',
+                                              onTap: () {},
+                                            ),
+                                            const SizedBox(width: 4),
+                                            _ActionBtn(
+                                              icon: Icons.delete_outline_rounded,
+                                              color: AppColors.criticalText,
+                                              tooltip: 'Delete',
+                                              onTap: () => setState(
+                                                  () => _clinicians.remove(c)),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
                     ),
                   ],
                 ),
-              ];
-            }).toList(),
+              ),
+            ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeaderCell extends StatelessWidget {
+  final String label;
+  final int flex;
+  const _HeaderCell(this.label, {required this.flex});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      flex: flex,
+      child: Text(label,
+          style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.mutedText,
+              letterSpacing: 0.5)),
     );
   }
 }
@@ -195,9 +292,7 @@ class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
-  const _FilterChip(
-      {required this.label, required this.selected, required this.onTap});
+  const _FilterChip({required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -210,14 +305,11 @@ class _FilterChip extends StatelessWidget {
           color: selected ? AppColors.primary : AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: selected ? Colors.white : AppColors.mutedText,
-          ),
-        ),
+        child: Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: selected ? Colors.white : AppColors.mutedText)),
       ),
     );
   }
@@ -228,12 +320,7 @@ class _ActionBtn extends StatelessWidget {
   final Color color;
   final String tooltip;
   final VoidCallback onTap;
-
-  const _ActionBtn(
-      {required this.icon,
-      required this.color,
-      required this.tooltip,
-      required this.onTap});
+  const _ActionBtn({required this.icon, required this.color, required this.tooltip, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -255,9 +342,7 @@ class _GradientButton extends StatelessWidget {
   final String label;
   final IconData icon;
   final VoidCallback onTap;
-
-  const _GradientButton(
-      {required this.label, required this.icon, required this.onTap});
+  const _GradientButton({required this.label, required this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -266,18 +351,14 @@ class _GradientButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
         decoration: BoxDecoration(
-          gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(10),
-        ),
+            gradient: AppColors.primaryGradient, borderRadius: BorderRadius.circular(10)),
         child: Row(
           children: [
             Icon(icon, color: Colors.white, size: 18),
             const SizedBox(width: 8),
             Text(label,
                 style: GoogleFonts.inter(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white)),
+                    fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white)),
           ],
         ),
       ),
@@ -288,9 +369,7 @@ class _GradientButton extends StatelessWidget {
 class _AddClinicianForm extends StatefulWidget {
   final ValueChanged<Map<String, dynamic>> onSubmit;
   final VoidCallback onCancel;
-
-  const _AddClinicianForm(
-      {required this.onSubmit, required this.onCancel});
+  const _AddClinicianForm({required this.onSubmit, required this.onCancel});
 
   @override
   State<_AddClinicianForm> createState() => _AddClinicianFormState();
@@ -318,21 +397,14 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-              color: AppColors.shadowColor,
-              blurRadius: 24,
-              offset: Offset(0, 4))
-        ],
+        boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Add New Clinician',
               style: GoogleFonts.publicSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.headings)),
+                  fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 20),
           Wrap(
             spacing: 16,
@@ -341,16 +413,16 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
               _FormField(label: 'Full Name', controller: _name, hint: 'Dr. John Doe'),
               _FormField(label: 'Contact', controller: _contact, hint: '+265 999 000 000'),
               _FormField(label: 'Facility', controller: _facility, hint: 'Health facility name'),
-              _DropdownField(
+              _DropField(
                 label: 'District',
                 value: _district,
                 items: const ['Blantyre', 'Lilongwe', 'Mzuzu', 'Zomba', 'Mangochi', 'Kasungu'],
                 onChanged: (v) => setState(() => _district = v!),
               ),
-              _DropdownField(
+              _DropField(
                 label: 'Role',
                 value: _role,
-                items: const ['Clinician', 'Nurse', 'Midwife', 'CHW'],
+                items: const ['Clinician', 'Midwife', 'CHW'],
                 onChanged: (v) => setState(() => _role = v!),
               ),
             ],
@@ -373,8 +445,7 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
               TextButton(
                 onPressed: widget.onCancel,
                 child: Text('Cancel',
-                    style: GoogleFonts.inter(
-                        fontSize: 13, color: AppColors.mutedText)),
+                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
               ),
             ],
           ),
@@ -388,9 +459,7 @@ class _FormField extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final String hint;
-
-  const _FormField(
-      {required this.label, required this.controller, required this.hint});
+  const _FormField({required this.label, required this.controller, required this.hint});
 
   @override
   Widget build(BuildContext context) {
@@ -401,31 +470,23 @@ class _FormField extends StatelessWidget {
         children: [
           Text(label.toUpperCase(),
               style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.mutedText,
-                  letterSpacing: 0.8)),
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: AppColors.mutedText, letterSpacing: 0.8)),
           const SizedBox(height: 6),
           TextField(
             controller: controller,
             style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle: GoogleFonts.inter(
-                  fontSize: 13, color: AppColors.mutedText),
+              hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
               filled: true,
               fillColor: AppColors.surfaceContainerHighest,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
+                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide:
-                    const BorderSide(color: AppColors.accent, width: 1.5),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.accent, width: 1.5)),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
         ],
@@ -434,17 +495,12 @@ class _FormField extends StatelessWidget {
   }
 }
 
-class _DropdownField extends StatelessWidget {
+class _DropField extends StatelessWidget {
   final String label;
   final String value;
   final List<String> items;
   final ValueChanged<String?> onChanged;
-
-  const _DropdownField(
-      {required this.label,
-      required this.value,
-      required this.items,
-      required this.onChanged});
+  const _DropField({required this.label, required this.value, required this.items, required this.onChanged});
 
   @override
   Widget build(BuildContext context) {
@@ -455,10 +511,8 @@ class _DropdownField extends StatelessWidget {
         children: [
           Text(label.toUpperCase(),
               style: GoogleFonts.inter(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.mutedText,
-                  letterSpacing: 0.8)),
+                  fontSize: 11, fontWeight: FontWeight.w600,
+                  color: AppColors.mutedText, letterSpacing: 0.8)),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             initialValue: value,
@@ -468,15 +522,10 @@ class _DropdownField extends StatelessWidget {
               filled: true,
               fillColor: AppColors.surfaceContainerHighest,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
-            items: items
-                .map((i) => DropdownMenuItem(value: i, child: Text(i)))
-                .toList(),
+            items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
           ),
         ],
       ),
