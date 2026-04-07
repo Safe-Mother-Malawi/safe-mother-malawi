@@ -9,16 +9,15 @@ import '../shared/widgets/status_badge.dart';
 import '../shared/widgets/chart_card.dart';
 import 'clinician_management.dart';
 import 'analytics_dashboard.dart';
-import 'system_logs.dart';
 import 'reports_screen.dart';
 import 'data_explorer.dart';
 import 'generate_analytics.dart';
 import 'heatmap_screen.dart';
-import 'ivr_insights.dart';
-import 'question_insights.dart';
-import 'task_analytics.dart';
 import 'rule_builder.dart';
+import 'insights_screen.dart';
+import 'activity_logs_screen.dart';
 import '../role_selector.dart';
+
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});
 
@@ -46,15 +45,15 @@ class _AdminOverviewState extends State<AdminOverview> {
       case '/heatmaps':
         return const HeatmapScreen();
       case '/ivr-insights':
-        return const IvrInsights();
+        return const InsightsScreen();
       case '/question-insights':
-        return const QuestionInsights();
+        return const InsightsScreen();
       case '/task-analytics':
-        return const TaskAnalytics();
+        return const ActivityLogsScreen();
       case '/rule-builder':
         return const RuleBuilder();
       case '/system-logs':
-        return const SystemLogs();
+        return const ActivityLogsScreen();
       case '/reports':
         return const ReportsScreen();
       default:
@@ -70,11 +69,11 @@ class _AdminOverviewState extends State<AdminOverview> {
       '/generate-analytics': 'Generate Analytics',
       '/analytics': 'Analytics Dashboard',
       '/heatmaps': 'Heatmaps',
-      '/ivr-insights': 'Insights — IVR',
-      '/question-insights': 'Insights — Questions',
-      '/task-analytics': 'Activity Logs — Tasks',
+      '/ivr-insights': 'Insights',
+      '/question-insights': 'Insights',
+      '/task-analytics': 'Activity Logs',
       '/rule-builder': 'Rule Builder',
-      '/system-logs': 'Activity Logs — System',
+      '/system-logs': 'Activity Logs',
       '/reports': 'Reports',
     };
     return titles[_currentRoute] ?? 'Dashboard';
