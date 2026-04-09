@@ -31,11 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  fl_chart: ^0.68.0
-  google_fonts: ^6.2.1
-  shared_preferences: ^2.2.3
-  flutter_map: ^7.0.2
-  latlong2: ^0.9.1
+  url_launcher: ^6.3.0
+  image_picker: ^1.1.2
 
 dev_dependencies:
   flutter_test:
@@ -60,7 +57,7 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/baby/
+    - assets/images/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
