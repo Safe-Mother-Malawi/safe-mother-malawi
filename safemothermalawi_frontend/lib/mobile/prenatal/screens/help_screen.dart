@@ -21,9 +21,9 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
         title: const Text('Help & Support', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
@@ -35,7 +35,7 @@ class _HelpScreenState extends State<HelpScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFFE91E8C), Color(0xFFFF80AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
@@ -51,7 +51,7 @@ class _HelpScreenState extends State<HelpScreen> {
                   ),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFFE91E8C), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF1A237E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
                   onPressed: () {},
                   child: const Text('Contact Us', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
@@ -68,11 +68,9 @@ class _HelpScreenState extends State<HelpScreen> {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
             child: Column(children: [
-              _LinkTile(icon: Icons.phone_outlined, label: 'Call Support', subtitle: '+265 800 000 111', color: const Color(0xFF1565C0), onTap: () {}),
+              _LinkTile(icon: Icons.phone_outlined, label: 'Call Support', subtitle: '+265 800 000 111', color: const Color(0xFF1A237E), onTap: () {}),
               const Divider(height: 1, indent: 56),
-              _LinkTile(icon: Icons.email_outlined, label: 'Email Us', subtitle: 'support@safemothermalawi.org', color: const Color(0xFFE91E8C), onTap: () {}),
-              const Divider(height: 1, indent: 56),
-              _LinkTile(icon: Icons.chat_bubble_outline, label: 'Live Chat', subtitle: 'Available 8AM – 5PM', color: const Color(0xFF00695C), onTap: () {}),
+              _LinkTile(icon: Icons.email_outlined, label: 'Email Us', subtitle: 'support@safemothermalawi.org', color: const Color(0xFF1A237E), onTap: () {}),
             ]),
           ),
           const SizedBox(height: 20),
@@ -131,7 +129,7 @@ class _FaqTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 8),
     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: expanded ? const Color(0xFFFFCDD2) : const Color(0xFFF0F0F0))),
+      border: Border.all(color: expanded ? const Color(0xFFBBBEF0) : const Color(0xFFF0F0F0))),
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -140,7 +138,7 @@ class _FaqTile extends StatelessWidget {
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(child: Text(question, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF212121)))),
-            Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: const Color(0xFFE91E8C)),
+            Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: const Color(0xFF1A237E)),
           ]),
           if (expanded) ...[
             const SizedBox(height: 10),

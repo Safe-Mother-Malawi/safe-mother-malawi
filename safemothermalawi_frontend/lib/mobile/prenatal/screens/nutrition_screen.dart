@@ -29,6 +29,10 @@ class _NutritionScreenState extends State<NutritionScreen> with SingleTickerProv
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Nutrition & Health', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
         bottom: TabBar(
           controller: _tab,
@@ -92,7 +96,7 @@ class _HealthTipsTab extends StatelessWidget {
   final _tips = const [
     {'title': 'Stay Hydrated', 'body': 'Drink at least 8–10 glasses of water daily. Dehydration can cause contractions.', 'icon': Icons.water_drop, 'color': 0xFF0288D1},
     {'title': 'Rest Adequately', 'body': 'Aim for 8 hours of sleep. Sleep on your left side to improve blood flow.', 'icon': Icons.bedtime, 'color': 0xFF6A1B9A},
-    {'title': 'Gentle Exercise', 'body': 'Walking and prenatal yoga are safe and beneficial. Avoid heavy lifting.', 'icon': Icons.directions_walk, 'color': 0xFF00695C},
+    {'title': 'Gentle Exercise', 'body': 'Walking and prenatal yoga are safe and beneficial. Avoid heavy lifting.', 'icon': Icons.directions_walk, 'color': 0xFF3949AB},
     {'title': 'Manage Stress', 'body': 'Practice deep breathing and relaxation. High stress can affect baby\'s development.', 'icon': Icons.self_improvement, 'color': 0xFF1A237E},
     {'title': 'Take Prenatal Vitamins', 'body': 'Folic acid, iron, and calcium supplements are essential throughout pregnancy.', 'icon': Icons.medication, 'color': 0xFFE65100},
     {'title': 'Attend All Checkups', 'body': 'Regular antenatal visits help detect complications early.', 'icon': Icons.medical_services, 'color': 0xFFD32F2F},

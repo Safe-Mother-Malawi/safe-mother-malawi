@@ -42,6 +42,10 @@ class _PregnancyTrackerScreenState extends State<PregnancyTrackerScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: const Text('Pregnancy Tracker', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
@@ -133,7 +137,7 @@ class _PregnancyTrackerScreenState extends State<PregnancyTrackerScreen> {
             // Health tip
             _InfoCard(
               icon: Icons.lightbulb_outline,
-              color: const Color(0xFF00695C),
+              color: const Color(0xFF3949AB),
               title: 'Health Tip',
               body: data['tip']!,
             ),
@@ -166,7 +170,7 @@ class _TrimesterBadge extends StatelessWidget {
       color = const Color(0xFF0288D1);
     } else if (week <= 26) {
       label = '2nd Trimester';
-      color = const Color(0xFF00695C);
+      color = const Color(0xFF3949AB);
     } else {
       label = '3rd Trimester';
       color = const Color(0xFF6A1B9A);

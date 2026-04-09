@@ -21,9 +21,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     final u = _user;
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
         title: const Text('My Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
@@ -38,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFFE91E8C), Color(0xFFFF80AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                gradient: LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
               ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
               child: Column(
@@ -57,7 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: 28,
                           height: 28,
                           decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(Icons.camera_alt, size: 16, color: Color(0xFFE91E8C)),
+                          child: const Icon(Icons.camera_alt, size: 16, color: Color(0xFF1A237E)),
                         ),
                       ),
                     ],
@@ -154,7 +154,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     child: Row(children: [
-      Icon(icon, size: 20, color: const Color(0xFFE91E8C)),
+      Icon(icon, size: 20, color: const Color(0xFF1A237E)),
       const SizedBox(width: 14),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),

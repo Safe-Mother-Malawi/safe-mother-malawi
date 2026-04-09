@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../auth/services/auth_service.dart';
-import '../../auth/screens/login_screen.dart';
 import '../models/pregnancy_data.dart';
 import '../widgets/baby_illustration.dart';
-import '../widgets/app_drawer.dart';
 import 'pregnancy_detail_screen.dart';
 import 'notifications_screen.dart';
 
 class PrenatalHomeScreen extends StatefulWidget {
-  const PrenatalHomeScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const PrenatalHomeScreen({super.key, this.onOpenDrawer});
 
   @override
   State<PrenatalHomeScreen> createState() => _PrenatalHomeScreenState();
@@ -56,7 +55,7 @@ class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
       helpText: 'Select Last Menstrual Period (LMP)',
       builder: (ctx, child) => Theme(
         data: Theme.of(ctx).copyWith(
-          colorScheme: const ColorScheme.light(primary: Color(0xFFE91E8C)),
+          colorScheme: const ColorScheme.light(primary: Color(0xFF1A237E)),
         ),
         child: child!,
       ),
@@ -71,17 +70,16 @@ class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFFFCE4EC),
-        body: Center(child: CircularProgressIndicator(color: Color(0xFFE91E8C))),
+        backgroundColor: Color(0xFFE8EAF6),
+        body: Center(child: CircularProgressIndicator(color: Color(0xFF1A237E))),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
-      drawer: const AppDrawer(),
+      backgroundColor: const Color(0xFFF5F7FF),
       body: Column(
         children: [
-          _Header(firstName: _firstName),
+          _Header(firstName: _firstName, onOpenDrawer: widget.onOpenDrawer),
           Expanded(
             child: _data == null
                 ? _NoDataView(onSetup: _editDueDate)
@@ -97,14 +95,15 @@ class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
 
 class _Header extends StatelessWidget {
   final String firstName;
-  const _Header({required this.firstName});
+  final VoidCallback? onOpenDrawer;
+  const _Header({required this.firstName, this.onOpenDrawer});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFFFF80AB), Color(0xFFFF4081)],
+          colors: [Color(0xFF3949AB), Color(0xFF1A237E)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -116,7 +115,7 @@ class _Header extends StatelessWidget {
           child: Row(
             children: [
               GestureDetector(
-                onTap: () => Scaffold.of(context).openDrawer(),
+                onTap: () => onOpenDrawer?.call(),
                 child: const Icon(Icons.menu, color: Colors.white, size: 24),
               ),
               const Spacer(),
@@ -154,11 +153,11 @@ class _NoDataView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.pregnant_woman, size: 80, color: Color(0xFFFF80AB)),
+            const Icon(Icons.pregnant_woman, size: 80, color: Color(0xFF3949AB)),
             const SizedBox(height: 20),
             const Text('Set up your pregnancy tracker',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF880E4F))),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
             const SizedBox(height: 10),
             const Text('Enter your Last Menstrual Period (LMP) to get started.',
                 textAlign: TextAlign.center,
@@ -167,7 +166,7 @@ class _NoDataView extends StatelessWidget {
             ElevatedButton(
               onPressed: onSetup,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE91E8C),
+                backgroundColor: const Color(0xFF1A237E),
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
@@ -197,7 +196,7 @@ class _Body extends StatelessWidget {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFFF4081), Color(0xFFFF80AB)],
+                colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -258,7 +257,7 @@ class _ProgressCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFFFF80AB).withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
@@ -272,14 +271,14 @@ class _ProgressCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(data.trimester,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFFE91E8C), fontWeight: FontWeight.w500)),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF3949AB), fontWeight: FontWeight.w500)),
                 const SizedBox(height: 12),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
                     value: data.progress,
-                    backgroundColor: const Color(0xFFFCE4EC),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E8C)),
+                    backgroundColor: const Color(0xFFE8EAF6),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1A237E)),
                     minHeight: 6,
                   ),
                 ),
@@ -291,7 +290,7 @@ class _ProgressCard extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFFE91E8C),
+              color: const Color(0xFF1A237E),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(
@@ -339,7 +338,7 @@ class _BabyThisWeekCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF80AB).withValues(alpha: 0.15),
+                color: const Color(0xFF3949AB).withValues(alpha: 0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
@@ -359,7 +358,7 @@ class _BabyThisWeekCard extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0xFFFFE4EE), Color(0xFFFCE4EC)],
+                        colors: [Color(0xFFE8EAF6), Color(0xFFE8EAF6)],
                       ),
                     ),
                     child: Image.asset(
@@ -416,11 +415,11 @@ class _BabyThisWeekCard extends StatelessWidget {
                         width: 76,
                         height: 66,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE91E8C),
+                          color: const Color(0xFF1A237E),
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFE91E8C).withValues(alpha: 0.3),
+                              color: const Color(0xFF1A237E).withValues(alpha: 0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -458,9 +457,9 @@ class _StatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF0F5),
+        color: const Color(0xFFF5F7FF),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFFCDD2), width: 1),
+        border: Border.all(color: const Color(0xFFBBBEF0), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -468,7 +467,7 @@ class _StatBox extends StatelessWidget {
           Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFFE91E8C))),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
         ],
       ),
     );
@@ -486,7 +485,7 @@ class _DueDateCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFFCE4EC),
+        color: const Color(0xFFE8EAF6),
         borderRadius: BorderRadius.circular(18),
       ),
       child: Row(
@@ -495,10 +494,10 @@ class _DueDateCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFE91E8C).withValues(alpha: 0.15),
+              color: const Color(0xFF1A237E).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.calendar_month, color: Color(0xFFE91E8C), size: 22),
+            child: const Icon(Icons.calendar_month, color: Color(0xFF1A237E), size: 22),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -517,7 +516,7 @@ class _DueDateCard extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFFE91E8C),
+                color: const Color(0xFF1A237E),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text('Edit', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
@@ -599,7 +598,7 @@ class _WeeklyTipCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF80AB).withValues(alpha: 0.08),
+              color: const Color(0xFF3949AB).withValues(alpha: 0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -642,11 +641,11 @@ class _WeeklyTipCard extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: const Color(0xFFFCE4EC),
+                color: const Color(0xFFE8EAF6),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(Icons.arrow_forward,
-                  color: Color(0xFFE91E8C), size: 18),
+                  color: Color(0xFF1A237E), size: 18),
             ),
           ],
         ),

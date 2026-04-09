@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../auth/services/auth_service.dart';
-import '../auth/screens/login_screen.dart';
+import '../auth/services/logout_helper.dart';
 import 'models/risk_record.dart';
 import 'services/risk_service.dart';
 
@@ -66,9 +65,9 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
               const SizedBox(width: 6),
               _FilterChip(label: 'Low',      selected: _filter == 'Low',      onTap: () => setState(() => _filter = 'Low'),      color: const Color(0xFF2E7D32)),
               const Spacer(),
-              _FilterChip(label: 'Prenatal', selected: _roleFilter == 'prenatal', onTap: () => setState(() => _roleFilter = _roleFilter == 'prenatal' ? 'All' : 'prenatal'), color: const Color(0xFFE91E8C)),
+              _FilterChip(label: 'Prenatal', selected: _roleFilter == 'prenatal', onTap: () => setState(() => _roleFilter = _roleFilter == 'prenatal' ? 'All' : 'prenatal'), color: const Color(0xFF3949AB)),
               const SizedBox(width: 6),
-              _FilterChip(label: 'Neonatal', selected: _roleFilter == 'neonatal', onTap: () => setState(() => _roleFilter = _roleFilter == 'neonatal' ? 'All' : 'neonatal'), color: const Color(0xFF00695C)),
+              _FilterChip(label: 'Neonatal', selected: _roleFilter == 'neonatal', onTap: () => setState(() => _roleFilter = _roleFilter == 'neonatal' ? 'All' : 'neonatal'), color: const Color(0xFF1A237E)),
             ]),
           ),
           // List
@@ -138,15 +137,7 @@ class _Header extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.logout, color: Colors.white),
-                onPressed: () async {
-                  await AuthService().logout();
-                  if (!context.mounted) return;
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (_) => false,
-                  );
-                },
+                onPressed: () => performLogout(),
               ),
             ],
           ),
@@ -275,7 +266,7 @@ class _RecordCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: r.role == 'prenatal' ? const Color(0xFFFCE4EC) : const Color(0xFFE0F7FA),
+                  color: r.role == 'prenatal' ? const Color(0xFFE8EAF6) : const Color(0xFFE8EAF6),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -283,7 +274,7 @@ class _RecordCard extends StatelessWidget {
                   style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: r.role == 'prenatal' ? const Color(0xFFE91E8C) : const Color(0xFF00695C)),
+                      color: r.role == 'prenatal' ? const Color(0xFF1A237E) : const Color(0xFF3949AB)),
                 ),
               ),
               const SizedBox(width: 8),

@@ -1,6 +1,39 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
+  // ── Mobile App Colors ─────────────────────────────────────────────────────────
+  // Navigation & Sidebar
+  static const navbarBg      = Color(0xFF1A237E);
+  static const sidebarBgMob  = Color(0xFF3949AB);
+  static const sidebarSel    = Color(0xFF3949AB);
+
+  // Mobile Primary
+  static const mobileNavy    = Color(0xFF1A237E);
+  static const mobileBlue    = Color(0xFF3949AB);
+  static const mobileLightBg = Color(0xFFE8EAF6);
+  static const mobilePageBg  = Color(0xFFF5F7FF);
+
+  // Status / Badge
+  static const statusGreen      = Color(0xFF388E3C);
+  static const statusGreenBg    = Color(0xFFE8F5E9);
+  static const statusAmber      = Color(0xFFF57F17);
+  static const statusAmberBg    = Color(0xFFFFF3E0);
+  static const statusRed        = Color(0xFFC62828);
+  static const statusRedBg      = Color(0xFFFFEBEE);
+  static const statusPurple     = Color(0xFF9C27B0);
+  static const statusPurpleBg   = Color(0xFFF3E5F5);
+  static const statusBlue       = Color(0xFF2196F3);
+
+  // Accent
+  static const mobileAccent  = Color(0xFF3949AB);
+
+  // Greys
+  static const textPrimary   = Color(0xFF0D0D0D);
+  static const textSecondary = Color(0xFF424242);
+  static const textMuted     = Color(0xFF9E9E9E);
+  static const border        = Color(0xFFE0E0E0);
+  static const cardBg        = Color(0xFFFFFFFF);
+
   // ── Brand / Primary ──────────────────────────────────────────────────────────
   static const navy  = Color(0xFF0D47A1);
   static const navyD = Color(0xFF0A3880);

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 import 'screens/home_screen.dart';
 import 'screens/appointments_screen.dart';
 import 'screens/diagnostic_screen.dart';
 import 'screens/ivr_screen.dart';
+import 'widgets/app_drawer.dart';
 
 class PrenatalDashboard extends StatefulWidget {
   const PrenatalDashboard({super.key});
@@ -13,17 +15,20 @@ class PrenatalDashboard extends StatefulWidget {
 
 class _PrenatalDashboardState extends State<PrenatalDashboard> {
   int _index = 0;
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final _screens = const [
-    PrenatalHomeScreen(),
-    AppointmentsScreen(),
-    DiagnosticScreen(),
-    IvrScreen(),
+  List<Widget> get _screens => [
+    PrenatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    AppointmentsScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    DiagnosticScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    IvrScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: const AppDrawer(),
       body: IndexedStack(index: _index, children: _screens),
       bottomNavigationBar: _PinkBottomNav(
         currentIndex: _index,
@@ -43,8 +48,9 @@ class _PinkBottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
+        border: const Border(top: BorderSide(color: AppColors.border, width: 1)),
         boxShadow: [
-          BoxShadow(color: const Color(0xFFFF80AB).withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, -3)),
+          BoxShadow(color: AppColors.navbarBg.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3)),
         ],
       ),
       child: SafeArea(
@@ -92,14 +98,14 @@ class _NavItem extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: active ? const Color(0xFFE91E8C) : const Color(0xFF9E9E9E), size: 24),
+            Icon(icon, color: active ? AppColors.mobileNavy : AppColors.textMuted, size: 24),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                color: active ? const Color(0xFFE91E8C) : const Color(0xFF9E9E9E),
+                color: active ? AppColors.mobileNavy : AppColors.textMuted,
               ),
             ),
           ],

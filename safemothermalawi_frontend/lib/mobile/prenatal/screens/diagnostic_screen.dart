@@ -16,7 +16,8 @@ class DiagnosticOption {
 }
 
 class DiagnosticScreen extends StatefulWidget {
-  const DiagnosticScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const DiagnosticScreen({super.key, this.onOpenDrawer});
 
   @override
   State<DiagnosticScreen> createState() => _DiagnosticScreenState();
@@ -140,7 +141,18 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => widget.onOpenDrawer?.call(),
+        ),
         title: const Text('Health Diagnostic', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+        actions: [
+          if (!_done && _currentIndex > 0)
+            TextButton(
+              onPressed: _restart,
+              child: const Text('Cancel', style: TextStyle(color: Colors.white, fontSize: 13)),
+            ),
+        ],
       ),
       body: _done ? _buildResult() : _buildQuestion(),
     );

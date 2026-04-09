@@ -25,7 +25,8 @@ class _Appointment {
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 class AppointmentsScreen extends StatefulWidget {
-  const AppointmentsScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const AppointmentsScreen({super.key, this.onOpenDrawer});
 
   @override
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
@@ -84,7 +85,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         builder: (ctx, setS) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text('New Appointment',
-              style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1A3A6B))),
+              style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -106,7 +107,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       lastDate: DateTime(2028),
                       builder: (c, child) => Theme(
                         data: Theme.of(c).copyWith(
-                          colorScheme: const ColorScheme.light(primary: Color(0xFF1A3A6B)),
+                          colorScheme: const ColorScheme.light(primary: Color(0xFF1A237E)),
                         ),
                         child: child!,
                       ),
@@ -122,7 +123,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.calendar_today, size: 16, color: Color(0xFF1A3A6B)),
+                        const Icon(Icons.calendar_today, size: 16, color: Color(0xFF1A237E)),
                         const SizedBox(width: 8),
                         Text(
                           picked == null ? 'Select date' : _fmtFull(picked!),
@@ -141,7 +142,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3A6B)),
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A237E)),
               onPressed: () {
                 if (titleCtrl.text.isNotEmpty && picked != null) {
                   setState(() {
@@ -169,7 +170,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F4FA),
+      backgroundColor: const Color(0xFFF5F7FF),
       body: Column(
         children: [
           _CalendarHeader(
@@ -177,6 +178,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
             onPrev: _prevMonth,
             onNext: _nextMonth,
             onNew: _showAddDialog,
+            onOpenDrawer: widget.onOpenDrawer,
           ),
           Expanded(
             child: SingleChildScrollView(
@@ -228,12 +230,14 @@ class _CalendarHeader extends StatelessWidget {
   final VoidCallback onPrev;
   final VoidCallback onNext;
   final VoidCallback onNew;
+  final VoidCallback? onOpenDrawer;
 
   const _CalendarHeader({
     required this.focusedMonth,
     required this.onPrev,
     required this.onNext,
     required this.onNew,
+    this.onOpenDrawer,
   });
 
   static const _months = [
@@ -245,7 +249,7 @@ class _CalendarHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        color: Color(0xFF1A3A6B),
+        color: Color(0xFF1A237E),
       ),
       child: SafeArea(
         bottom: false,
@@ -253,6 +257,11 @@ class _CalendarHeader extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Row(
             children: [
+              GestureDetector(
+                onTap: () => onOpenDrawer?.call(),
+                child: const Icon(Icons.menu, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +286,7 @@ class _CalendarHeader extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2A4F8F),
+                    color: const Color(0xFF3949AB),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text('+ New',
@@ -363,9 +372,9 @@ class _CalendarGrid extends StatelessWidget {
                   margin: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     color: isSelected
-                        ? const Color(0xFFC0392B)
+                        ? const Color(0xFF1A237E)
                         : isToday
-                            ? const Color(0xFFD6E4F7)
+                            ? const Color(0xFFE8EAF6)
                             : Colors.transparent,
                     shape: BoxShape.circle,
                   ),
@@ -380,7 +389,7 @@ class _CalendarGrid extends StatelessWidget {
                           color: isSelected
                               ? Colors.white
                               : isToday
-                                  ? const Color(0xFF1A3A6B)
+                                  ? const Color(0xFF1A237E)
                                   : const Color(0xFF424242),
                         ),
                       ),
@@ -391,7 +400,7 @@ class _CalendarGrid extends StatelessWidget {
                             width: 4,
                             height: 4,
                             decoration: const BoxDecoration(
-                              color: Color(0xFF1A3A6B),
+                              color: Color(0xFF1A237E),
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -517,14 +526,14 @@ class _AppointmentCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE8EEF7),
+                      color: const Color(0xFFE8EAF6),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
                       'Clinician assigned',
                       style: TextStyle(
                           fontSize: 11,
-                          color: Color(0xFF1A3A6B),
+                          color: Color(0xFF1A237E),
                           fontWeight: FontWeight.w500),
                     ),
                   ),
@@ -539,7 +548,7 @@ class _AppointmentCard extends StatelessWidget {
 
   Color _dateBadgeColor(String status) {
     switch (status) {
-      case 'tomorrow': return const Color(0xFFE8EEF7);
+      case 'tomorrow': return const Color(0xFFE8EAF6);
       case 'confirmed': return const Color(0xFFE8F5E9);
       default: return const Color(0xFFF5F5F5);
     }
@@ -547,7 +556,7 @@ class _AppointmentCard extends StatelessWidget {
 
   Color _dateBadgeTextColor(String status) {
     switch (status) {
-      case 'tomorrow': return const Color(0xFF1A3A6B);
+      case 'tomorrow': return const Color(0xFF1A237E);
       case 'confirmed': return const Color(0xFF2E7D32);
       default: return const Color(0xFF616161);
     }
@@ -556,7 +565,7 @@ class _AppointmentCard extends StatelessWidget {
   Map<String, dynamic> _statusBadge(String status, DateTime date) {
     switch (status) {
       case 'tomorrow':
-        return {'label': 'Tomorrow', 'color': const Color(0xFFC0392B), 'bg': const Color(0xFFFDECEC)};
+        return {'label': 'Tomorrow', 'color': const Color(0xFFC62828), 'bg': const Color(0xFFFFEBEE)};
       case 'confirmed':
         return {'label': 'Confirmed', 'color': const Color(0xFF2E7D32), 'bg': const Color(0xFFE8F5E9)};
       case 'weeks':
@@ -599,7 +608,7 @@ class _DialogField extends StatelessWidget {
             borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
-            borderSide: const BorderSide(color: Color(0xFF1A3A6B))),
+            borderSide: const BorderSide(color: Color(0xFF1A237E))),
       ),
     );
   }

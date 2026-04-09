@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 
 class IvrScreen extends StatelessWidget {
-  const IvrScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const IvrScreen({super.key, this.onOpenDrawer});
 
   static const _contacts = [
     {'name': 'Emergency Hotline', 'number': '116', 'icon': Icons.emergency, 'color': 0xFFD32F2F},
-    {'name': 'Kamuzu Central Hospital', 'number': '+265 1 524 222', 'icon': Icons.local_hospital, 'color': 0xFF1A237E},
-    {'name': 'Queen Elizabeth Hospital', 'number': '+265 1 874 333', 'icon': Icons.local_hospital, 'color': 0xFF1A237E},
-    {'name': 'Midwife Helpline', 'number': '+265 888 000 111', 'icon': Icons.support_agent, 'color': 0xFF00695C},
+    {'name': 'Clinician Helpline', 'number': '+265 888 000 111', 'icon': Icons.support_agent, 'color': 0xFF3949AB},
     {'name': 'Ambulance Services', 'number': '998', 'icon': Icons.airport_shuttle, 'color': 0xFFE65100},
   ];
 
@@ -18,6 +17,10 @@ class IvrScreen extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => onOpenDrawer?.call(),
+        ),
         title: const Text('IVR — Quick Call', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
       ),
       body: SingleChildScrollView(
@@ -133,7 +136,7 @@ class _IvrMenuCard extends StatelessWidget {
     {'key': 'Press 1', 'value': 'Appointment booking'},
     {'key': 'Press 2', 'value': 'Emergency assistance'},
     {'key': 'Press 3', 'value': 'Lab results inquiry'},
-    {'key': 'Press 4', 'value': 'Speak to a midwife'},
+    {'key': 'Press 4', 'value': 'Speak to a clinician'},
     {'key': 'Press 0', 'value': 'Repeat menu'},
   ];
 

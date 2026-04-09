@@ -90,9 +90,9 @@ class _NeonatalNotificationsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5F3),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -127,7 +127,7 @@ class _NeonatalNotificationsScreenState
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(Icons.notifications_none,
-                      size: 64, color: Color(0xFFB2DFDB)),
+                      size: 64, color: Color(0xFFE8EAF6)),
                   SizedBox(height: 16),
                   Text('No notifications',
                       style: TextStyle(
@@ -161,12 +161,12 @@ class _NeonatalNotificationsScreenState
                       decoration: BoxDecoration(
                         color: n.read
                             ? Colors.white
-                            : const Color(0xFFE0F7FA),
+                            : const Color(0xFFE8EAF6),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color: n.read
                               ? const Color(0xFFF0F0F0)
-                              : const Color(0xFF80DEEA),
+                              : const Color(0xFFC5CAE9),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -211,7 +211,7 @@ class _NeonatalNotificationsScreenState
                                         width: 8,
                                         height: 8,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFF00897B),
+                                          color: Color(0xFF1A237E),
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -261,7 +261,7 @@ class _NeonatalNotificationsScreenState
 
   Color _iconColor(String type) {
     switch (type) {
-      case 'appointment': return const Color(0xFF1565C0);
+      case 'appointment': return const Color(0xFF1A237E);
       case 'milestone':   return const Color(0xFFF9A825);
       case 'alert':       return const Color(0xFFC62828);
       default:            return const Color(0xFF2E7D32);

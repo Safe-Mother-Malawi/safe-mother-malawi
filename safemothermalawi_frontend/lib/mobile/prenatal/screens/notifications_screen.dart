@@ -36,9 +36,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -65,7 +65,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.notifications_none, size: 64, color: Color(0xFFFFCDD2)),
+                  Icon(Icons.notifications_none, size: 64, color: Color(0xFFBBBEF0)),
                   SizedBox(height: 16),
                   Text('No notifications', style: TextStyle(fontSize: 16, color: Color(0xFF9E9E9E))),
                 ],
@@ -93,10 +93,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: n.read ? Colors.white : const Color(0xFFFFF0F5),
+                        color: n.read ? Colors.white : const Color(0xFFF5F7FF),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: n.read ? const Color(0xFFF0F0F0) : const Color(0xFFFFCDD2),
+                          color: n.read ? const Color(0xFFF0F0F0) : const Color(0xFFBBBEF0),
                         ),
                         boxShadow: [
                           BoxShadow(
@@ -138,7 +138,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                         width: 8,
                                         height: 8,
                                         decoration: const BoxDecoration(
-                                          color: Color(0xFFE91E8C),
+                                          color: Color(0xFF1A237E),
                                           shape: BoxShape.circle,
                                         ),
                                       ),
@@ -183,7 +183,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Color _iconColor(String type) {
     switch (type) {
-      case 'appointment': return const Color(0xFF1565C0);
+      case 'appointment': return const Color(0xFF1A237E);
       case 'milestone': return const Color(0xFFF9A825);
       case 'alert': return const Color(0xFFC62828);
       default: return const Color(0xFF2E7D32);

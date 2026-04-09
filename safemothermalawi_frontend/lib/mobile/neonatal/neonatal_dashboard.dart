@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../theme/app_colors.dart';
 import '../auth/services/auth_service.dart';
-import '../auth/screens/login_screen.dart';
+import '../auth/services/logout_helper.dart';
 import 'models/neonatal_data.dart';
 import 'screens/home_screen.dart';
 import 'screens/schedule_screen.dart';
@@ -13,8 +14,10 @@ import 'screens/notifications_screen.dart';
 import 'screens/profile_screen.dart';
 import 'screens/nutrition_screen.dart';
 import 'screens/baby_tracker_screen.dart';
+import 'screens/settings_screen.dart';
+import 'screens/help_screen.dart';
 
-const _kActive = Color(0xFFD81B60);
+const _kActive = AppColors.mobileNavy;
 
 class NeonatalDashboard extends StatefulWidget {
   const NeonatalDashboard({super.key});
@@ -27,6 +30,7 @@ class _NeonatalDashboardState extends State<NeonatalDashboard> {
   NeonatalData? _sharedData;
   String _babyName   = 'Baby';
   String _motherName = 'Mama';
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() { super.initState(); _loadSharedData(); }
@@ -45,15 +49,16 @@ class _NeonatalDashboardState extends State<NeonatalDashboard> {
   }
 
   List<Widget> get _screens => [
-    const NeonatalHomeScreen(),
-    const ScheduleScreen(),
-    NeonatalHealthScreen(data: _sharedData),
-    const CallScreen(),
+    NeonatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    ScheduleScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    NeonatalHealthScreen(data: _sharedData, onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    CallScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       drawer: _NeoDrawer(babyName: _babyName, motherName: _motherName, data: _sharedData),
       body: IndexedStack(index: _index, children: _screens),
       bottomNavigationBar: _NeoBottomNav(
@@ -81,9 +86,10 @@ class _NeoBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFEEEEEE), width: 1)),
+        border: const Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, -2))],
       ),
       child: SafeArea(
         top: false,
@@ -100,14 +106,23 @@ class _NeoBottomNav extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(active ? item.$2 : item.$1,
-                        color: active ? _kActive : const Color(0xFF9E9E9E), size: 26),
+                    if (active)
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8EAF6),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(item.$2, color: const Color(0xFF1A237E), size: 22),
+                      )
+                    else
+                      Icon(item.$1, color: const Color(0xFF9E9E9E), size: 24),
                     const SizedBox(height: 4),
                     Text(item.$3,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: active ? FontWeight.w700 : FontWeight.normal,
-                          color: active ? _kActive : const Color(0xFF9E9E9E),
+                          color: active ? const Color(0xFF1A237E) : const Color(0xFF9E9E9E),
                         )),
                   ],
                 ),
@@ -127,6 +142,46 @@ class _NeoDrawer extends StatelessWidget {
   final NeonatalData? data;
   const _NeoDrawer({required this.babyName, required this.motherName, this.data});
 
+  void _showAbout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64, height: 64,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(colors: [AppColors.navbarBg, AppColors.mobileBlue]),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.child_care, color: Colors.white, size: 36),
+            ),
+            const SizedBox(height: 16),
+            const Text('Safe Mother Malawi',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+            const SizedBox(height: 6),
+            const Text('Version 1.0.0',
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            const Text(
+              'A neonatal care app supporting mothers with newborns in Malawi — tracking baby growth, health, feeding, sleep, and vaccines.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close', style: TextStyle(color: AppColors.mobileNavy)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
@@ -138,7 +193,7 @@ class _NeoDrawer extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(20, 56, 20, 24),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF00695C), Color(0xFF00ACC1)],
+                colors: [AppColors.navbarBg, AppColors.sidebarBgMob],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -149,8 +204,9 @@ class _NeoDrawer extends StatelessWidget {
                 Container(
                   width: 56, height: 56,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
+                    color: Colors.white.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
                   ),
                   child: const Icon(Icons.child_care, color: Colors.white, size: 30),
                 ),
@@ -245,22 +301,37 @@ class _NeoDrawer extends StatelessWidget {
                 _DrawerItem(
                   icon: Icons.settings_outlined,
                   label: 'Settings',
-                  onTap: () => Navigator.pop(context),
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const NeonatalSettingsScreen()));
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.help_outline,
+                  label: 'Help & Support',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(context, MaterialPageRoute(
+                        builder: (_) => const NeonatalHelpScreen()));
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.info_outline,
+                  label: 'About',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showAbout(context);
+                  },
                 ),
                 const Divider(indent: 16, endIndent: 16),
                 _DrawerItem(
                   icon: Icons.logout,
                   label: 'Log out',
-                  color: Colors.red,
+                  color: AppColors.statusRed,
                   onTap: () async {
                     Navigator.pop(context);
-                    await AuthService().logout();
-                    if (!context.mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (_) => false,
-                    );
+                    await confirmAndLogout(context);
                   },
                 ),
               ],
@@ -284,7 +355,7 @@ class _DrawerSection extends StatelessWidget {
         style: const TextStyle(
             fontSize: 10,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF9E9E9E),
+            color: AppColors.textMuted,
             letterSpacing: 1.2)),
   );
 }
@@ -298,10 +369,12 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? const Color(0xFF212121);
+    final c = color ?? AppColors.mobileNavy;
     return ListTile(
       leading: Icon(icon, color: c, size: 22),
-      title: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: c)),
+      title: Text(label,
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
+              color: color ?? AppColors.textPrimary)),
       onTap: onTap,
       horizontalTitleGap: 8,
     );

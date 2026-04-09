@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/neonatal_data.dart';
 
 const _kGreen  = Color(0xFF388E3C);
 const _kAmber  = Color(0xFFF57F17);
 const _kGrey   = Color(0xFF757575);
-const _kBg     = Color(0xFFE8F5F3);
+const _kBg     = Color(0xFFF5F7FF);
+
+// ── Persistence helpers ───────────────────────────────────────────────────────
+
+Future<Set<String>> _loadGivenKeys() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getStringList('vaccine_given_keys')?.toSet() ?? {};
+}
+
+Future<void> _saveGivenKeys(Set<String> keys) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setStringList('vaccine_given_keys', keys.toList());
+}
 
 class VaccinesScreen extends StatefulWidget {
   final NeonatalData? data;
@@ -16,15 +29,19 @@ class VaccinesScreen extends StatefulWidget {
 
 class _VaccinesScreenState extends State<VaccinesScreen> {
   late List<VaccineEntry> _schedule;
+  Set<String> _givenKeys = {};
 
   @override
   void initState() {
     super.initState();
     _schedule = widget.data?.vaccineSchedule ?? _defaultSchedule();
+    _loadGivenKeys().then((keys) {
+      if (!mounted) return;
+      setState(() => _givenKeys = keys);
+    });
   }
 
   List<VaccineEntry> _defaultSchedule() {
-    // Fallback if NeonatalData is not yet loaded (baby DOB unknown)
     return const [
       VaccineEntry(name: 'BCG (Tuberculosis)',            ageLabel: 'At birth',  dueDayAge: 0,   status: VaccineStatus.given),
       VaccineEntry(name: 'OPV-0 (Oral Polio)',            ageLabel: 'At birth',  dueDayAge: 0,   status: VaccineStatus.given),
@@ -39,9 +56,26 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
     ];
   }
 
-  int get _givenCount =>
-      _schedule.where((v) => v.status == VaccineStatus.given).length;
+  // A vaccine is "given" if its original status was given OR the user toggled it on
+  bool _isGiven(VaccineEntry v) =>
+      v.status == VaccineStatus.given || _givenKeys.contains(v.name);
 
+  void _toggle(VaccineEntry v) {
+    // Vaccines that were auto-marked given at birth cannot be untoggled
+    if (v.status == VaccineStatus.given && !_givenKeys.contains(v.name)) {
+      // First tap on a birth-given vaccine — allow untoggling by adding a "removed" key
+    }
+    setState(() {
+      if (_givenKeys.contains(v.name)) {
+        _givenKeys.remove(v.name);
+      } else {
+        _givenKeys.add(v.name);
+      }
+    });
+    _saveGivenKeys(_givenKeys);
+  }
+
+  int get _givenCount => _schedule.where(_isGiven).length;
   double get _progress => _schedule.isEmpty ? 0 : _givenCount / _schedule.length;
 
   @override
@@ -54,7 +88,7 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF1B5E20), Color(0xFF388E3C)],
+                colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -66,19 +100,28 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(Icons.vaccines, color: Colors.white, size: 22),
-                        SizedBox(width: 10),
-                        Text('Vaccine Schedule',
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 10),
+                        const Icon(Icons.vaccines, color: Colors.white, size: 22),
+                        const SizedBox(width: 8),
+                        const Text('Vaccine Schedule',
                             style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close, color: Colors.white70, size: 22),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text('Malawi EPI Schedule',
                         style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13)),
                     const SizedBox(height: 16),
-                    // Progress bar
                     Row(
                       children: [
                         Expanded(
@@ -127,10 +170,8 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Info banner
                   _InfoBanner(),
                   const SizedBox(height: 16),
-                  // Group by age
                   ..._buildGroupedList(),
                   const SizedBox(height: 30),
                 ],
@@ -160,7 +201,11 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
         ),
       );
       for (final v in vaccines) {
-        widgets.add(_VaccineTile(entry: v));
+        widgets.add(_VaccineTile(
+          entry: v,
+          isGiven: _isGiven(v),
+          onToggle: () => _toggle(v),
+        ));
       }
       widgets.add(const SizedBox(height: 8));
     });
@@ -202,89 +247,113 @@ class _InfoBanner extends StatelessWidget {
 
 class _VaccineTile extends StatelessWidget {
   final VaccineEntry entry;
-  const _VaccineTile({required this.entry});
+  final bool isGiven;
+  final VoidCallback onToggle;
+  const _VaccineTile({required this.entry, required this.isGiven, required this.onToggle});
 
   Color get _dotColor {
+    if (isGiven) return _kGreen;
     switch (entry.status) {
-      case VaccineStatus.given:     return _kGreen;
       case VaccineStatus.upcoming:  return _kAmber;
       case VaccineStatus.scheduled: return _kGrey;
+      default:                      return _kGrey;
     }
   }
 
   String get _badgeText {
+    if (isGiven) return '✓ Given';
     switch (entry.status) {
-      case VaccineStatus.given:     return '✓ Given';
       case VaccineStatus.upcoming:  return 'Due Soon';
-      case VaccineStatus.scheduled: return 'Scheduled';
+      case VaccineStatus.scheduled: return '';
+      default:                      return '';
     }
   }
 
   Color get _badgeBg {
+    if (isGiven) return const Color(0xFFE8F5E9);
     switch (entry.status) {
-      case VaccineStatus.given:     return const Color(0xFFE8F5E9);
       case VaccineStatus.upcoming:  return const Color(0xFFFFF8E1);
       case VaccineStatus.scheduled: return const Color(0xFFF5F5F5);
+      default:                      return const Color(0xFFF5F5F5);
     }
   }
 
-  Color get _badgeText2 {
+  Color get _badgeFg {
+    if (isGiven) return _kGreen;
     switch (entry.status) {
-      case VaccineStatus.given:     return _kGreen;
       case VaccineStatus.upcoming:  return _kAmber;
       case VaccineStatus.scheduled: return _kGrey;
+      default:                      return _kGrey;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          // Status dot
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            width: 12, height: 12,
-            decoration: BoxDecoration(
-              color: _dotColor,
-              shape: BoxShape.circle,
-              boxShadow: entry.status == VaccineStatus.upcoming
-                  ? [BoxShadow(color: _dotColor.withValues(alpha: 0.4), blurRadius: 6, spreadRadius: 2)]
+    return GestureDetector(
+      onTap: onToggle,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: isGiven ? const Color(0xFFF1FBF2) : Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: isGiven ? _kGreen.withValues(alpha: 0.35) : const Color(0xFFE0E0E0),
+          ),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+        ),
+        child: Row(
+          children: [
+            // Toggle checkbox
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 24, height: 24,
+              decoration: BoxDecoration(
+                color: isGiven ? _kGreen : Colors.transparent,
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isGiven ? _kGreen : _dotColor,
+                  width: 2,
+                ),
+                boxShadow: isGiven
+                    ? [BoxShadow(color: _kGreen.withValues(alpha: 0.3), blurRadius: 6, spreadRadius: 1)]
+                    : null,
+              ),
+              child: isGiven
+                  ? const Icon(Icons.check, color: Colors.white, size: 14)
                   : null,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(entry.name,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
-                const SizedBox(height: 2),
-                Text(entry.ageLabel,
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-              ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(entry.name,
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: isGiven ? const Color(0xFF388E3C) : const Color(0xFF212121),
+                          decoration: isGiven ? TextDecoration.none : null)),
+                  const SizedBox(height: 2),
+                  Text(entry.ageLabel,
+                      style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _badgeBg,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(_badgeText,
-                style: TextStyle(
-                    fontSize: 11, fontWeight: FontWeight.w600, color: _badgeText2)),
-          ),
-        ],
+            const SizedBox(width: 8),
+            if (_badgeText.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _badgeBg,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(_badgeText,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _badgeFg)),
+              ),
+          ],
+        ),
       ),
     );
   }

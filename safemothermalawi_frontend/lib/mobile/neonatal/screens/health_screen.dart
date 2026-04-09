@@ -22,7 +22,8 @@ class _Option {
 
 class NeonatalHealthScreen extends StatefulWidget {
   final NeonatalData? data;
-  const NeonatalHealthScreen({super.key, this.data});
+  final VoidCallback? onOpenDrawer;
+  const NeonatalHealthScreen({super.key, this.data, this.onOpenDrawer});
 
   @override
   State<NeonatalHealthScreen> createState() => _NeonatalHealthScreenState();
@@ -150,16 +151,25 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F7F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => widget.onOpenDrawer?.call(),
+        ),
         title: const Text('Health Check',
             style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.w600)),
         actions: [
+          if (!_done && _currentIndex > 0)
+            TextButton(
+              onPressed: _restart,
+              child: const Text('Cancel', style: TextStyle(color: Colors.white, fontSize: 13)),
+            ),
           if (widget.data != null)
             Padding(
               padding: const EdgeInsets.only(right: 16),
@@ -202,7 +212,7 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
                   style: const TextStyle(fontSize: 13, color: Color(0xFF757575))),
               Text('${_totalScore}pts',
                   style: const TextStyle(
-                      fontSize: 13, color: Color(0xFF00695C))),
+                      fontSize: 13, color: Color(0xFF1A237E))),
             ],
           ),
           const SizedBox(height: 8),
@@ -211,7 +221,7 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
             child: LinearProgressIndicator(
               value: progress,
               backgroundColor: const Color(0xFFE0E0E0),
-              color: const Color(0xFF00695C),
+              color: const Color(0xFF1A237E),
               minHeight: 6,
             ),
           ),
@@ -245,11 +255,11 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
                 margin: const EdgeInsets.only(bottom: 12),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: selected ? const Color(0xFF00695C) : Colors.white,
+                  color: selected ? const Color(0xFF1A237E) : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
                     color: selected
-                        ? const Color(0xFF00695C)
+                        ? const Color(0xFF1A237E)
                         : const Color(0xFFE0E0E0),
                   ),
                 ),
@@ -272,7 +282,7 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
             child: ElevatedButton(
               onPressed: _selectedOption != null ? _next : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00695C),
+                backgroundColor: const Color(0xFF1A237E),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
@@ -347,7 +357,7 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
                     style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF00695C))),
+                        color: Color(0xFF1A237E))),
               ],
             ),
           ),
@@ -405,7 +415,7 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
             child: ElevatedButton(
               onPressed: _restart,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF00695C),
+                backgroundColor: const Color(0xFF1A237E),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),

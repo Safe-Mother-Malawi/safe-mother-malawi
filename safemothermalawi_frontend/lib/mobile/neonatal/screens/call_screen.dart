@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 
 class CallScreen extends StatelessWidget {
-  const CallScreen({super.key});
+  final VoidCallback? onOpenDrawer;
+  const CallScreen({super.key, this.onOpenDrawer});
 
   static const _contacts = [
-    {'name': 'SafeMother Helpline',      'number': '116',             'icon': Icons.support_agent,           'color': 0xFFD81B60},
-    {'name': 'Kamuzu Central Hospital',  'number': '+265 1 524 222',  'icon': Icons.local_hospital,          'color': 0xFF00695C},
-    {'name': 'Queen Elizabeth Hospital', 'number': '+265 1 874 333',  'icon': Icons.local_hospital,          'color': 0xFF00695C},
-    {'name': 'Neonatal Nurse Helpline',  'number': '+265 888 000 222','icon': Icons.child_care,              'color': 0xFF00897B},
-    {'name': 'Ambulance Services',       'number': '998',             'icon': Icons.airport_shuttle,         'color': 0xFFE65100},
-    {'name': 'Ministry of Health',       'number': '+265 1 789 400',  'icon': Icons.health_and_safety,       'color': 0xFF1565C0},
+    {'name': 'SafeMother Helpline', 'number': '116',  'icon': Icons.support_agent,  'color': 0xFF1A237E},
+    {'name': 'Ambulance Services',  'number': '998',  'icon': Icons.airport_shuttle, 'color': 0xFFE65100},
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF0F7F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.menu, color: Colors.white),
+          onPressed: () => onOpenDrawer?.call(),
+        ),
         title: const Text('Call',
             style: TextStyle(
                 color: Colors.white,
@@ -187,7 +188,7 @@ class _IvrMenuCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFB2DFDB)),
+        border: Border.all(color: const Color(0xFFE3E8FF)),
       ),
       child: Column(
         children: _steps
@@ -199,7 +200,7 @@ class _IvrMenuCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00695C),
+                          color: const Color(0xFF1A237E),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(s['key']!,

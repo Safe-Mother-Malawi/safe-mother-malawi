@@ -36,9 +36,9 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
     final u = _user;
     final d = _data;
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5F3),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -64,7 +64,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
               width: double.infinity,
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF00695C), Color(0xFF00ACC1)],
+                  colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -91,7 +91,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                               color: Colors.white,
                               shape: BoxShape.circle),
                           child: const Icon(Icons.camera_alt,
-                              size: 16, color: Color(0xFF00695C)),
+                              size: 16, color: Color(0xFF1A237E)),
                         ),
                       ),
                     ],
@@ -262,7 +262,7 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(children: [
-          Icon(icon, size: 20, color: const Color(0xFF00897B)),
+          Icon(icon, size: 20, color: const Color(0xFF1A237E)),
           const SizedBox(width: 14),
           Expanded(
             child: Column(

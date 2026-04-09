@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../auth/services/auth_service.dart';
-import '../../auth/screens/login_screen.dart';
+import '../../auth/services/logout_helper.dart';
 import '../screens/profile_screen.dart';
 import '../screens/notifications_screen.dart';
 import '../screens/nutrition_screen.dart';
@@ -25,7 +24,7 @@ class NeoAppDrawer extends StatelessWidget {
             width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF00695C), Color(0xFF00ACC1)],
+                colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -88,13 +87,8 @@ class NeoAppDrawer extends StatelessWidget {
                   label: 'Sign Out',
                   color: const Color(0xFFC62828),
                   onTap: () async {
-                    await AuthService().logout();
-                    if (!context.mounted) return;
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
-                      (_) => false,
-                    );
+                    Navigator.pop(context);
+                    await confirmAndLogout(context);
                   },
                 ),
               ],
@@ -123,7 +117,7 @@ class NeoAppDrawer extends StatelessWidget {
             Container(
               width: 64, height: 64,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [Color(0xFF00695C), Color(0xFF00ACC1)]),
+                gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)]),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Icon(Icons.child_care, color: Colors.white, size: 36),
@@ -143,7 +137,7 @@ class NeoAppDrawer extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close', style: TextStyle(color: Color(0xFF00695C))),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF1A237E))),
           ),
         ],
       ),
@@ -160,7 +154,7 @@ class _Item extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: color ?? const Color(0xFF00695C), size: 22),
+    leading: Icon(icon, color: color ?? const Color(0xFF1A237E), size: 22),
     title: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color ?? const Color(0xFF212121))),
     trailing: color == null ? const Icon(Icons.arrow_forward_ios, size: 13, color: Color(0xFFBDBDBD)) : null,
     onTap: onTap,

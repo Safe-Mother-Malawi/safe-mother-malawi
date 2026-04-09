@@ -9,9 +9,9 @@ class PregnancyDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -34,7 +34,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFFFF80AB).withValues(alpha: 0.15),
+                    color: const Color(0xFF3949AB).withValues(alpha: 0.15),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -49,7 +49,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                       gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [Color(0xFFFFE4EE), Color(0xFFFCE4EC)],
+                        colors: [Color(0xFFE8EAF6), Color(0xFFE8EAF6)],
                       ),
                     ),
                   ),
@@ -74,7 +74,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                         gradient: LinearGradient(
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
-                          colors: [Colors.transparent, Color(0xFFFFF0F5)],
+                          colors: [Colors.transparent, Color(0xFFF5F7FF)],
                         ),
                       ),
                     ),
@@ -87,9 +87,9 @@ class PregnancyDetailScreen extends StatelessWidget {
             // Week + trimester badge
             Row(
               children: [
-                _Badge(label: 'Week ${data.currentWeek}', color: const Color(0xFFE91E8C)),
+                _Badge(label: 'Week ${data.currentWeek}', color: const Color(0xFF1A237E)),
                 const SizedBox(width: 10),
-                _Badge(label: data.trimester, color: const Color(0xFFAD1457)),
+                _Badge(label: data.trimester, color: const Color(0xFF3949AB)),
               ],
             ),
             const SizedBox(height: 20),
@@ -123,7 +123,7 @@ class PregnancyDetailScreen extends StatelessWidget {
             // Size comparison
             _InfoSection(
               icon: Icons.eco,
-              color: const Color(0xFF00695C),
+              color: const Color(0xFF1A237E),
               title: 'Size Comparison',
               body: 'Your baby is about the size of a ${data.babySize}.',
             ),
@@ -132,7 +132,7 @@ class PregnancyDetailScreen extends StatelessWidget {
             // Milestone
             _InfoSection(
               icon: Icons.star_outline,
-              color: const Color(0xFFE91E8C),
+              color: const Color(0xFF1A237E),
               title: 'This Week\'s Milestone',
               body: data.milestone,
             ),
@@ -155,8 +155,8 @@ class PregnancyDetailScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
               child: LinearProgressIndicator(
                 value: data.progress,
-                backgroundColor: const Color(0xFFFCE4EC),
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFE91E8C)),
+                backgroundColor: const Color(0xFFE8EAF6),
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1A237E)),
                 minHeight: 12,
               ),
             ),
@@ -165,7 +165,7 @@ class PregnancyDetailScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('${(data.progress * 100).toStringAsFixed(0)}% complete',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFFE91E8C), fontWeight: FontWeight.w500)),
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF1A237E), fontWeight: FontWeight.w500)),
                 Text('${data.daysRemaining} days remaining',
                     style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
               ],
@@ -209,11 +209,11 @@ class _DetailStat extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: const Color(0xFFFF80AB).withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFFE91E8C), size: 22),
+          Icon(icon, color: const Color(0xFF1A237E), size: 22),
           const SizedBox(width: 10),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

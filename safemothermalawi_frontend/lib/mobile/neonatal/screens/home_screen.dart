@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
 import 'notifications_screen.dart';
+import 'daily_feed_detail_screen.dart';
 import '../models/neonatal_data.dart';
 
-// ── Color Constants ────────────────────────────────────────────────────────────
-const _kTeal1 = Color(0xFF00695C);
-const _kTeal2 = Color(0xFF00ACC1);
-const _kAccent = Color(0xFF00897B);
-const _kBg = Color(0xFFE8F5F3);
+// ── Blue palette ──────────────────────────────────────────────────────────────
+const _kBg        = Color(0xFFF5F7FF);
+const _kCard      = Color(0xFFFFFFFF);
+const _kBrown     = Color(0xFF000000);      // primary text → black
+const _kBrownMid  = Color(0xFF212121);      // secondary text → near black
+const _kBrownSoft = Color(0xFF616161);      // muted text → dark grey
+const _kOrange    = Color(0xFF1A237E);      // accent → primary blue
+const _kGreeting  = Color(0xFFE8EAF6);     // greeting card bg → light blue
+const _kStage1    = Color(0xFF9FA8DA);      // done stage → mid blue
+const _kStage2    = Color(0xFF1A237E);      // active stage → primary blue
+const _kStage3    = Color(0xFFE8EAF6);     // future stage → light blue
+const _kFeedBg    = Color(0xFFE8EAF6);     // feed icon bg → light blue
+const _kFeedAccent = Color(0xFF3949AB);    // feed accent → mid blue
+const _kApptBar   = Color(0xFF1A237E);     // appointment bar → primary blue
+
+// ── Screen ────────────────────────────────────────────────────────────────────
 
 class NeonatalHomeScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -33,13 +45,11 @@ class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
     final user = await AuthService().getCurrentUser();
     if (!mounted) return;
     if (user == null) { setState(() => _loading = false); return; }
-
     final firstName = user.fullName.split(' ').first;
     final babyDob = user.babyDob.isNotEmpty
         ? DateTime.tryParse(user.babyDob) ?? DateTime.now()
         : DateTime.now();
     final babyName = user.babyName.isNotEmpty ? user.babyName : 'Baby';
-
     setState(() {
       _firstName = firstName;
       _data = NeonatalData(babyDob: babyDob, babyName: babyName);
@@ -52,73 +62,20 @@ class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: _kBg,
-        body: Center(child: CircularProgressIndicator(color: _kAccent)),
+        body: Center(child: CircularProgressIndicator(color: _kOrange)),
       );
     }
     return Scaffold(
       backgroundColor: _kBg,
-      body: Column(
-        children: [
-          _NeoHeader(firstName: _firstName, onOpenDrawer: widget.onOpenDrawer),
-          Expanded(
-            child: _data == null
-                ? _NoDataView(onSetup: _load)
-                : _Body(
-                    data: _data!,
-                    tipDismissed: _tipDismissed,
-                    onDismissTip: () => setState(() => _tipDismissed = true),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Header ─────────────────────────────────────────────────────────────────────
-
-class _NeoHeader extends StatelessWidget {
-  final String firstName;
-  final VoidCallback? onOpenDrawer;
-  const _NeoHeader({required this.firstName, this.onOpenDrawer});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [_kTeal1, _kTeal2],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-          child: Row(
-            children: [
-              GestureDetector(
-                onTap: () => onOpenDrawer?.call(),
-                child: const Icon(Icons.menu, color: Colors.white, size: 24),
-              ),
-              const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const NeonatalNotificationsScreen())),
-                child: Container(
-                  width: 38, height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+      body: _data == null
+          ? _NoDataView(onSetup: _load)
+          : _HomeBody(
+              data: _data!,
+              firstName: _firstName,
+              tipDismissed: _tipDismissed,
+              onDismissTip: () => setState(() => _tipDismissed = true),
+              onOpenDrawer: widget.onOpenDrawer,
+            ),
     );
   }
 }
@@ -137,20 +94,20 @@ class _NoDataView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.child_care, size: 80, color: _kAccent),
+            const Icon(Icons.child_care, size: 80, color: _kOrange),
             const SizedBox(height: 20),
             const Text('Welcome to Neonatal Care',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _kTeal1)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _kBrown)),
             const SizedBox(height: 10),
-            const Text('Your baby\'s profile is being loaded. Please wait or re-login.',
+            const Text("Your baby's profile is being loaded. Please wait or re-login.",
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Color(0xFF757575))),
+                style: TextStyle(fontSize: 14, color: _kBrownMid)),
             const SizedBox(height: 28),
             ElevatedButton(
               onPressed: onSetup,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kAccent,
+                backgroundColor: _kOrange,
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
@@ -163,66 +120,134 @@ class _NoDataView extends StatelessWidget {
   }
 }
 
-// ── Body ───────────────────────────────────────────────────────────────────────
+// ── Home Body ─────────────────────────────────────────────────────────────────
 
-class _Body extends StatelessWidget {
+class _HomeBody extends StatelessWidget {
   final NeonatalData data;
+  final String firstName;
   final bool tipDismissed;
   final VoidCallback onDismissTip;
+  final VoidCallback? onOpenDrawer;
 
-  const _Body({
+  const _HomeBody({
     required this.data,
+    required this.firstName,
     required this.tipDismissed,
     required this.onDismissTip,
+    this.onOpenDrawer,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          // Greeting continuation on teal background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [_kTeal2, _kTeal1],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      children: [
+        // ── Top bar (safe area) ──────────────────────────────────────────────
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+            child: Row(
               children: [
-                Text(NeonatalData.greeting,
-                    style: const TextStyle(color: Colors.white, fontSize: 14)),
-                const SizedBox(height: 2),
-                Row(children: [
-                  Text(data.babyName.isNotEmpty ? 'Hi, Mama 👋' : 'Hi, Mama 👋',
-                      style: const TextStyle(
-                          color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                ]),
+                GestureDetector(
+                  onTap: () => onOpenDrawer?.call(),
+                  child: const Icon(Icons.menu, color: _kBrown, size: 24),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                      MaterialPageRoute(builder: (_) => const NeonatalNotificationsScreen())),
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: 40, height: 40,
+                        decoration: BoxDecoration(
+                          color: _kCard,
+                          shape: BoxShape.circle,
+                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2))],
+                        ),
+                        child: const Icon(Icons.notifications_outlined, color: _kBrown, size: 20),
+                      ),
+                      Positioned(
+                        top: 6, right: 6,
+                        child: Container(
+                          width: 8, height: 8,
+                          decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
+        ),
 
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        // ── Scrollable content ───────────────────────────────────────────────
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             child: Column(
               children: [
-                const SizedBox(height: 16),
-                _AgeCard(data: data),
-                const SizedBox(height: 20),
-                _BabyTodayCard(data: data),
-                const SizedBox(height: 16),
-                _NextVaccineCard(data: data),
-                const SizedBox(height: 16),
-                _QuickStatsRow(data: data),
-                const SizedBox(height: 16),
-                if (!tipDismissed) _TipCard(data: data, onDismiss: onDismissTip),
-                const SizedBox(height: 8),
+                _WelcomeCard(firstName: firstName, data: data),
+                const SizedBox(height: 14),
+                _BabyInfoCard(data: data),
+                const SizedBox(height: 14),
+                _DailyFeedsCard(data: data),
+                const SizedBox(height: 14),
+                _TodayAppointmentCard(data: data),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Welcome Card ──────────────────────────────────────────────────────────────
+
+class _WelcomeCard extends StatelessWidget {
+  final String firstName;
+  final NeonatalData data;
+  const _WelcomeCard({required this.firstName, required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      decoration: BoxDecoration(
+        color: _kGreeting,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFC5CAE9), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'WELCOME BACK',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: _kBrownSoft,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '${NeonatalData.greeting},',
+            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kBrown),
+          ),
+          const SizedBox(height: 2),
+          Row(
+            children: [
+              Text(
+                'Mama $firstName',
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kOrange),
+              ),
+              const SizedBox(width: 6),
+              const Text('👋', style: TextStyle(fontSize: 20)),
+            ],
           ),
         ],
       ),
@@ -230,413 +255,404 @@ class _Body extends StatelessWidget {
   }
 }
 
-// ── Age Card ───────────────────────────────────────────────────────────────────
+// ── Baby Info Card ────────────────────────────────────────────────────────────
 
-class _AgeCard extends StatelessWidget {
+class _BabyInfoCard extends StatelessWidget {
   final NeonatalData data;
-  const _AgeCard({required this.data});
+  const _BabyInfoCard({required this.data});
+
+  // Neonatal stage definitions
+  static const _stageNames  = ['Early neonatal', 'Late neonatal', 'Post-neonatal'];
+  static const _stageDays   = [7, 28, 60]; // end day of each stage
+  static const _stageLabels = ['Day 0–7', 'Day 8–28', 'Day 29+'];
+
+  int get _currentStageIndex {
+    final d = data.ageInDays;
+    if (d <= 7)  return 0;
+    if (d <= 28) return 1;
+    return 2;
+  }
+
+  String get _stageRangeLabel {
+    final idx = _currentStageIndex;
+    if (idx == 0) return 'Early neonatal (day 0–7)';
+    if (idx == 1) return 'Late neonatal (day 8–28)';
+    return 'Post-neonatal (day 29+)';
+  }
+
+  String get _stageDayProgress {
+    final idx   = _currentStageIndex;
+    // Stage boundaries (inclusive)
+    // Early:  day 0–7  (8 days)
+    // Late:   day 8–28 (21 days)
+    // Post:   day 29–60 (32 days)
+    final start = idx == 0 ? 0 : (idx == 1 ? 8 : 29);
+    final end   = idx == 0 ? 7 : (idx == 1 ? 28 : 60);
+    final total      = end - start + 1;           // inclusive count
+    final dayInStage = (data.ageInDays - start + 1).clamp(1, total);
+    return 'Day $dayInStage of $total';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final stageIdx = _currentStageIndex;
+
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _kCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Baby name row
+          Row(
+            children: [
+              Container(
+                width: 40, height: 40,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8EAF6),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(child: Text('🍼', style: TextStyle(fontSize: 20))),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(data.babyName.isNotEmpty ? data.babyName : 'Baby',
+                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: _kBrown)),
+                    Text('Day ${data.ageInDays} · ${_stageNames[stageIdx]}',
+                        style: const TextStyle(fontSize: 12, color: _kBrownSoft)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Age + badge row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              RichText(
+                text: TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${data.ageInDays}',
+                      style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w800, color: _kOrange, height: 1),
+                    ),
+                    const TextSpan(
+                      text: '  days old',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500, color: _kBrownMid),
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8EAF6),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _kOrange.withValues(alpha: 0.4)),
+                ),
+                child: Column(
+                  children: [
+                    Text('Day ${_stageDays[stageIdx == 0 ? 0 : stageIdx == 1 ? 1 : 2] - (stageIdx == 0 ? 0 : stageIdx == 1 ? 7 : 27)}–${_stageDays[stageIdx]}',
+                        style: const TextStyle(fontSize: 10, color: _kBrownMid)),
+                    Text(_stageNames[stageIdx],
+                        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _kOrange)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Stage label + day progress
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(_stageRangeLabel,
+                  style: const TextStyle(fontSize: 12, color: _kBrownMid, fontWeight: FontWeight.w500)),
+              Text(_stageDayProgress,
+                  style: const TextStyle(fontSize: 12, color: _kBrownSoft)),
+            ],
+          ),
+          const SizedBox(height: 8),
+
+          // Segmented stage progress bar
+          Row(
+            children: List.generate(3, (i) {
+              Color barColor;
+              if (i < stageIdx) {
+                barColor = _kStage1;
+              } else if (i == stageIdx) {
+                barColor = _kStage2;
+              } else {
+                barColor = _kStage3;
+              }
+              return Expanded(
+                child: Container(
+                  height: 8,
+                  margin: EdgeInsets.only(right: i < 2 ? 4 : 0),
+                  decoration: BoxDecoration(
+                    color: barColor,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              );
+            }),
+          ),
+          const SizedBox(height: 8),
+
+          // Stage labels row
+          Row(
+            children: List.generate(3, (i) => Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(_stageLabels[i],
+                      style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: i == stageIdx ? _kOrange : _kBrownSoft)),
+                  Text(
+                    i == 0 ? 'Early neonatal ${i < stageIdx ? "✓" : i == stageIdx ? "← now" : ""}' :
+                    i == 1 ? 'Late neonatal ${i < stageIdx ? "✓" : i == stageIdx ? "← now" : ""}' :
+                             'Post-neonatal${i == stageIdx ? " ← now" : ""}',
+                    style: TextStyle(
+                        fontSize: 9,
+                        color: i == stageIdx ? _kOrange : _kBrownSoft),
+                  ),
+                ],
+              ),
+            )),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Daily Feeds Card ──────────────────────────────────────────────────────────
+
+class _DailyFeedsCard extends StatefulWidget {
+  final NeonatalData data;
+  const _DailyFeedsCard({required this.data});
+  @override
+  State<_DailyFeedsCard> createState() => _DailyFeedsCardState();
+}
+
+class _DailyFeedsCardState extends State<_DailyFeedsCard> {
+  int _feedCount = 0;
+
+  int get _targetFeeds {
+    final d = widget.data.ageInDays;
+    if (d <= 14) return 10;
+    if (d <= 28) return 8;
+    if (d <= 56) return 7;
+    return 6;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: _kAccent.withValues(alpha: 0.12), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(fontSize: 16, color: Color(0xFF212121), fontWeight: FontWeight.bold),
-                    children: [
-                      TextSpan(text: data.babyName.isNotEmpty ? data.babyName : 'Baby'),
-                      const TextSpan(text: ' is'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '${data.ageInDays} Days Old',
-                  style: const TextStyle(
-                      fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF004D40)),
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: _kAccent,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(data.stageLabel,
-                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: data.stageProgress,
-                    backgroundColor: const Color(0xFFB2DFDB),
-                    valueColor: const AlwaysStoppedAnimation<Color>(_kAccent),
-                    minHeight: 6,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text('Week ${data.ageInWeeks + 1} of Newborn Stage',
-                    style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Container(
-            width: 60, height: 64,
-            decoration: BoxDecoration(
-              color: _kAccent,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text('Day', style: TextStyle(color: Colors.white, fontSize: 11)),
-                Text('${data.ageInDays}',
-                    style: const TextStyle(
-                        color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold, height: 1.1)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Baby Today Card ────────────────────────────────────────────────────────────
-
-class _BabyTodayCard extends StatelessWidget {
-  final NeonatalData data;
-  const _BabyTodayCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 10),
-          child: Text('YOUR BABY TODAY',
-              style: TextStyle(
-                  fontSize: 11, fontWeight: FontWeight.w700,
-                  color: Color(0xFF9E9E9E), letterSpacing: 0.8)),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-              // Stats row
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 18),
-                child: Row(
-                  children: [
-                    Expanded(child: _StatBox(label: 'Approx weight', value: data.displayWeight)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _StatBox(
-                        label: 'Approx length',
-                        value: '${data.expectedLengthCm.toStringAsFixed(1)} cm',
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => _showMilestoneSheet(context, data),
-                      child: Container(
-                        width: 76, height: 66,
-                        decoration: BoxDecoration(
-                          color: _kAccent,
-                          borderRadius: BorderRadius.circular(16),
-                          boxShadow: [BoxShadow(color: _kAccent.withValues(alpha: 0.35), blurRadius: 10, offset: const Offset(0, 4))],
-                        ),
-                        child: const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text('See more', style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
-                            SizedBox(height: 5),
-                            Icon(Icons.arrow_forward_ios, color: Colors.white, size: 12),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          // Header row
+          Row(
+            children: [
+              const Icon(Icons.wb_sunny_outlined, color: _kOrange, size: 18),
+              const SizedBox(width: 8),
+              const Text('Daily feed',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kBrown)),
+              const Spacer(),
+              GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => DailyFeedDetailScreen(data: widget.data))),
+                child: const Text('See more »',
+                    style: TextStyle(fontSize: 12, color: _kOrange, fontWeight: FontWeight.w500)),
               ),
             ],
           ),
-      ],
-    );
-  }
+          const SizedBox(height: 14),
 
-  void _showMilestoneSheet(BuildContext context, NeonatalData data) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      builder: (_) => _MilestoneSheet(data: data),
-    );
-  }
-}
+          // Feed content row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: _kFeedBg,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(child: Text('😴', style: TextStyle(fontSize: 26))),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('SLEEP', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _kFeedAccent, letterSpacing: 0.8)),
+                        const Text(' · ', style: TextStyle(fontSize: 10, color: _kBrownSoft)),
+                        Text(
+                          widget.data.ageInDays <= 7 ? 'EARLY NEONATAL' :
+                          widget.data.ageInDays <= 28 ? 'LATE NEONATAL' : 'POST-NEONATAL',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: _kBrownSoft, letterSpacing: 0.6),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text('Safe sleep: the ABCs every parent must know',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kBrown, height: 1.3)),
+                    const SizedBox(height: 4),
+                    Text(widget.data.sleepRecommendation,
+                        style: const TextStyle(fontSize: 12, color: _kBrownMid, height: 1.4)),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              GestureDetector(
+                onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => DailyFeedDetailScreen(data: widget.data))),
+                child: const Icon(Icons.chevron_right, color: _kBrownSoft, size: 20),
+              ),
+            ],
+          ),
 
-class _StatBox extends StatelessWidget {
-  final String label;
-  final String value;
-  const _StatBox({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE0F7FA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFB2EBF2)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-          const SizedBox(height: 4),
-          Text(value,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: _kTeal1)),
+          const SizedBox(height: 16),
+          const Divider(color: Color(0xFFEEE8E3), height: 1),
         ],
       ),
     );
   }
 }
 
-// ── Milestone Bottom Sheet ─────────────────────────────────────────────────────
+// ── Today's Appointment Card ──────────────────────────────────────────────────
 
-class _MilestoneSheet extends StatelessWidget {
+class _TodayAppointmentCard extends StatelessWidget {
   final NeonatalData data;
-  const _MilestoneSheet({required this.data});
+  const _TodayAppointmentCard({required this.data});
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      ('👁️', 'Vision',        'Focuses 20–30 cm. Prefers faces and high-contrast patterns.'),
-      ('👂', 'Hearing',       'Startles to loud sounds. Calmed by familiar voices.'),
-      ('🤲', 'Motor',         'Strong grasp and root reflex. Turns head side to side.'),
-      ('💬', 'Communication', 'Cries to express all needs. May begin to coo.'),
-      ('🍼', 'Feeding',       data.feedingRecommendation),
-      ('😴', 'Sleep',         data.sleepRecommendation),
+    final today = DateTime.now();
+    final checkDate = data.babyDob.add(Duration(days: data.nextCheckDay));
+    final isToday = checkDate.year == today.year &&
+        checkDate.month == today.month &&
+        checkDate.day == today.day;
+
+    // Format time: e.g. "9:30 AM"
+    final rawHour = today.hour;
+    final timeHour = rawHour == 0 ? 12 : (rawHour > 12 ? rawHour - 12 : rawHour);
+    final timePeriod = rawHour >= 12 ? 'PM' : 'AM';
+    final timeStr = '$timeHour:${today.minute.toString().padLeft(2, '0')}';
+
+    // Format date: e.g. "12 April"
+    const _months = [
+      'January','February','March','April','May','June',
+      'July','August','September','October','November','December'
     ];
+    final apptDate = isToday ? today : checkDate;
+    final dateStr = '${apptDate.day} ${_months[apptDate.month - 1]}';
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(width: 36, height: 4,
-                decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2))),
-          ),
-          const SizedBox(height: 16),
-          Text('${data.babyName} · Day ${data.ageInDays} Development',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
-          const SizedBox(height: 4),
-          Text(data.milestone,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF757575), height: 1.4)),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
-            childAspectRatio: 1.5,
-            children: items
-                .map((t) => _DevTile(emoji: t.$1, label: t.$2, desc: t.$3))
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DevTile extends StatelessWidget {
-  final String emoji, label, desc;
-  const _DevTile({required this.emoji, required this.label, required this.desc});
-
-  @override
-  Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFFE0F7FA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFB2EBF2)),
+        color: _kCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(height: 3),
-          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _kTeal1)),
-          const SizedBox(height: 2),
-          Flexible(
-            child: Text(desc,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 10, color: Color(0xFF757575), height: 1.3)),
+          // Header
+          Row(
+            children: [
+              const Icon(Icons.calendar_today_outlined, color: _kOrange, size: 18),
+              const SizedBox(width: 8),
+              const Text("Today's appointment",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kBrown)),
+            ],
           ),
-        ],
-      ),
-    );
-  }
-}
+          const SizedBox(height: 14),
 
-// ── Next Vaccine Card ──────────────────────────────────────────────────────────
-
-class _NextVaccineCard extends StatelessWidget {
-  final NeonatalData data;
-  const _NextVaccineCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFA5D6A7)),
-      ),
-      child: Row(
-        children: [
+          // Appointment bar — dark brown like reference
           Container(
-            width: 40, height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: const Color(0xFF388E3C).withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: _kApptBar,
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.vaccines, color: Color(0xFF388E3C), size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                const Text('Next Vaccine Due',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-                const SizedBox(height: 2),
-                Text(data.nextVaccineSummary,
-                    style: const TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.bold, color: Color(0xFF212121))),
+                // Time + date block
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Text('$timeStr $timePeriod',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
+                    const SizedBox(height: 2),
+                    Text(dateStr,
+                        style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.75))),
+                  ],
+                ),
+                const SizedBox(width: 16),
+                // Divider
+                Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
+                const SizedBox(width: 16),
+                // Details
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('CLINIC VISIT',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white70, letterSpacing: 0.8)),
+                      const SizedBox(height: 3),
+                      Text(
+                        isToday ? 'Well-Baby Clinic Visit' : 'Day ${data.nextCheckDay} Check-up',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  width: 28, height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.chevron_right, color: Colors.white, size: 18),
+                ),
               ],
             ),
           ),
+
+          // Vaccine row
+          const SizedBox(height: 10),
         ],
       ),
     );
   }
 }
 
-// ── Quick Stats Row ────────────────────────────────────────────────────────────
 
-class _QuickStatsRow extends StatelessWidget {
-  final NeonatalData data;
-  const _QuickStatsRow({required this.data});
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        _QuickStat(icon: '🍼', label: 'Feeding', value: data.feedingRecommendation.split('.').first),
-        const SizedBox(width: 10),
-        _QuickStat(icon: '😴', label: 'Sleep', value: data.sleepRecommendation.split('.').first),
-        const SizedBox(width: 10),
-        _QuickStat(icon: '📅', label: 'Next Check', value: data.nextCheckDate),
-      ],
-    );
-  }
-}
-
-class _QuickStat extends StatelessWidget {
-  final String icon, label, value;
-  const _QuickStat({required this.icon, required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          children: [
-            Text(icon, style: const TextStyle(fontSize: 22)),
-            const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF9E9E9E), fontWeight: FontWeight.w600)),
-            const SizedBox(height: 2),
-            Text(value,
-                maxLines: 2,
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF004D40))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Tip Card ───────────────────────────────────────────────────────────────────
-
-class _TipCard extends StatelessWidget {
-  final NeonatalData data;
-  final VoidCallback onDismiss;
-  const _TipCard({required this.data, required this.onDismiss});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF8E1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFFFE082)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(data.tipEmoji, style: const TextStyle(fontSize: 22)),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Tip of the Day',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFFE65100))),
-                const SizedBox(height: 3),
-                Text(data.tipOfTheDay,
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF5D4037), height: 1.45)),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: onDismiss,
-            child: const Icon(Icons.close, size: 18, color: Color(0xFF9E9E9E)),
-          ),
-        ],
-      ),
-    );
-  }
-}

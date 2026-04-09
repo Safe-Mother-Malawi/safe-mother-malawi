@@ -27,9 +27,9 @@ class _NeonatalNutritionScreenState extends State<NeonatalNutritionScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5F3),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -70,7 +70,7 @@ class _FeedingTab extends StatelessWidget {
   const _FeedingTab();
 
   static const _foods = [
-    {'name': 'Breast Milk', 'benefit': 'Best nutrition for newborns — provides antibodies and immunity', 'icon': Icons.child_care, 'color': 0xFF00897B},
+    {'name': 'Breast Milk', 'benefit': 'Best nutrition for newborns — provides antibodies and immunity', 'icon': Icons.child_care, 'color': 0xFF1A237E},
     {'name': 'Colostrum', 'benefit': 'First milk — rich in antibodies, vital in first 3–5 days', 'icon': Icons.water_drop, 'color': 0xFF0288D1},
     {'name': 'Formula Milk', 'benefit': 'Safe alternative when breastfeeding is not possible', 'icon': Icons.local_drink, 'color': 0xFF6D4C41},
     {'name': 'Vitamin D Drops', 'benefit': 'Recommended for breastfed babies from birth', 'icon': Icons.wb_sunny, 'color': 0xFFE65100},
@@ -106,13 +106,13 @@ class _CareTipsTab extends StatelessWidget {
   const _CareTipsTab();
 
   static const _tips = [
-    {'title': 'Skin-to-Skin Contact', 'body': 'Hold baby against your bare chest daily. Regulates temperature, heart rate, and bonding.', 'icon': Icons.favorite, 'color': 0xFFD81B60},
+    {'title': 'Skin-to-Skin Contact', 'body': 'Hold baby against your bare chest daily. Regulates temperature, heart rate, and bonding.', 'icon': Icons.favorite, 'color': 0xFF1A237E},
     {'title': 'Safe Sleep Position', 'body': 'Always place baby on their back to sleep. Never on tummy or side.', 'icon': Icons.bedtime, 'color': 0xFF6A1B9A},
-    {'title': 'Umbilical Cord Care', 'body': 'Keep the stump clean and dry. It falls off in 1–3 weeks. Do not pull it.', 'icon': Icons.healing, 'color': 0xFF00695C},
+    {'title': 'Umbilical Cord Care', 'body': 'Keep the stump clean and dry. It falls off in 1–3 weeks. Do not pull it.', 'icon': Icons.healing, 'color': 0xFF3949AB},
     {'title': 'Bathing', 'body': 'Sponge baths only until cord falls off. Use warm water and mild soap.', 'icon': Icons.bathtub, 'color': 0xFF0288D1},
     {'title': 'Tummy Time', 'body': 'Start 2–3 minutes while awake. Builds neck and shoulder muscles.', 'icon': Icons.fitness_center, 'color': 0xFF2E7D32},
     {'title': 'Talk and Sing', 'body': 'Language development starts from day one. Talk, sing, and read to your baby.', 'icon': Icons.record_voice_over, 'color': 0xFFE65100},
-    {'title': 'Hand Hygiene', 'body': 'Everyone who holds baby must wash hands first. Newborns have weak immunity.', 'icon': Icons.clean_hands, 'color': 0xFF1565C0},
+    {'title': 'Hand Hygiene', 'body': 'Everyone who holds baby must wash hands first. Newborns have weak immunity.', 'icon': Icons.clean_hands, 'color': 0xFF1A237E},
   ];
 
   @override
@@ -191,7 +191,7 @@ class _SectionBanner extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-            colors: [Color(0xFF00695C), Color(0xFF00ACC1)],
+            colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(14),

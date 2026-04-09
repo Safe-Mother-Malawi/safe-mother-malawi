@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../models/neonatal_data.dart';
 
-const _kAccent = Color(0xFF00897B);
-const _kTeal1  = Color(0xFF00695C);
-const _kBg     = Color(0xFFE8F5F3);
+const _kAccent = Color(0xFF1A237E);
+const _kTeal1  = Color(0xFF1A237E);
+const _kBg     = Color(0xFFF5F7FF);
 
 class FeedingScreen extends StatefulWidget {
   const FeedingScreen({super.key});
@@ -79,8 +79,22 @@ class _FeedingScreenState extends State<FeedingScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Feeding Tracker',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        const Text('Feeding Tracker',
+                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close, color: Colors.white70, size: 22),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -202,7 +216,7 @@ class _LogCard extends StatelessWidget {
                     margin: const EdgeInsets.only(right: 6),
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
-                      color: active ? _kAccent : const Color(0xFFE0F2F1),
+                      color: active ? _kAccent : const Color(0xFFE8EAF6),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -272,11 +286,11 @@ class _NeoTextField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFB2DFDB))),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFC5CAE9))),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: _kAccent, width: 1.5)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         filled: true,
-        fillColor: const Color(0xFFE0F7FA),
+        fillColor: const Color(0xFFE8EAF6),
       ),
     );
   }
@@ -297,7 +311,7 @@ class _FeedTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFB2DFDB)),
+        border: Border.all(color: const Color(0xFFC5CAE9)),
       ),
       child: Row(
         children: [
@@ -305,7 +319,7 @@ class _FeedTile extends StatelessWidget {
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: const Color(0xFFE0F7FA), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(color: const Color(0xFFE8EAF6), borderRadius: BorderRadius.circular(8)),
             child: Text(entry.typeLabel,
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: _kTeal1)),
           ),

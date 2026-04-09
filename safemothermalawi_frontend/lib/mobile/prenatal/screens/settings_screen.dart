@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../auth/services/logout_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -15,12 +16,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _offlineMode = true;
   String _language = 'English';
 
+  Future<void> _confirmLogout() async {
+    await confirmAndLogout(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFFF0F5),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFFE91E8C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
         title: const Text('Settings', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
@@ -48,6 +53,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _NavTile(icon: Icons.lock_outline, label: 'Change Password', onTap: () {}),
             _NavTile(icon: Icons.privacy_tip_outlined, label: 'Privacy Policy', onTap: () {}),
             _NavTile(icon: Icons.delete_outline, label: 'Delete Account', color: const Color(0xFFC62828), onTap: () => _confirmDelete(context)),
+          ]),
+          const SizedBox(height: 16),
+          // Account
+          _SettingsSection(title: 'Account', children: [
+            _NavTile(icon: Icons.logout, label: 'Sign Out', color: const Color(0xFFC62828), onTap: _confirmLogout),
           ]),
           const SizedBox(height: 24),
         ],
@@ -114,13 +124,13 @@ class _SwitchTile extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(children: [
-      Icon(icon, size: 22, color: const Color(0xFFE91E8C)),
+      Icon(icon, size: 22, color: const Color(0xFF1A237E)),
       const SizedBox(width: 14),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF212121))),
         Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
       ])),
-      Switch(value: value, onChanged: onChanged, activeColor: const Color(0xFFE91E8C)),
+      Switch(value: value, onChanged: onChanged, activeColor: const Color(0xFF1A237E)),
     ]),
   );
 }
@@ -137,7 +147,7 @@ class _SelectTile extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
     child: Row(children: [
-      Icon(icon, size: 22, color: const Color(0xFFE91E8C)),
+      Icon(icon, size: 22, color: const Color(0xFF1A237E)),
       const SizedBox(width: 14),
       Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF212121)))),
       DropdownButton<String>(
@@ -164,7 +174,7 @@ class _NavTile extends StatelessWidget {
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(children: [
-        Icon(icon, size: 22, color: color ?? const Color(0xFFE91E8C)),
+        Icon(icon, size: 22, color: color ?? const Color(0xFF1A237E)),
         const SizedBox(width: 14),
         Expanded(child: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color ?? const Color(0xFF212121)))),
         Icon(Icons.arrow_forward_ios, size: 14, color: color ?? const Color(0xFF9E9E9E)),

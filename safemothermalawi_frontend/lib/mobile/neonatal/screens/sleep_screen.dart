@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/neonatal_data.dart';
 
-const _kAccent = Color(0xFF00897B);
-const _kBg     = Color(0xFFE8F5F3);
+const _kAccent = Color(0xFF1A237E);
+const _kBg     = Color(0xFFF5F7FF);
 
 class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
@@ -92,8 +92,22 @@ class _SleepScreenState extends State<SleepScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Sleep Tracker',
-                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.arrow_back, color: Colors.white, size: 24),
+                        ),
+                        const SizedBox(width: 14),
+                        const Text('Sleep Tracker',
+                            style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        const Spacer(),
+                        GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(Icons.close, color: Colors.white70, size: 22),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 16),
                     Row(
                       children: [

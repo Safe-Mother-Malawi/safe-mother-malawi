@@ -42,9 +42,9 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
     final actual = widget.data;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFE8F5F3),
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00695C),
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -66,7 +66,7 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF00695C), Color(0xFF00ACC1)],
+                  colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -117,15 +117,15 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF00897B).withValues(alpha: 0.12),
+                  color: const Color(0xFF1A237E).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: const Color(0xFF00897B).withValues(alpha: 0.3)),
+                      color: const Color(0xFF1A237E).withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '${actual.babyName} is currently Day ${actual.ageInDays} · ${actual.stageLabel}',
                   style: const TextStyle(
-                      color: Color(0xFF00695C),
+                      color: Color(0xFF1A237E),
                       fontWeight: FontWeight.w600,
                       fontSize: 13),
                 ),
@@ -170,7 +170,7 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
             // Milestone
             _InfoCard(
               icon: Icons.star,
-              color: const Color(0xFF00695C),
+              color: const Color(0xFF1A237E),
               title: 'Development Milestone',
               body: data['milestone']!,
             ),
@@ -179,7 +179,7 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
             // Health tip
             _InfoCard(
               icon: Icons.lightbulb_outline,
-              color: const Color(0xFF00897B),
+              color: const Color(0xFF3949AB),
               title: 'Care Tip',
               body: data['tip']!,
             ),
@@ -217,7 +217,7 @@ class _StatChip extends StatelessWidget {
             style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF00695C))),
+                color: Color(0xFF1A237E))),
         const SizedBox(height: 4),
         Text(label,
             style: const TextStyle(
@@ -293,11 +293,11 @@ class _StageRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: active ? const Color(0xFF00695C) : Colors.white,
+        color: active ? const Color(0xFF1A237E) : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
             color: active
-                ? const Color(0xFF00695C)
+                ? const Color(0xFF1A237E)
                 : const Color(0xFFE0E0E0)),
       ),
       child: Row(

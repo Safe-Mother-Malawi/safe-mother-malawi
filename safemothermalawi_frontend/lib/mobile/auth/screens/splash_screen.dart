@@ -38,21 +38,22 @@ class _SplashScreenState extends State<SplashScreen>
     await AuthService().seedDemoAccounts();
     final user = await AuthService().getCurrentUser();
     if (!mounted) return;
+    Widget dest;
     if (user != null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => user.role == 'prenatal'
-              ? const PrenatalDashboard()
-              : const NeonatalDashboard(),
-        ),
-      );
+      if (user.role == 'prenatal') {
+        dest = const PrenatalDashboard();
+      } else if (user.role == 'neonatal') {
+        dest = const NeonatalDashboard();
+      } else {
+        dest = const LoginScreen(); // clinician always re-logs in
+      }
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      dest = const LoginScreen();
     }
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => dest),
+    );
   }
 
   @override
