@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'clinician/clinician_layout.dart';
+import '../web/admin/admin_overview.dart';
+import '../web/dho/dho_overview.dart';
 import 'login_dialog.dart';
 
 class _SlideData {
@@ -78,14 +79,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _onLogin() async {
-    final confirmed = await showDialog<bool>(
+    final role = await showDialog<String>(
       context: context,
       barrierDismissible: true,
       builder: (_) => const LoginDialog(),
     );
-    if (confirmed != true || !mounted) return;
-    Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const ClinicianDashboard()));
+    if (role == null || !mounted) return;
+    if (role == 'admin') {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const AdminOverview()));
+    } else if (role == 'dho') {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DhoOverview()));
+    }
   }
 
   Widget _fullScreen({required GlobalKey sectionKey, required Widget child}) {
