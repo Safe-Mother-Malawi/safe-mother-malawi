@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_colors.dart';
-import 'web/dho/dho_overview.dart';
 
 void main() {
   runApp(const SafeMotherApp());
@@ -13,7 +12,7 @@ class SafeMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Safe Mother Malawi — Staff Portal',
+      title: 'Safe Mother Malawi',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -22,9 +21,8 @@ class SafeMotherApp extends StatelessWidget {
           brightness: Brightness.light,
         ),
         textTheme: GoogleFonts.interTextTheme(),
-        scaffoldBackgroundColor: AppColors.pageBg,
+        scaffoldBackgroundColor: Colors.white,
       ),
-      home: const DhoOverview(),
     );
   }
 }
