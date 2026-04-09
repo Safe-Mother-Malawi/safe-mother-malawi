@@ -11,11 +11,9 @@ class _LoginDialogState extends State<LoginDialog> {
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscure       = true;
-  String _role        = 'admin'; // 'admin' or 'dho'
 
-  static const _navy  = Color(0xFF0D47A1);
-  static const _bg    = Color(0xFFF0F6FF);
-  static const _light = Color(0xFFE3F2FD);
+  static const _navy = Color(0xFF0D47A1);
+  static const _bg   = Color(0xFFF0F6FF);
 
   @override
   void dispose() {
@@ -24,12 +22,21 @@ class _LoginDialogState extends State<LoginDialog> {
     super.dispose();
   }
 
+  /// Determine role from email prefix for demo purposes.
+  /// Real auth will replace this with a backend role check.
+  String _detectRole() {
+    final email = _emailCtrl.text.toLowerCase();
+    if (email.contains('admin')) return 'admin';
+    if (email.contains('dho')) return 'dho';
+    return 'admin'; // default
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 440),
+        constraints: const BoxConstraints(maxWidth: 420),
         child: Padding(
           padding: const EdgeInsets.all(36),
           child: Column(
@@ -61,27 +68,9 @@ class _LoginDialogState extends State<LoginDialog> {
               const Text('Sign in to your account',
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0A1628))),
               const SizedBox(height: 6),
-              const Text('Select your role and enter your credentials',
+              const Text('Enter your credentials to continue',
                   style: TextStyle(fontSize: 13, color: Colors.black45)),
-              const SizedBox(height: 20),
-
-              // Role selector
-              Row(children: [
-                Expanded(child: _RoleChip(
-                  label: 'System Admin',
-                  icon: Icons.admin_panel_settings_rounded,
-                  selected: _role == 'admin',
-                  onTap: () => setState(() => _role = 'admin'),
-                )),
-                const SizedBox(width: 12),
-                Expanded(child: _RoleChip(
-                  label: 'DHO',
-                  icon: Icons.location_city_rounded,
-                  selected: _role == 'dho',
-                  onTap: () => setState(() => _role = 'dho'),
-                )),
-              ]),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // Email
               TextFormField(
@@ -117,11 +106,11 @@ class _LoginDialogState extends State<LoginDialog> {
               ),
               const SizedBox(height: 24),
 
-              // Sign in button — returns role string
+              // Sign in — returns detected role
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(_role),
+                  onPressed: () => Navigator.of(context).pop(_detectRole()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _navy, foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
@@ -133,42 +122,6 @@ class _LoginDialogState extends State<LoginDialog> {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _RoleChip extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _RoleChip({required this.label, required this.icon, required this.selected, required this.onTap});
-
-  static const _navy  = Color(0xFF0D47A1);
-  static const _light = Color(0xFFE3F2FD);
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-        decoration: BoxDecoration(
-          color: selected ? _light : const Color(0xFFF5F5F5),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: selected ? _navy : Colors.transparent, width: 1.5),
-        ),
-        child: Row(children: [
-          Icon(icon, size: 18, color: selected ? _navy : Colors.black38),
-          const SizedBox(width: 8),
-          Expanded(child: Text(label,
-              style: TextStyle(fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  color: selected ? _navy : Colors.black45))),
-        ]),
       ),
     );
   }
