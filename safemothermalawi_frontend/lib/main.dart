@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'theme/app_colors.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
@@ -11,11 +13,16 @@ class SafeMotherApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Safe Mother Malawi',
+      title: 'Safe Mother Malawi — Staff Portal',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF0D47A1)),
         useMaterial3: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          brightness: Brightness.light,
+        ),
+        textTheme: GoogleFonts.interTextTheme(),
+        scaffoldBackgroundColor: AppColors.pageBg,
       ),
       home: const SplashScreen(),
     );
