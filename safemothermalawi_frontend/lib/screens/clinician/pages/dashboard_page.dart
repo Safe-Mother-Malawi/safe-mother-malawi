@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 
 class ClinicianDashboardPage extends StatelessWidget {
-  const ClinicianDashboardPage({super.key});
+  final VoidCallback? onRegisterPatient;
+  const ClinicianDashboardPage({super.key, this.onRegisterPatient});
 
   @override
   Widget build(BuildContext context) {
@@ -58,20 +59,11 @@ class ClinicianDashboardPage extends StatelessWidget {
               const SizedBox(width: 4),
               const Text('Monday, 24 March 2026',
                   style: TextStyle(color: Colors.white54, fontSize: 11)),
-              const SizedBox(width: 12),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                    color: AppColors.red.withOpacity(0.8),
-                    borderRadius: BorderRadius.circular(10)),
-                child: const Text('1 critical alert',
-                    style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
-              ),
             ]),
           ]),
         ),
         ElevatedButton.icon(
-          onPressed: () {},
+          onPressed: onRegisterPatient,
           icon: const Icon(Icons.person_add, size: 16),
           label: const Text('Register Patient', style: TextStyle(fontSize: 13)),
           style: ElevatedButton.styleFrom(
@@ -92,16 +84,13 @@ class ClinicianDashboardPage extends StatelessWidget {
           AppColors.navy, AppColors.navyL)),
       const SizedBox(width: 12),
       Expanded(child: _metricCard(Icons.pregnant_woman, '5', 'Pregnant', 'ANC active',
-          const Color(0xFF7B1FA2), const Color(0xFFF3E5F5))),
+          AppColors.navy, AppColors.navyL)),
       const SizedBox(width: 12),
-      Expanded(child: _metricCard(Icons.child_friendly_outlined, '1', 'Postnatal', 'PNC active',
-          AppColors.green, AppColors.greenL)),
-      const SizedBox(width: 12),
-      Expanded(child: _metricCard(Icons.warning_amber_outlined, '1', 'High Risk', 'Needs attention',
-          AppColors.amber, AppColors.amberL)),
+      Expanded(child: _metricCard(Icons.child_friendly_outlined, '1', 'Neonatal', 'PNC active',
+          AppColors.navy, AppColors.navyL)),
       const SizedBox(width: 12),
       Expanded(child: _metricCard(Icons.notifications_active_outlined, '2', 'Alerts', 'Active alerts',
-          AppColors.red, AppColors.redL)),
+          AppColors.orange, AppColors.orangeL)),
     ]);
   }
 
@@ -136,10 +125,10 @@ class ClinicianDashboardPage extends StatelessWidget {
   Widget _buildRecentPatients() {
     final patients = [
       ('Grace Banda',  '28 yrs · G2P1 · BP: 110/70',  'Stable',   AppColors.green,  AppColors.greenL),
-      ('Mary Phiri',   '35 yrs · G3P2 · BP: 140/90',  'Monitor',  AppColors.amber,  AppColors.amberL),
+      ('Mary Phiri',   '35 yrs · G3P2 · BP: 140/90',  'Monitor',  AppColors.orange, AppColors.orangeL),
       ('Aisha Tembo',  '22 yrs · G1P0 · BP: 160/100', 'Critical', AppColors.red,    AppColors.redL),
       ('Fatima Chirwa','19 yrs · G1P0 · BP: 115/75',  'Stable',   AppColors.green,  AppColors.greenL),
-      ('Joyce Mwale',  '40 yrs · G5P4 · BP: 125/80',  'Due Soon', AppColors.navy,   AppColors.navyL),
+      ('Joyce Mwale',  '40 yrs · G5P4 · BP: 125/80',  'Due Soon', AppColors.orange, AppColors.orangeL),
     ];
 
     return Container(
@@ -224,8 +213,8 @@ class ClinicianDashboardPage extends StatelessWidget {
   }
 
   Widget _appointmentRow(String time, String title, int index) {
-    final colors = [AppColors.navy, AppColors.amber, AppColors.green, AppColors.navy, AppColors.rose];
-    final color = colors[index % colors.length];
+    // Appointments use navy as a neutral indicator — not a risk color
+    const color = AppColors.navy;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: const BoxDecoration(

@@ -7,6 +7,7 @@ import 'pages/register_page.dart';
 import 'pages/consult_page.dart';
 import 'pages/risk_scoring_page.dart';
 import 'pages/calendar_page.dart';
+import 'pages/profile_page.dart';
 import '../splash_screen.dart';
 
 class ClinicianDashboard extends StatefulWidget {
@@ -18,16 +19,22 @@ class ClinicianDashboard extends StatefulWidget {
 
 class _ClinicianDashboardState extends State<ClinicianDashboard> {
   int _selectedIndex = 0;
+  final List<Widget> _pages = [];
 
-  final List<Widget> _pages = [
-    const ClinicianDashboardPage(),  // 0 Dashboard
-    const ClinicianPatientsPage(),   // 1 My Patients
-    const ClinicianAlertsPage(),     // 2 Alerts
-    const ClinicianRegisterPage(),   // 3 Register Patient
-    const ClinicianConsultPage(),    // 4 Health Data
-    const RiskScoringPage(),         // 5 Risk Scoring
-    const CalendarPage(),            // 6 Calendar
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _pages.addAll([
+      ClinicianDashboardPage(onRegisterPatient: () => setState(() => _selectedIndex = 3)),
+      const ClinicianPatientsPage(),
+      ClinicianAlertsPage(onNavigate: (i) => setState(() => _selectedIndex = i)),
+      const ClinicianRegisterPage(),
+      const ClinicianConsultPage(),
+      const RiskScoringPage(),
+      const CalendarPage(),
+      MyProfilePage(onClose: () => setState(() => _selectedIndex = 0)),
+    ]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,22 +59,17 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(children: [
         const Spacer(),
-        // Notification bell
-        Stack(children: [
-          const Icon(Icons.notifications_outlined, color: AppColors.g600, size: 22),
-          Positioned(
-            right: 0, top: 0,
-            child: Container(
-              width: 8, height: 8,
-              decoration: const BoxDecoration(color: AppColors.red, shape: BoxShape.circle),
-            ),
-          ),
-        ]),
-        const SizedBox(width: 20),
-        const Icon(Icons.person_outline, color: AppColors.g600, size: 22),
+        GestureDetector(
+          onTap: () => setState(() => _selectedIndex = 7),
+          child: const Icon(Icons.person_outline, color: AppColors.g600, size: 22),
+        ),
         const SizedBox(width: 8),
-        const Text('Dr. Rachel',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.g800)),
+        GestureDetector(
+          onTap: () => setState(() => _selectedIndex = 7),
+          child: const Text('Dr. Rachel',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
+                  color: AppColors.g800)),
+        ),
       ]),
     );
   }
@@ -77,7 +79,6 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
       width: 200,
       color: AppColors.navy,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Logo area
         Container(
           padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -101,19 +102,19 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
         const SizedBox(height: 8),
         _sidebarLabel('OVERVIEW'),
         _sidebarItem(0, Icons.dashboard_outlined, 'Dashboard'),
-        _sidebarItem(1, Icons.people_outline, 'My Patients', badge: '6'),
-        _sidebarItem(2, Icons.notifications_outlined, 'Alerts', badge: '2'),
+        _sidebarItem(1, Icons.people_outline, 'Patients'),
+        _sidebarItem(2, Icons.notifications_outlined, 'Alerts'),
         const SizedBox(height: 8),
         _sidebarLabel('CLINICAL'),
         _sidebarItem(3, Icons.person_add_outlined, 'Register Patient'),
         _sidebarItem(4, Icons.favorite_border, 'Health Data'),
-        _sidebarItem(5, Icons.assessment_outlined, 'Risk Scoring'),
+        _sidebarItem(5, Icons.assessment_outlined, 'Risk Monitoring'),
         _sidebarItem(6, Icons.calendar_today_outlined, 'Calendar'),
         const Spacer(),
         const Divider(color: Colors.white12, height: 1),
         _sidebarItem(7, Icons.account_circle_outlined, 'My Profile'),
         InkWell(
-          onTap: () => _confirmLogout(),
+          onTap: _confirmLogout,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: const Row(children: [
@@ -147,10 +148,10 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context); // close dialog
+              Navigator.pop(context);
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (_) => const SplashScreen()),
-                (route) => false, // clear entire stack
+                (route) => false,
               );
             },
             style: ElevatedButton.styleFrom(
@@ -171,7 +172,8 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
       padding: const EdgeInsets.only(left: 16, bottom: 6, top: 4),
       child: Text(label,
           style: const TextStyle(
-              fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.2)),
+              fontSize: 9, fontWeight: FontWeight.bold,
+              color: Colors.white38, letterSpacing: 1.2)),
     );
   }
 
@@ -187,8 +189,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
           borderRadius: BorderRadius.circular(6),
         ),
         child: Row(children: [
-          Icon(icon, size: 17,
-              color: selected ? Colors.white : Colors.white60),
+          Icon(icon, size: 17, color: selected ? Colors.white : Colors.white60),
           const SizedBox(width: 10),
           Text(title,
               style: TextStyle(
@@ -202,7 +203,8 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
               decoration: BoxDecoration(
                   color: AppColors.red, borderRadius: BorderRadius.circular(10)),
               child: Text(badge,
-                  style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(color: Colors.white, fontSize: 9,
+                      fontWeight: FontWeight.bold)),
             ),
           ],
         ]),

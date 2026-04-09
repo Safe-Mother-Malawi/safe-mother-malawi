@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
+import '../../../state/events_store.dart';
 
 // ── Model ─────────────────────────────────────────────────────────────────────
 
-enum EventType { prenatal, postnatal, other }
+enum EventType { prenatal, neonatal, other }
 
 class CalEvent {
   final String id;
@@ -40,12 +41,12 @@ List<CalEvent> _seedEvents() {
   return [
     CalEvent(id: '1', title: 'ANC Check', patientName: 'Grace Banda',       patientContact: '+265 991 234 567', patientStatus: 'Prenatal',  time: '09:00 AM', notes: 'BP monitoring required', type: EventType.prenatal,  date: DateTime(y, m, 3)),
     CalEvent(id: '2', title: 'Ultrasound', patientName: 'Faith Mwale',      patientContact: '+265 888 345 678', patientStatus: 'Prenatal',  time: '10:30 AM', notes: 'Growth scan at 34 weeks', type: EventType.prenatal, date: DateTime(y, m, 3)),
-    CalEvent(id: '3', title: 'PNC Visit',  patientName: 'Mercy Tembo',      patientContact: '+265 993 111 222', patientStatus: 'Postnatal', time: '11:00 AM', notes: 'Day 8 postnatal check',   type: EventType.postnatal, date: DateTime(y, m, 7)),
+    CalEvent(id: '3', title: 'PNC Visit',  patientName: 'Mercy Tembo',      patientContact: '+265 993 111 222', patientStatus: 'Neonatal', time: '11:00 AM', notes: 'Day 8 neonatal check',   type: EventType.neonatal, date: DateTime(y, m, 7)),
     CalEvent(id: '4', title: 'ANC Visit',  patientName: 'Liness Kachali',   patientContact: '+265 999 456 789', patientStatus: 'Prenatal',  time: '02:00 PM', notes: 'Diabetes follow-up',      type: EventType.prenatal,  date: DateTime(y, m, 10)),
     CalEvent(id: '5', title: 'Labour Assessment', patientName: 'Joyce Mwale', patientContact: '+265 992 678 901', patientStatus: 'Prenatal', time: '09:30 AM', notes: 'Week 30 assessment',     type: EventType.prenatal,  date: DateTime(y, m, now.day)),
-    CalEvent(id: '6', title: 'Counselling', patientName: 'Rose Phiri',      patientContact: '+265 994 222 333', patientStatus: 'Postnatal', time: '03:30 PM', notes: 'Postnatal mental health', type: EventType.postnatal, date: DateTime(y, m, now.day)),
+    CalEvent(id: '6', title: 'Counselling', patientName: 'Rose Phiri',      patientContact: '+265 994 222 333', patientStatus: 'Neonatal', time: '03:30 PM', notes: 'Neonatal mental health', type: EventType.neonatal, date: DateTime(y, m, now.day)),
     CalEvent(id: '7', title: 'First Visit', patientName: 'Aisha Tembo',     patientContact: '+265 881 567 890', patientStatus: 'Prenatal',  time: '01:00 PM', notes: 'New registration',        type: EventType.prenatal,  date: DateTime(y, m, now.day + 2 > 28 ? 28 : now.day + 2)),
-    CalEvent(id: '8', title: 'PNC Day 14', patientName: 'Fatima Chirwa',    patientContact: '+265 995 333 444', patientStatus: 'Postnatal', time: '10:00 AM', notes: 'Routine day 14 check',    type: EventType.postnatal, date: DateTime(y, m, now.day + 4 > 28 ? 28 : now.day + 4)),
+    CalEvent(id: '8', title: 'PNC Day 14', patientName: 'Fatima Chirwa',    patientContact: '+265 995 333 444', patientStatus: 'Neonatal', time: '10:00 AM', notes: 'Routine day 14 check',    type: EventType.neonatal, date: DateTime(y, m, now.day + 4 > 28 ? 28 : now.day + 4)),
   ];
 }
 
@@ -60,7 +61,8 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   late DateTime _month;
   DateTime? _selected;
-  late List<CalEvent> _events;
+
+  List<CalEvent> get _events => EventsStore.instance.events;
 
   @override
   void initState() {
@@ -68,8 +70,22 @@ class _CalendarPageState extends State<CalendarPage> {
     final now = DateTime.now();
     _month    = DateTime(now.year, now.month);
     _selected = DateTime(now.year, now.month, now.day);
-    _events   = _seedEvents();
+    // Seed initial events into the store if empty
+    if (_events.isEmpty) {
+      for (final e in _seedEvents()) {
+        EventsStore.instance.events.add(e);
+      }
+    }
+    EventsStore.instance.addListener(_onStoreUpdate);
   }
+
+  @override
+  void dispose() {
+    EventsStore.instance.removeListener(_onStoreUpdate);
+    super.dispose();
+  }
+
+  void _onStoreUpdate() => setState(() {});
 
   List<CalEvent> _eventsOn(DateTime d) =>
       _events.where((e) => e.date.year == d.year && e.date.month == d.month && e.date.day == d.day).toList();
@@ -216,11 +232,7 @@ class _CalendarPageState extends State<CalendarPage> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Row(children: [
-            _legend('Prenatal', AppColors.navy),
-            const SizedBox(width: 16),
-            _legend('Postnatal', AppColors.rose),
-            const SizedBox(width: 16),
-            _legend('Other', AppColors.amber),
+            _legend('Scheduled Event', AppColors.navy),
           ]),
         ),
       ]),
@@ -282,7 +294,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final color = _eventColor(e.type);
     final bg    = _eventBg(e.type);
     final typeLabel = e.type == EventType.prenatal ? 'Prenatal'
-        : e.type == EventType.postnatal ? 'Postnatal' : 'Other';
+        : e.type == EventType.neonatal ? 'Neonatal' : 'Other';
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
@@ -313,7 +325,7 @@ class _CalendarPageState extends State<CalendarPage> {
             const SizedBox(width: 8),
             // Delete
             GestureDetector(
-              onTap: () => setState(() => _events.removeWhere((ev) => ev.id == e.id)),
+              onTap: () => setState(() => EventsStore.instance.events.removeWhere((ev) => ev.id == e.id)),
               child: const Icon(Icons.delete_outline, size: 15, color: AppColors.red),
             ),
           ]),
@@ -375,18 +387,18 @@ class _CalendarPageState extends State<CalendarPage> {
           onDateChanged: (d) => setS(() => date = d),
           onSave: () {
             if (titleCtrl.text.trim().isEmpty || patientCtrl.text.trim().isEmpty) return;
-            setState(() {
-              _events.add(CalEvent(
-                id: DateTime.now().millisecondsSinceEpoch.toString(),
-                title: titleCtrl.text.trim(),
-                patientName: patientCtrl.text.trim(),
-                patientContact: contactCtrl.text.trim(),
-                patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Postnatal',
-                time: timeCtrl.text.trim(),
-                notes: notesCtrl.text.trim(),
-                type: type, date: date,
-              ));
-            });
+              setState(() {
+                EventsStore.instance.add(CalEvent(
+                  id: DateTime.now().millisecondsSinceEpoch.toString(),
+                  title: titleCtrl.text.trim(),
+                  patientName: patientCtrl.text.trim(),
+                  patientContact: contactCtrl.text.trim(),
+                  patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Neonatal',
+                  time: timeCtrl.text.trim(),
+                  notes: notesCtrl.text.trim(),
+                  type: type, date: date,
+                ));
+              });
             Navigator.pop(ctx);
           },
         );
@@ -415,16 +427,17 @@ class _CalendarPageState extends State<CalendarPage> {
           onDateChanged: (d) => setS(() => date = d),
           onSave: () {
             setState(() {
-              final idx = _events.indexWhere((ev) => ev.id == e.id);
+              final idx = EventsStore.instance.events.indexWhere((ev) => ev.id == e.id);
               if (idx != -1) {
-                _events[idx] = CalEvent(
+                EventsStore.instance.events[idx] = CalEvent(
                   id: e.id, title: titleCtrl.text.trim(),
                   patientName: patientCtrl.text.trim(),
                   patientContact: contactCtrl.text.trim(),
-                  patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Postnatal',
+                  patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Neonatal',
                   time: timeCtrl.text.trim(), notes: notesCtrl.text.trim(),
                   type: type, date: date,
                 );
+                EventsStore.instance.notify();
               }
             });
             Navigator.pop(ctx);
@@ -464,7 +477,7 @@ class _CalendarPageState extends State<CalendarPage> {
             Row(children: [
               _typeBtn('Prenatal', EventType.prenatal, type, onTypeChanged),
               const SizedBox(width: 8),
-              _typeBtn('Postnatal', EventType.postnatal, type, onTypeChanged),
+              _typeBtn('Neonatal', EventType.neonatal, type, onTypeChanged),
               const SizedBox(width: 8),
               _typeBtn('Other', EventType.other, type, onTypeChanged),
             ]),
@@ -533,8 +546,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _typeBtn(String label, EventType t, EventType current, void Function(EventType) onChanged) {
     final sel = current == t;
-    final color = t == EventType.prenatal ? AppColors.navy
-        : t == EventType.postnatal ? AppColors.rose : AppColors.amber;
+    final color = AppColors.navy;
     return GestureDetector(
       onTap: () => onChanged(t),
       child: AnimatedContainer(
@@ -570,17 +582,9 @@ class _CalendarPageState extends State<CalendarPage> {
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
-  Color _eventColor(EventType t) => switch (t) {
-        EventType.prenatal  => AppColors.navy,
-        EventType.postnatal => AppColors.rose,
-        EventType.other     => AppColors.amber,
-      };
+  Color _eventColor(EventType t) => AppColors.navy;
 
-  Color _eventBg(EventType t) => switch (t) {
-        EventType.prenatal  => AppColors.navyL,
-        EventType.postnatal => AppColors.roseL,
-        EventType.other     => AppColors.amberL,
-      };
+  Color _eventBg(EventType t) => AppColors.navyL;
 
   String _monthName(int m) => const [
     '', 'January', 'February', 'March', 'April', 'May', 'June',

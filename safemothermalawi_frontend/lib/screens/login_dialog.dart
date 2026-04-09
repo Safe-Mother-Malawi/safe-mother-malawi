@@ -44,6 +44,17 @@ class _LoginDialogState extends State<LoginDialog> {
                 const SizedBox(width: 10),
                 const Text('Safe Mother Malawi',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _navy)),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(null),
+                  child: Container(
+                    width: 30, height: 30,
+                    decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.06),
+                        shape: BoxShape.circle),
+                    child: const Icon(Icons.close, size: 16, color: Colors.black54),
+                  ),
+                ),
               ]),
               const SizedBox(height: 24),
               const Text('Sign in to your account',

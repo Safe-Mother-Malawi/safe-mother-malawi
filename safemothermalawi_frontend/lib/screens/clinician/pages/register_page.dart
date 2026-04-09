@@ -9,7 +9,7 @@ class ClinicianRegisterPage extends StatefulWidget {
 }
 
 class _ClinicianRegisterPageState extends State<ClinicianRegisterPage> {
-  int _tab = 0; // 0 = Prenatal, 1 = Postnatal
+  int _tab = 0; // 0 = Prenatal, 1 = Neonatal
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +36,7 @@ class _ClinicianRegisterPageState extends State<ClinicianRegisterPage> {
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             _tabBtn(0, Icons.pregnant_woman, 'Prenatal (Pregnant)'),
             const SizedBox(width: 4),
-            _tabBtn(1, Icons.child_friendly_outlined, 'Postnatal (Neonatal)'),
+            _tabBtn(1, Icons.child_friendly_outlined, 'Neonatal (Neonatal)'),
           ]),
         ),
         const SizedBox(height: 24),
@@ -48,7 +48,7 @@ class _ClinicianRegisterPageState extends State<ClinicianRegisterPage> {
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: AppColors.g200)),
           padding: const EdgeInsets.all(28),
-          child: _tab == 0 ? const _PrenatalForm() : const _PostnatalForm(),
+          child: _tab == 0 ? const _PrenatalForm() : const _NeonatalForm(),
         ),
       ]),
     );
@@ -88,7 +88,6 @@ const _districts = [
   'Nkhotakota', 'Nsanje', 'Ntcheu', 'Ntchisi', 'Phalombe', 'Rumphi',
   'Salima', 'Thyolo', 'Zomba',
 ];
-
 Widget _sectionTitle(String title) => Padding(
       padding: const EdgeInsets.only(bottom: 16, top: 8),
       child: Row(children: [
@@ -337,15 +336,15 @@ Widget _twoCol(Widget a, Widget b) {
   ]);
 }
 
-// ── Postnatal Form ────────────────────────────────────────────────────────────
+// ── Neonatal Form ────────────────────────────────────────────────────────────
 
-class _PostnatalForm extends StatefulWidget {
-  const _PostnatalForm();
+class _NeonatalForm extends StatefulWidget {
+  const _NeonatalForm();
   @override
-  State<_PostnatalForm> createState() => _PostnatalFormState();
+  State<_NeonatalForm> createState() => _NeonatalFormState();
 }
 
-class _PostnatalFormState extends State<_PostnatalForm> {
+class _NeonatalFormState extends State<_NeonatalForm> {
   final _formKey    = GlobalKey<FormState>();
   final _mName      = TextEditingController();
   final _mAge       = TextEditingController();
@@ -400,7 +399,7 @@ class _PostnatalFormState extends State<_PostnatalForm> {
     if (_formKey.currentState!.validate() && _bDob != null && _bGender != null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Postnatal patient "${_mName.text}" registered successfully.'),
+          content: Text('Neonatal patient "${_mName.text}" registered successfully.'),
           backgroundColor: AppColors.green,
         ),
       );

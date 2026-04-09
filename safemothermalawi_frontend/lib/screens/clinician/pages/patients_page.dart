@@ -23,7 +23,7 @@ class PrenatalPatient {
   });
 }
 
-class PostnatalPatient {
+class NeonatalPatient {
   final String name, phone, email, nationality, district, zone;
   final int age;
   final String babyName, babyDob, babyGender, babyAge;
@@ -31,7 +31,7 @@ class PostnatalPatient {
   final String bp;
   final List<String> symptoms;
 
-  const PostnatalPatient({
+  const NeonatalPatient({
     required this.name, required this.age, required this.phone,
     required this.email, required this.nationality, required this.district,
     required this.zone, required this.babyName, required this.babyDob,
@@ -43,17 +43,17 @@ class PostnatalPatient {
 // ── Sample data ───────────────────────────────────────────────────────────────
 
 const _prenatal = [
-  PrenatalPatient(name: 'Grace Banda',    age: 28, phone: '+265 991 234 567', email: 'grace@mail.com',   nationality: 'Malawian', district: 'Zomba',    zone: 'Zomba Central HC', pregnancyMonths: 7, edd: '15 Jun 2026', risk: RiskLevel.high,   bp: '148/96',  symptoms: ['Severe headache', 'Reduced fetal movement']),
-  PrenatalPatient(name: 'Faith Mwale',    age: 22, phone: '+265 888 345 678', email: '',                 nationality: 'Malawian', district: 'Blantyre', zone: 'Queen Elizabeth HC', pregnancyMonths: 8, edd: '02 May 2026', risk: RiskLevel.high,   bp: '152/98',  symptoms: ['Oedema', 'Proteinuria']),
-  PrenatalPatient(name: 'Liness Kachali', age: 31, phone: '+265 999 456 789', email: 'liness@mail.com', nationality: 'Malawian', district: 'Lilongwe', zone: 'Area 18 HC',        pregnancyMonths: 7, edd: '20 Jun 2026', risk: RiskLevel.medium, bp: '126/84',  symptoms: ['Gestational diabetes', 'Fatigue']),
-  PrenatalPatient(name: 'Aisha Tembo',    age: 19, phone: '+265 881 567 890', email: '',                 nationality: 'Malawian', district: 'Mzuzu',    zone: 'Mzuzu City HC',    pregnancyMonths: 4, edd: '10 Sep 2026', risk: RiskLevel.low,    bp: '110/70',  symptoms: ['Mild nausea']),
-  PrenatalPatient(name: 'Joyce Mwale',    age: 40, phone: '+265 992 678 901', email: 'joyce@mail.com',  nationality: 'Malawian', district: 'Dedza',    zone: 'Dedza District HC', pregnancyMonths: 6, edd: '30 Jul 2026', risk: RiskLevel.medium, bp: '125/80',  symptoms: ['Fatigue', 'Back pain']),
+  PrenatalPatient(name: 'Grace Banda',    age: 28, phone: '+265 991 234 567', email: 'grace@mail.com',   nationality: 'Malawian', district: 'Zomba',    zone: 'Zomba Central HC',    pregnancyMonths: 7, edd: '15 Jun 2026', risk: RiskLevel.high,   bp: '148/96',  symptoms: ['Severe headache', 'Reduced fetal movement']),
+  PrenatalPatient(name: 'Faith Mwale',    age: 22, phone: '+265 888 345 678', email: '',                 nationality: 'Malawian', district: 'Blantyre', zone: 'Queen Elizabeth HC',  pregnancyMonths: 8, edd: '02 May 2026', risk: RiskLevel.high,   bp: '152/98',  symptoms: ['Oedema', 'Proteinuria']),
+  PrenatalPatient(name: 'Liness Kachali', age: 31, phone: '+265 999 456 789', email: 'liness@mail.com', nationality: 'Malawian', district: 'Lilongwe', zone: 'Area 18 HC',          pregnancyMonths: 7, edd: '20 Jun 2026', risk: RiskLevel.medium, bp: '126/84',  symptoms: ['Gestational diabetes', 'Fatigue']),
+  PrenatalPatient(name: 'Aisha Tembo',    age: 19, phone: '+265 881 567 890', email: '',                 nationality: 'Malawian', district: 'Mzuzu',    zone: 'Mzuzu City HC',       pregnancyMonths: 4, edd: '10 Sep 2026', risk: RiskLevel.low,    bp: '110/70',  symptoms: ['Mild nausea']),
+  PrenatalPatient(name: 'Joyce Mwale',    age: 40, phone: '+265 992 678 901', email: 'joyce@mail.com',  nationality: 'Malawian', district: 'Dedza',    zone: 'Dedza District HC',   pregnancyMonths: 6, edd: '30 Jul 2026', risk: RiskLevel.medium, bp: '125/80',  symptoms: ['Fatigue', 'Back pain']),
 ];
 
-const _postnatal = [
-  PostnatalPatient(name: 'Mercy Tembo',   age: 26, phone: '+265 993 111 222', email: 'mercy@mail.com', nationality: 'Malawian', district: 'Zomba',    zone: 'Zomba Central HC',  babyName: 'Baby Tembo',   babyDob: '18 Mar 2026', babyGender: 'Female', babyAge: '8 days',   risk: RiskLevel.medium, bp: '118/78', symptoms: ['Mild fever 37.9°C', 'Breast tenderness']),
-  PostnatalPatient(name: 'Rose Phiri',    age: 24, phone: '+265 994 222 333', email: '',               nationality: 'Malawian', district: 'Blantyre', zone: 'Queen Elizabeth HC', babyName: 'Baby Phiri',   babyDob: '12 Mar 2026', babyGender: 'Male',   babyAge: '14 days',  risk: RiskLevel.low,    bp: '112/72', symptoms: []),
-  PostnatalPatient(name: 'Fatima Chirwa', age: 19, phone: '+265 995 333 444', email: '',               nationality: 'Malawian', district: 'Lilongwe', zone: 'Area 18 HC',         babyName: 'Baby Chirwa',  babyDob: '20 Mar 2026', babyGender: 'Female', babyAge: '6 days',   risk: RiskLevel.low,    bp: '115/75', symptoms: []),
+const _neonatal = [
+  NeonatalPatient(name: 'Mercy Tembo',   age: 26, phone: '+265 993 111 222', email: 'mercy@mail.com', nationality: 'Malawian', district: 'Zomba',    zone: 'Zomba Central HC',  babyName: 'Baby Tembo',   babyDob: '18 Mar 2026', babyGender: 'Female', babyAge: '8 days',   risk: RiskLevel.medium, bp: '118/78', symptoms: ['Mild fever 37.9°C', 'Breast tenderness']),
+  NeonatalPatient(name: 'Rose Phiri',    age: 24, phone: '+265 994 222 333', email: '',               nationality: 'Malawian', district: 'Blantyre', zone: 'Queen Elizabeth HC', babyName: 'Baby Phiri',   babyDob: '12 Mar 2026', babyGender: 'Male',   babyAge: '14 days',  risk: RiskLevel.low,    bp: '112/72', symptoms: []),
+  NeonatalPatient(name: 'Fatima Chirwa', age: 19, phone: '+265 995 333 444', email: '',               nationality: 'Malawian', district: 'Lilongwe', zone: 'Area 18 HC',         babyName: 'Baby Chirwa',  babyDob: '20 Mar 2026', babyGender: 'Female', babyAge: '6 days',   risk: RiskLevel.low,    bp: '115/75', symptoms: []),
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -64,44 +64,39 @@ class ClinicianPatientsPage extends StatefulWidget {
   State<ClinicianPatientsPage> createState() => _ClinicianPatientsPageState();
 }
 
-class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
+class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   final _search = TextEditingController();
-  RiskLevel? _riskFilter;
-  String? _districtFilter;
-  Object? _selected; // PrenatalPatient | PostnatalPatient
+  String _filter = 'All'; // All | Prenatal | Neonatal
+  Object? _selected;
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
-    _tabCtrl.addListener(() => setState(() {}));
     _selected = null;
   }
 
   @override
   void dispose() {
-    _tabCtrl.dispose();
     _search.dispose();
     super.dispose();
   }
 
-  List<PrenatalPatient> get _filteredPrenatal => _prenatal.where((p) {
-        if (_riskFilter != null && p.risk != _riskFilter) return false;
-        if (_districtFilter != null && p.district != _districtFilter) return false;
-        if (_search.text.isNotEmpty &&
-            !p.name.toLowerCase().contains(_search.text.toLowerCase())) return false;
-        return true;
-      }).toList();
-
-  List<PostnatalPatient> get _filteredPostnatal => _postnatal.where((p) {
-        if (_riskFilter != null && p.risk != _riskFilter) return false;
-        if (_districtFilter != null && p.district != _districtFilter) return false;
-        if (_search.text.isNotEmpty &&
-            !p.name.toLowerCase().contains(_search.text.toLowerCase())) return false;
-        return true;
-      }).toList();
+  // Combined filtered list — all patients, filtered by search + type
+  List<Object> get _filteredAll {
+    final q = _search.text.toLowerCase();
+    final List<Object> result = [];
+    for (final p in _prenatal) {
+      if (_filter == 'Neonatal') continue;
+      if (q.isNotEmpty && !p.name.toLowerCase().contains(q)) continue;
+      result.add(p);
+    }
+    for (final p in _neonatal) {
+      if (_filter == 'Prenatal') continue;
+      if (q.isNotEmpty && !p.name.toLowerCase().contains(q)) continue;
+      result.add(p);
+    }
+    return result;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,163 +122,109 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
   // ── Header ───────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
-    final allDistricts = {
-      ..._prenatal.map((p) => p.district),
-      ..._postnatal.map((p) => p.district),
-    }.toList()..sort();
-
     return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
       const Icon(Icons.people_outline, color: AppColors.navy, size: 22),
       const SizedBox(width: 10),
       const Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('My Patients',
+          Text('Patients',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
           Text('View and manage all patients under your care.',
               style: TextStyle(fontSize: 13, color: AppColors.g400)),
         ]),
       ),
-      // Risk filter
-      _chip('All Risk', null, isRisk: true),
-      const SizedBox(width: 6),
-      _chip('High', RiskLevel.high, isRisk: true),
-      const SizedBox(width: 6),
-      _chip('Medium', RiskLevel.medium, isRisk: true),
-      const SizedBox(width: 6),
-      _chip('Low', RiskLevel.low, isRisk: true),
-      const SizedBox(width: 12),
-      // District filter
-      DropdownButton<String>(
-        value: _districtFilter,
-        hint: const Text('District', style: TextStyle(fontSize: 12, color: AppColors.g600)),
-        underline: const SizedBox(),
-        style: const TextStyle(fontSize: 12, color: AppColors.g800),
-        items: [
-          const DropdownMenuItem(value: null, child: Text('All Districts')),
-          ...allDistricts.map((d) => DropdownMenuItem(value: d, child: Text(d))),
-        ],
-        onChanged: (v) => setState(() => _districtFilter = v),
-      ),
     ]);
-  }
-
-  Widget _chip(String label, RiskLevel? risk, {bool isRisk = false}) {
-    final selected = isRisk
-        ? (risk == null ? _riskFilter == null : _riskFilter == risk)
-        : false;
-    Color color = AppColors.navy;
-    if (risk == RiskLevel.high) color = AppColors.red;
-    if (risk == RiskLevel.medium) color = AppColors.amber;
-    if (risk == RiskLevel.low) color = AppColors.green;
-
-    return GestureDetector(
-      onTap: () => setState(() => _riskFilter = (selected && risk != null) ? null : risk),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: selected ? color : AppColors.g100,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.g600)),
-      ),
-    );
   }
 
   // ── List panel ────────────────────────────────────────────────────────────────
 
   Widget _buildListPanel() {
+    final list = _filteredAll;
     return Container(
       decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.g200)),
       child: Column(children: [
-        // Search
+        // Search + dropdown filter row
         Padding(
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: _search,
-            onChanged: (_) => setState(() {}),
-            decoration: InputDecoration(
-              hintText: 'Search patients...',
-              hintStyle: const TextStyle(fontSize: 12, color: AppColors.g400),
-              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
-              filled: true, fillColor: AppColors.bg,
-              contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+          child: Row(children: [
+            Expanded(
+              child: TextField(
+                controller: _search,
+                onChanged: (_) => setState(() {}),
+                decoration: InputDecoration(
+                  hintText: 'Search patients...',
+                  hintStyle: const TextStyle(fontSize: 12, color: AppColors.g400),
+                  prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
+                  filled: true, fillColor: AppColors.bg,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                ),
+              ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: AppColors.bg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.g200),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _filter,
+                  style: const TextStyle(fontSize: 12, color: AppColors.g800),
+                  icon: const Icon(Icons.filter_list, size: 16, color: AppColors.navy),
+                  items: ['All', 'Prenatal', 'Neonatal']
+                      .map((f) => DropdownMenuItem(value: f, child: Text(f)))
+                      .toList(),
+                  onChanged: (v) => setState(() { _filter = v!; _selected = null; }),
+                ),
+              ),
+            ),
+          ]),
         ),
-        // Tabs
-        Container(
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: AppColors.g200))),
-          child: TabBar(
-            controller: _tabCtrl,
-            labelColor: AppColors.navy,
-            unselectedLabelColor: AppColors.g400,
-            indicatorColor: AppColors.navy,
-            indicatorWeight: 2,
-            labelStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            tabs: [
-              Tab(text: 'Prenatal (${_filteredPrenatal.length})'),
-              Tab(text: 'Postnatal (${_filteredPostnatal.length})'),
-            ],
-          ),
-        ),
+        const Divider(height: 1, color: AppColors.g200),
+        // Combined list
         SizedBox(
           height: 480,
-          child: TabBarView(
-            controller: _tabCtrl,
-            children: [
-              _prenatalList(),
-              _postnatalList(),
-            ],
-          ),
+          child: list.isEmpty
+              ? _emptyState()
+              : ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (_, i) {
+                    final item = list[i];
+                    if (item is PrenatalPatient) {
+                      final sel = _selected is PrenatalPatient &&
+                          (_selected as PrenatalPatient).name == item.name;
+                      return _patientTile(
+                        name: item.name, age: item.age,
+                        sub: 'Prenatal · ${item.pregnancyMonths} months',
+                        selected: sel,
+                        onTap: () => setState(() => _selected = item),
+                      );
+                    } else {
+                      final p = item as NeonatalPatient;
+                      final sel = _selected is NeonatalPatient &&
+                          (_selected as NeonatalPatient).name == p.name;
+                      return _patientTile(
+                        name: p.name, age: p.age,
+                        sub: 'Neonatal · ${p.babyAge} old',
+                        selected: sel,
+                        onTap: () => setState(() => _selected = p),
+                      );
+                    }
+                  },
+                ),
         ),
       ]),
     );
   }
 
-  Widget _prenatalList() {
-    final list = _filteredPrenatal;
-    if (list.isEmpty) return _emptyState();
-    return ListView.builder(
-      itemCount: list.length,
-      itemBuilder: (_, i) {
-        final p = list[i];
-        final sel = _selected is PrenatalPatient && (_selected as PrenatalPatient).name == p.name;
-        return _patientTile(
-          name: p.name, age: p.age, sub: '${p.pregnancyMonths} months · ${p.district}',
-          risk: p.risk, selected: sel,
-          onTap: () => setState(() => _selected = p),
-        );
-      },
-    );
-  }
 
-  Widget _postnatalList() {
-    final list = _filteredPostnatal;
-    if (list.isEmpty) return _emptyState();
-    return ListView.builder(
-      itemCount: list.length,
-      itemBuilder: (_, i) {
-        final p = list[i];
-        final sel = _selected is PostnatalPatient && (_selected as PostnatalPatient).name == p.name;
-        return _patientTile(
-          name: p.name, age: p.age, sub: '${p.babyAge} old · ${p.district}',
-          risk: p.risk, selected: sel,
-          onTap: () => setState(() => _selected = p),
-        );
-      },
-    );
-  }
 
   Widget _emptyState() => const Center(
         child: Padding(
@@ -295,9 +236,8 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
 
   Widget _patientTile({
     required String name, required int age, required String sub,
-    required RiskLevel risk, required bool selected, required VoidCallback onTap,
+    required bool selected, required VoidCallback onTap,
   }) {
-    final (color, bg, label) = _riskStyle(risk);
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -308,12 +248,12 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
           border: const Border(bottom: BorderSide(color: AppColors.g200, width: 0.5)),
         ),
         child: Row(children: [
-          if (risk == RiskLevel.high)
-            Padding(padding: const EdgeInsets.only(right: 6),
-                child: AnimatedPulseDot(color: AppColors.red, size: 6)),
-          CircleAvatar(radius: 15, backgroundColor: bg,
-              child: Text(name[0], style: TextStyle(color: color, fontSize: 11,
-                  fontWeight: FontWeight.bold))),
+          CircleAvatar(
+            radius: 15,
+            backgroundColor: AppColors.navyL,
+            child: Text(name[0], style: const TextStyle(
+                color: AppColors.navy, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
@@ -321,12 +261,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
             Text('$age yrs · $sub',
                 style: const TextStyle(fontSize: 10, color: AppColors.g400)),
           ])),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-            child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold,
-                color: color)),
-          ),
         ]),
       ),
     );
@@ -346,7 +280,7 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
       );
     }
     if (_selected is PrenatalPatient) return _prenatalDetail(_selected as PrenatalPatient);
-    return _postnatalDetail(_selected as PostnatalPatient);
+    return _neonatalDetail(_selected as NeonatalPatient);
   }
 
   Widget _prenatalDetail(PrenatalPatient p) {
@@ -360,7 +294,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (p.risk == RiskLevel.high) _alertBanner('High-risk patient — immediate attention required.', AppColors.red, AppColors.redL),
             _section('Contact Information', [
               _row(Icons.phone, 'Phone', p.phone),
               if (p.email.isNotEmpty) _row(Icons.email_outlined, 'Email', p.email),
@@ -375,43 +308,45 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
             _section('Pregnancy Details', [
               _row(Icons.pregnant_woman, 'Pregnancy Duration', '${p.pregnancyMonths} months'),
               _row(Icons.calendar_today_outlined, 'Expected Delivery Date', p.edd),
-              _row(Icons.favorite_border, 'Blood Pressure', p.bp,
-                  valueColor: _bpColor(p.bp)),
             ]),
-            if (p.symptoms.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _section('Reported Symptoms',
-                  p.symptoms.map((s) => _tag(s, AppColors.amber, AppColors.amberL)).toList()),
-            ],
             const SizedBox(height: 20),
-            _actions(),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showHistory(context, p.name, p.symptoms, p.risk),
+                icon: const Icon(Icons.history, size: 16),
+                label: const Text('View Patient History'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.navy,
+                  side: const BorderSide(color: AppColors.navy),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
           ]),
         ),
       ]),
     );
   }
 
-  Widget _postnatalDetail(PostnatalPatient p) {
+  Widget _neonatalDetail(NeonatalPatient p) {
     final (color, bg, label) = _riskStyle(p.risk);
     return Container(
       decoration: BoxDecoration(color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.g200)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _detailHeader(p.name, p.age, 'Postnatal', color, bg, label, p.risk),
+        _detailHeader(p.name, p.age, 'Neonatal', color, bg, label, p.risk),
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            if (p.risk == RiskLevel.medium || p.risk == RiskLevel.high)
-              _alertBanner('Patient requires close monitoring.', AppColors.amber, AppColors.amberL),
-            _section('Mother Contact', [
+            _section('Mother Details', [
               _row(Icons.phone, 'Phone', p.phone),
               if (p.email.isNotEmpty) _row(Icons.email_outlined, 'Email', p.email),
               _row(Icons.flag_outlined, 'Nationality', p.nationality),
               _row(Icons.location_on_outlined, 'District', p.district),
               _row(Icons.place_outlined, 'Zone', p.zone),
-              _row(Icons.favorite_border, 'Blood Pressure', p.bp,
-                  valueColor: _bpColor(p.bp)),
             ]),
             const SizedBox(height: 16),
             _section('Baby Details', [
@@ -420,13 +355,21 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
               _row(Icons.wc_outlined, 'Gender', p.babyGender),
               _row(Icons.timelapse_outlined, 'Baby Age', p.babyAge),
             ]),
-            if (p.symptoms.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _section('Reported Symptoms',
-                  p.symptoms.map((s) => _tag(s, AppColors.amber, AppColors.amberL)).toList()),
-            ],
             const SizedBox(height: 20),
-            _actions(),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _showHistory(context, p.name, p.symptoms, p.risk),
+                icon: const Icon(Icons.history, size: 16),
+                label: const Text('View Patient History'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.navy,
+                  side: const BorderSide(color: AppColors.navy),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ),
           ]),
         ),
       ]),
@@ -434,17 +377,20 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
   }
 
   Widget _detailHeader(String name, int age, String status,
-      Color color, Color bg, String label, RiskLevel risk) {
+      Color riskColor, Color riskBg, String riskLabel, RiskLevel risk) {
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: risk == RiskLevel.high ? AppColors.redL : AppColors.navyL,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+      decoration: const BoxDecoration(
+        color: AppColors.navyL, // consistent for all risk levels
+        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: Row(children: [
-        CircleAvatar(radius: 22, backgroundColor: bg,
-            child: Text(name[0], style: TextStyle(color: color, fontSize: 16,
-                fontWeight: FontWeight.bold))),
+        CircleAvatar(
+          radius: 22,
+          backgroundColor: Colors.white,
+          child: Text(name[0], style: const TextStyle(
+              color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.bold)),
+        ),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(name, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
@@ -452,20 +398,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
           Text('$age years old · $status',
               style: const TextStyle(fontSize: 12, color: AppColors.g600)),
         ])),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: color.withOpacity(0.4))),
-          child: Row(children: [
-            if (risk == RiskLevel.high)
-              Padding(padding: const EdgeInsets.only(right: 6),
-                  child: AnimatedPulseDot(color: color, size: 7)),
-            Text('$label Risk', style: TextStyle(fontSize: 11,
-                fontWeight: FontWeight.bold, color: color)),
-          ]),
-        ),
-        const SizedBox(width: 8),
-        // Close detail panel
         GestureDetector(
           onTap: () => setState(() => _selected = null),
           child: const Icon(Icons.close, size: 18, color: AppColors.g400),
@@ -573,10 +505,183 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
+  void _showHistory(BuildContext context, String name, List<String> symptoms, RiskLevel risk) {
+    final (riskColor, _, riskLabel) = _riskStyle(risk);
+
+    // Per-patient symptom history with risk level and date/time
+    final Map<String, List<Map<String, String>>> symptomHistory = {
+      'Grace Banda': [
+        {'date': '20 Mar 2026', 'time': '10:14 AM', 'risk': 'High',   'symptoms': 'Severe headache, Reduced fetal movement'},
+        {'date': '10 Mar 2026', 'time': '09:00 AM', 'risk': 'Medium', 'symptoms': 'Mild headache, Fatigue'},
+        {'date': '01 Mar 2026', 'time': '02:30 PM', 'risk': 'Low',    'symptoms': 'Mild nausea'},
+      ],
+      'Faith Mwale': [
+        {'date': '18 Mar 2026', 'time': '11:00 AM', 'risk': 'High',   'symptoms': 'Oedema, Proteinuria, Dizziness'},
+        {'date': '05 Mar 2026', 'time': '03:15 PM', 'risk': 'Medium', 'symptoms': 'Swollen feet'},
+      ],
+      'Mercy Tembo': [
+        {'date': '22 Mar 2026', 'time': '08:45 AM', 'risk': 'Medium', 'symptoms': 'Mild fever 37.9°C, Breast tenderness'},
+        {'date': '15 Mar 2026', 'time': '10:00 AM', 'risk': 'Low',    'symptoms': 'Fatigue'},
+      ],
+      'Liness Kachali': [
+        {'date': '19 Mar 2026', 'time': '01:00 PM', 'risk': 'Medium', 'symptoms': 'Gestational diabetes, Fatigue'},
+        {'date': '10 Mar 2026', 'time': '09:30 AM', 'risk': 'Low',    'symptoms': 'Back pain'},
+      ],
+      'Aisha Tembo': [
+        {'date': '17 Mar 2026', 'time': '11:30 AM', 'risk': 'Low',    'symptoms': 'Mild nausea'},
+      ],
+      'Joyce Mwale': [
+        {'date': '21 Mar 2026', 'time': '02:00 PM', 'risk': 'Medium', 'symptoms': 'Fatigue, Back pain'},
+        {'date': '12 Mar 2026', 'time': '10:45 AM', 'risk': 'Low',    'symptoms': 'Mild fatigue'},
+      ],
+      'Rose Phiri': [
+        {'date': '20 Mar 2026', 'time': '09:00 AM', 'risk': 'Low',    'symptoms': 'No symptoms reported'},
+      ],
+      'Fatima Chirwa': [
+        {'date': '22 Mar 2026', 'time': '08:00 AM', 'risk': 'Low',    'symptoms': 'No symptoms reported'},
+      ],
+    };
+
+    // Per-patient IVR call history
+    final Map<String, List<Map<String, String>>> ivrHistory = {
+      'Grace Banda':    [{'date': '20 Mar 2026', 'time': '10:10 AM', 'duration': '3 min 22 sec'}, {'date': '15 Mar 2026', 'time': '02:45 PM', 'duration': '1 min 55 sec'}],
+      'Faith Mwale':    [{'date': '18 Mar 2026', 'time': '10:55 AM', 'duration': '2 min 10 sec'}],
+      'Mercy Tembo':    [{'date': '22 Mar 2026', 'time': '08:40 AM', 'duration': '1 min 30 sec'}, {'date': '15 Mar 2026', 'time': '09:55 AM', 'duration': '2 min 05 sec'}],
+      'Liness Kachali': [{'date': '19 Mar 2026', 'time': '12:55 PM', 'duration': '4 min 00 sec'}],
+      'Aisha Tembo':    [{'date': '17 Mar 2026', 'time': '11:25 AM', 'duration': '1 min 10 sec'}],
+      'Joyce Mwale':    [{'date': '21 Mar 2026', 'time': '01:55 PM', 'duration': '2 min 45 sec'}],
+      'Rose Phiri':     [{'date': '20 Mar 2026', 'time': '08:55 AM', 'duration': '0 min 55 sec'}],
+      'Fatima Chirwa':  [{'date': '22 Mar 2026', 'time': '07:55 AM', 'duration': '1 min 20 sec'}],
+    };
+
+    final patientSymptoms = symptomHistory[name] ?? [];
+    final patientCalls    = ivrHistory[name] ?? [];
+
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 520, maxHeight: 620),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: AppColors.navyL,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.history, color: AppColors.navy, size: 20),
+                const SizedBox(width: 10),
+                Expanded(child: Text('$name — Patient History',
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold,
+                        color: AppColors.g800))),
+                GestureDetector(
+                  onTap: () => Navigator.pop(context),
+                  child: const Icon(Icons.close, size: 18, color: AppColors.g400),
+                ),
+              ]),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(20),
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+
+                  // ── Symptom & Risk History ──────────────────────────────────
+                  _historySection('Symptom & Risk History'),
+                  const SizedBox(height: 10),
+                  if (patientSymptoms.isEmpty)
+                    _historyEmpty('No symptom history recorded.')
+                  else
+                    ...patientSymptoms.map((e) {
+                      final rc = e['risk'] == 'High' ? AppColors.red
+                          : e['risk'] == 'Medium' ? AppColors.orange : AppColors.green;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(color: AppColors.bg,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.g200)),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Row(children: [
+                            Container(width: 7, height: 7,
+                                decoration: BoxDecoration(color: rc, shape: BoxShape.circle)),
+                            const SizedBox(width: 8),
+                            Text('${e['risk']} Risk',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
+                                    color: rc)),
+                            const Spacer(),
+                            Text('${e['date']}  ·  ${e['time']}',
+                                style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+                          ]),
+                          const SizedBox(height: 6),
+                          Text(e['symptoms']!,
+                              style: const TextStyle(fontSize: 12, color: AppColors.g800)),
+                        ]),
+                      );
+                    }),
+
+                  const SizedBox(height: 20),
+
+                  // ── IVR Call History ────────────────────────────────────────
+                  _historySection('IVR Call History'),
+                  const SizedBox(height: 10),
+                  if (patientCalls.isEmpty)
+                    _historyEmpty('No IVR calls recorded.')
+                  else
+                    ...patientCalls.map((c) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: AppColors.bg,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: AppColors.g200)),
+                          child: Row(children: [
+                            Container(
+                              width: 34, height: 34,
+                              decoration: BoxDecoration(color: AppColors.navyL,
+                                  borderRadius: BorderRadius.circular(8)),
+                              child: const Icon(Icons.phone_in_talk_outlined,
+                                  color: AppColors.navy, size: 17),
+                            ),
+                            const SizedBox(width: 12),
+                            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                              Text('${c['date']}  ·  ${c['time']}',
+                                  style: const TextStyle(fontSize: 12,
+                                      fontWeight: FontWeight.w600, color: AppColors.g800)),
+                              const SizedBox(height: 2),
+                              Text('Duration: ${c['duration']}',
+                                  style: const TextStyle(fontSize: 11, color: AppColors.g400)),
+                            ]),
+                          ]),
+                        )),
+                ]),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _historySection(String title) {
+    return Row(children: [
+      Container(width: 3, height: 14, color: AppColors.navy,
+          margin: const EdgeInsets.only(right: 8)),
+      Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
+          color: AppColors.g800)),
+    ]);
+  }
+
+  Widget _historyEmpty(String msg) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(msg, style: const TextStyle(fontSize: 12, color: AppColors.g400)),
+      );
+
   (Color, Color, String) _riskStyle(RiskLevel r) => switch (r) {
-        RiskLevel.high   => (AppColors.red,   AppColors.redL,   'High'),
-        RiskLevel.medium => (AppColors.amber,  AppColors.amberL, 'Medium'),
-        RiskLevel.low    => (AppColors.green,  AppColors.greenL, 'Low'),
+        RiskLevel.high   => (AppColors.red,    AppColors.redL,    'High'),
+        RiskLevel.medium => (AppColors.orange,  AppColors.orangeL, 'Medium'),
+        RiskLevel.low    => (AppColors.green,   AppColors.greenL,  'Low'),
       };
 
   Color _bpColor(String bp) {
@@ -584,7 +689,7 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage>
     if (parts.isEmpty) return AppColors.g800;
     final sys = int.tryParse(parts[0].trim()) ?? 0;
     if (sys >= 140) return AppColors.red;
-    if (sys >= 130) return AppColors.amber;
+    if (sys >= 130) return AppColors.orange;
     return AppColors.green;
   }
 }

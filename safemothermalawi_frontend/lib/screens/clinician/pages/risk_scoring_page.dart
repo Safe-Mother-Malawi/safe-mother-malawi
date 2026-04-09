@@ -9,7 +9,7 @@ enum RiskLevel { low, medium, high }
 class _Patient {
   final String name;
   final int age;
-  final String status; // Prenatal / Postnatal
+  final String status; // Prenatal / Neonatal
   final RiskLevel risk;
   final String bp;
   final String pregnancyOrBabyAge;
@@ -46,7 +46,7 @@ const _patients = [
     overdueCheckup: false,
   ),
   _Patient(
-    name: 'Mercy Tembo', age: 26, status: 'Postnatal', risk: RiskLevel.medium,
+    name: 'Mercy Tembo', age: 26, status: 'Neonatal', risk: RiskLevel.medium,
     bp: '118 / 78 mmHg', pregnancyOrBabyAge: 'Baby: 8 days old',
     symptoms: ['Mild fever (37.9°C)', 'Breast tenderness'],
     complications: [],
@@ -60,7 +60,7 @@ const _patients = [
     overdueCheckup: false,
   ),
   _Patient(
-    name: 'Rose Phiri', age: 24, status: 'Postnatal', risk: RiskLevel.low,
+    name: 'Rose Phiri', age: 24, status: 'Neonatal', risk: RiskLevel.low,
     bp: '112 / 72 mmHg', pregnancyOrBabyAge: 'Baby: 14 days old',
     symptoms: [],
     complications: [],
@@ -89,16 +89,20 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
   RiskLevel? _filterRisk;
   String _filterStatus = 'All';
 
+  String _search = '';
+
   List<_Patient> get _filtered => _patients.where((p) {
         if (_filterRisk != null && p.risk != _filterRisk) return false;
         if (_filterStatus != 'All' && p.status != _filterStatus) return false;
+        if (_search.isNotEmpty &&
+            !p.name.toLowerCase().contains(_search.toLowerCase())) return false;
         return true;
       }).toList();
 
   @override
   void initState() {
     super.initState();
-    _selected = _patients.first;
+    _selected = null;
   }
 
   @override
@@ -111,9 +115,14 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         _buildSummaryRow(),
         const SizedBox(height: 20),
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 2, child: _buildPatientList()),
-          const SizedBox(width: 16),
-          Expanded(flex: 3, child: _buildDetailPanel()),
+          Expanded(
+            flex: _selected == null ? 1 : 2,
+            child: _buildPatientList(),
+          ),
+          if (_selected != null) ...[
+            const SizedBox(width: 16),
+            Expanded(flex: 3, child: _buildDetailPanel()),
+          ],
         ]),
       ]),
     );
@@ -138,7 +147,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
       const SizedBox(width: 6),
       _filterChip('Prenatal', null, isStatus: true),
       const SizedBox(width: 6),
-      _filterChip('Postnatal', null, isStatus: true),
+      _filterChip('Neonatal', null, isStatus: true),
     ]);
   }
 
@@ -180,7 +189,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
       Expanded(child: _summaryCard('High Risk', '$high', AppColors.red, AppColors.redL,
           Icons.warning_amber_rounded)),
       const SizedBox(width: 12),
-      Expanded(child: _summaryCard('Medium Risk', '$medium', AppColors.amber, AppColors.amberL,
+      Expanded(child: _summaryCard('Medium Risk', '$medium', AppColors.orange, AppColors.orangeL,
           Icons.info_outline)),
       const SizedBox(width: 12),
       Expanded(child: _summaryCard('Low Risk', '$low', AppColors.green, AppColors.greenL,
@@ -233,13 +242,28 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                 style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold,
                     color: AppColors.g800)),
             const Spacer(),
-            // Risk filter chips
             _riskChip('H', RiskLevel.high, AppColors.red, AppColors.redL),
             const SizedBox(width: 4),
-            _riskChip('M', RiskLevel.medium, AppColors.amber, AppColors.amberL),
+            _riskChip('M', RiskLevel.medium, AppColors.orange, AppColors.orangeL),
             const SizedBox(width: 4),
             _riskChip('L', RiskLevel.low, AppColors.green, AppColors.greenL),
           ]),
+        ),
+        // Search bar
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+          child: TextField(
+            onChanged: (v) => setState(() => _search = v),
+            decoration: InputDecoration(
+              hintText: 'Search patients...',
+              hintStyle: const TextStyle(fontSize: 12, color: AppColors.g400),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
+              filled: true, fillColor: AppColors.bg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+            ),
+          ),
         ),
         const Divider(height: 1, color: AppColors.g200),
         if (list.isEmpty)
@@ -274,7 +298,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
 
   Widget _patientListItem(_Patient p) {
     final isSelected = _selected?.name == p.name;
-    final (color, bg, label) = _riskStyle(p.risk);
+    final (riskColor, _, label) = _riskStyle(p.risk);
     return GestureDetector(
       onTap: () => setState(() => _selected = p),
       child: AnimatedContainer(
@@ -285,17 +309,18 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           border: const Border(bottom: BorderSide(color: AppColors.g200, width: 0.5)),
         ),
         child: Row(children: [
-          // Alert dot for high risk
-          if (p.risk == RiskLevel.high)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: AnimatedPulseDot(color: AppColors.red, size: 7),
-            ),
+          // Risk level indicator dot (only colored element)
+          Container(
+            width: 8, height: 8,
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle),
+          ),
           CircleAvatar(
             radius: 16,
-            backgroundColor: bg,
+            backgroundColor: AppColors.navyL,
             child: Text(p.name[0],
-                style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+                style: const TextStyle(color: AppColors.navy, fontSize: 12,
+                    fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -309,9 +334,9 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                     decoration: BoxDecoration(
-                        color: AppColors.amberL, borderRadius: BorderRadius.circular(4)),
+                        color: AppColors.orangeL, borderRadius: BorderRadius.circular(4)),
                     child: const Text('Overdue',
-                        style: TextStyle(fontSize: 9, color: AppColors.amber,
+                        style: TextStyle(fontSize: 9, color: AppColors.orange,
                             fontWeight: FontWeight.bold)),
                   ),
                 ],
@@ -320,11 +345,14 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                   style: const TextStyle(fontSize: 10, color: AppColors.g400)),
             ]),
           ),
+          // Risk label badge — colored per risk level
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(
+                color: AppColors.g100, borderRadius: BorderRadius.circular(10)),
             child: Text(label,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
+                    color: riskColor)),
           ),
         ]),
       ),
@@ -334,18 +362,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
   // ── Detail panel ─────────────────────────────────────────────────────────────
 
   Widget _buildDetailPanel() {
-    if (_selected == null) {
-      return Container(
-        decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.g200)),
-        child: const Center(
-          child: Text('Select a patient to view risk details.',
-              style: TextStyle(color: AppColors.g400)),
-        ),
-      );
-    }
+    if (_selected == null) return const SizedBox.shrink();
     final p = _selected!;
     final (color, bg, label) = _riskStyle(p.risk);
 
@@ -358,16 +375,17 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         // Patient header
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: p.risk == RiskLevel.high ? AppColors.redL : AppColors.navyL,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+          decoration: const BoxDecoration(
+            color: AppColors.navyL, // consistent for all risk levels
+            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
           ),
           child: Row(children: [
             CircleAvatar(
               radius: 22,
-              backgroundColor: bg,
+              backgroundColor: Colors.white,
               child: Text(p.name[0],
-                  style: TextStyle(color: color, fontSize: 16, fontWeight: FontWeight.bold)),
+                  style: const TextStyle(color: AppColors.navy, fontSize: 16,
+                      fontWeight: FontWeight.bold)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -375,25 +393,30 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                 Text(p.name,
                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
                         color: AppColors.g800)),
-                Text('${p.age} years old · ${p.status}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.g600)),
               ]),
             ),
-            // Risk badge
+            // Risk badge — only this retains risk color
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(color: bg,
+              decoration: BoxDecoration(
+                  color: AppColors.g100,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.4))),
+                  border: Border.all(color: color.withOpacity(0.5))),
               child: Row(children: [
-                if (p.risk == RiskLevel.high)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: AnimatedPulseDot(color: color, size: 7),
-                  ),
+                Container(
+                  width: 8, height: 8,
+                  margin: const EdgeInsets.only(right: 6),
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
                 Text('$label Risk',
                     style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
               ]),
+            ),
+            const SizedBox(width: 8),
+            // Close button
+            GestureDetector(
+              onTap: () => setState(() => _selected = null),
+              child: const Icon(Icons.close, size: 18, color: AppColors.g400),
             ),
           ]),
         ),
@@ -401,10 +424,6 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            // Alerts banner for high risk / overdue
-            if (p.risk == RiskLevel.high || p.overdueCheckup)
-              _alertBanner(p),
-
             _detailSection('Clinical Readings', [
               _detailRow(Icons.favorite_border, 'Blood Pressure', p.bp,
                   valueColor: _bpColor(p.bp)),
@@ -415,13 +434,13 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
 
             if (p.symptoms.isNotEmpty)
               _detailSection('Reported Symptoms', [
-                ...p.symptoms.map((s) => _tagRow(s, AppColors.amber, AppColors.amberL)),
+                ...p.symptoms.map((s) => _detailRow(Icons.report_outlined, s, '', valueColor: AppColors.g800)),
               ]),
 
             if (p.complications.isNotEmpty) ...[
               const SizedBox(height: 16),
               _detailSection('Previous / Current Complications', [
-                ...p.complications.map((c) => _tagRow(c, AppColors.red, AppColors.redL)),
+                ...p.complications.map((c) => _detailRow(Icons.medical_information_outlined, c, '', valueColor: AppColors.g800)),
               ]),
             ],
 
@@ -439,39 +458,6 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                 ]),
               ),
             ],
-
-            const SizedBox(height: 20),
-            // Action buttons
-            Row(children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.edit_note, size: 16),
-                  label: const Text('Update Record'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.navy,
-                    side: const BorderSide(color: AppColors.navy),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.schedule, size: 16),
-                  label: const Text('Schedule Checkup'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.navy,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    elevation: 0,
-                  ),
-                ),
-              ),
-            ]),
           ]),
         ),
       ]),
@@ -498,10 +484,10 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         if (p.overdueCheckup) ...[
           if (p.risk == RiskLevel.high) const SizedBox(height: 6),
           const Row(children: [
-            Icon(Icons.schedule, color: AppColors.amber, size: 16),
+            Icon(Icons.schedule, color: AppColors.orange, size: 16),
             SizedBox(width: 8),
             Text('Checkup is overdue — please schedule immediately.',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.amber)),
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.orange)),
           ]),
         ],
       ]),
@@ -530,10 +516,12 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
       child: Row(children: [
         Icon(icon, size: 16, color: AppColors.navy),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
-        const Spacer(),
-        Text(value,
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor)),
+        Expanded(
+          child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        ),
+        if (value.isNotEmpty)
+          Text(value,
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor)),
       ]),
     );
   }
@@ -554,9 +542,9 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   (Color, Color, String) _riskStyle(RiskLevel r) => switch (r) {
-        RiskLevel.high   => (AppColors.red,   AppColors.redL,   'High'),
-        RiskLevel.medium => (AppColors.amber,  AppColors.amberL, 'Medium'),
-        RiskLevel.low    => (AppColors.green,  AppColors.greenL, 'Low'),
+        RiskLevel.high   => (AppColors.red,    AppColors.redL,    'High'),
+        RiskLevel.medium => (AppColors.orange,  AppColors.orangeL, 'Medium'),
+        RiskLevel.low    => (AppColors.green,   AppColors.greenL,  'Low'),
       };
 
   Color _bpColor(String bp) {
@@ -564,7 +552,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
     if (parts.length < 2) return AppColors.g800;
     final sys = int.tryParse(parts[0]) ?? 0;
     if (sys >= 140) return AppColors.red;
-    if (sys >= 130) return AppColors.amber;
+    if (sys >= 130) return AppColors.orange;
     return AppColors.green;
   }
 }

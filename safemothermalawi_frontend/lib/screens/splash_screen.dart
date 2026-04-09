@@ -12,10 +12,10 @@ class _SlideData {
 }
 
 const List<_SlideData> _slides = [
-  _SlideData(imagePath: 'assets/images/pic1.png', headline: 'World-Class Hospital Care',  sub: 'Providing excellence in maternal health since 2010'),
-  _SlideData(imagePath: 'assets/images/pic2.jpg', headline: 'Advanced Medical Equipment', sub: 'State-of-the-art technology for better outcomes'),
+  _SlideData(imagePath: 'assets/images/pic1.png', headline: 'Excellence in maternal and neonatal health',  sub: 'Delivering  Safe,high-quality care for mothers and newborns across Malawi'),
+  _SlideData(imagePath: 'assets/images/pic2.jpg', headline: 'Smart Clinical Management', sub: 'Digital tools for seamless patient care coordination and data-driven insights'),
   _SlideData(imagePath: 'assets/images/pic3.jpg', headline: 'Dedicated Medical Team',     sub: 'Over 200 specialists committed to your health'),
-  _SlideData(imagePath: 'assets/images/pic4.png', headline: 'Patient Monitoring Systems', sub: '24/7 real-time monitoring for every patient'),
+  _SlideData(imagePath: 'assets/images/pic4.png', headline: 'Always Watching over You', sub: '24/7 real-time monitoring for every patient'),
   _SlideData(imagePath: 'assets/images/pic5.jpg', headline: 'Emergency Response Ready',   sub: 'Rapid response units available around the clock'),
 ];
 
@@ -330,12 +330,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   Widget _buildServices() {
     final services = [
-      (Icons.pregnant_woman,   'Maternity Care',     'Comprehensive prenatal, delivery and postnatal care for mothers.'),
+      (Icons.pregnant_woman,   'Maternity Care',     'Comprehensive prenatal, delivery and neonatal care for mothers.'),
       (Icons.child_care,       'Neonatal Unit',      'Specialised care for premature and critically ill newborns.'),
       (Icons.monitor_heart,    'Patient Monitoring', '24/7 vital signs monitoring with modern ICU equipment.'),
       (Icons.medical_services, 'Surgical Services',  'Emergency and elective obstetric surgeries by expert surgeons.'),
       (Icons.vaccines,         'Immunisation',       'Full vaccination programmes for mothers and children.'),
-      (Icons.psychology,       'Mental Health',      'Postnatal depression support and counselling services.'),
+      (Icons.psychology,       'Mental Health',      'Neonatal depression support and counselling services.'),
     ];
     return _fullScreen(
       sectionKey: _servicesKey,
