@@ -83,8 +83,9 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
 
   void _next() {
     GlobalKey<FormState> key;
-    if (_step == 0) key = _step1Key;
-    else if (_step == 1) key = _step2Key;
+    if (_step == 0) {
+      key = _step1Key;
+    } else if (_step == 1) key = _step2Key;
     else key = _step3Key;
     if (!key.currentState!.validate()) return;
     if (_step == 1) {
@@ -260,7 +261,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           )),
           const SizedBox(height: 14),
           _Field(label: 'District *', child: DropdownButtonFormField<String>(
-            value: _district.isEmpty ? null : _district,
+            initialValue: _district.isEmpty ? null : _district,
             decoration: _dec('Select your district'),
             items: _districts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
             onChanged: (v) => setState(() {
@@ -271,7 +272,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           )),
           const SizedBox(height: 14),
           _Field(label: 'Health Centre / Zone *', child: DropdownButtonFormField<String>(
-            value: _healthCentre,
+            initialValue: _healthCentre,
             decoration: _dec('Select health centre'),
             items: (_district.isNotEmpty
                     ? (kDistrictHealthCentres[_district] ?? [])
@@ -452,7 +453,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           _Field(
             label: 'Choose a question *',
             child: DropdownButtonFormField<String>(
-              value: _secQuestion,
+              initialValue: _secQuestion,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),

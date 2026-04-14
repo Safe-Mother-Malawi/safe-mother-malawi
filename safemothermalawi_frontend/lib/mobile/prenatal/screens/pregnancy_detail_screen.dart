@@ -59,7 +59,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 280,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Center(
+                    errorBuilder: (_, _, _) => Center(
                       child: BabyFallbackPainter(week: data.currentWeek, size: 220),
                     ),
                   ),

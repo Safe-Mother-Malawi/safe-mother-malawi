@@ -13,7 +13,9 @@ class EventsStore {
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);
-  void notify() { for (final l in _listeners) l(); }
+  void notify() { for (final l in _listeners) {
+    l();
+  } }
 
   void add(CalEvent e) {
     events.add(e);

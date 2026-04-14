@@ -16,7 +16,7 @@ class AppLogo extends StatelessWidget {
         width: size,
         height: size,
         fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) =>
+        errorBuilder: (_, _, _) =>
             _TextLogo(size: size, darkBackground: darkBackground),
       ),
     );

@@ -130,7 +130,7 @@ class _SwitchTile extends StatelessWidget {
         Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF212121))),
         Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
       ])),
-      Switch(value: value, onChanged: onChanged, activeColor: const Color(0xFF1A237E)),
+      Switch(value: value, onChanged: onChanged, activeThumbColor: const Color(0xFF1A237E)),
     ]),
   );
 }

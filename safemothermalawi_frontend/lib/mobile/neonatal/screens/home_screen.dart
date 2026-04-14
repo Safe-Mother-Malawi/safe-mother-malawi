@@ -451,7 +451,7 @@ class _DailyFeedsCard extends StatefulWidget {
 }
 
 class _DailyFeedsCardState extends State<_DailyFeedsCard> {
-  int _feedCount = 0;
+  final int _feedCount = 0;
 
   int get _targetFeeds {
     final d = widget.data.ageInDays;
@@ -567,12 +567,12 @@ class _TodayAppointmentCard extends StatelessWidget {
     final timeStr = '$timeHour:${today.minute.toString().padLeft(2, '0')}';
 
     // Format date: e.g. "12 April"
-    const _months = [
+    const months = [
       'January','February','March','April','May','June',
       'July','August','September','October','November','December'
     ];
     final apptDate = isToday ? today : checkDate;
-    final dateStr = '${apptDate.day} ${_months[apptDate.month - 1]}';
+    final dateStr = '${apptDate.day} ${months[apptDate.month - 1]}';
 
     return Container(
       padding: const EdgeInsets.all(18),

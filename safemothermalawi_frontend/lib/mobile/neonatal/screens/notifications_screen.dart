@@ -81,7 +81,9 @@ class _NeonatalNotificationsScreenState
   ];
 
   void _markAllRead() =>
-      setState(() { for (final n in _notifs) n.read = true; });
+      setState(() { for (final n in _notifs) {
+        n.read = true;
+      } });
   void _markRead(int i) => setState(() => _notifs[i].read = true);
   void _delete(int i)   => setState(() => _notifs.removeAt(i));
 
@@ -138,7 +140,7 @@ class _NeonatalNotificationsScreenState
           : ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 12),
               itemCount: _notifs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 2),
+              separatorBuilder: (_, _) => const SizedBox(height: 2),
               itemBuilder: (_, i) {
                 final n = _notifs[i];
                 return Dismissible(

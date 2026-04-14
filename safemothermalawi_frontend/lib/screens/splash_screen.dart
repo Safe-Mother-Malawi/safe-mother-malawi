@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import '../web/admin/admin_overview.dart';
 import '../web/dho/dho_overview.dart';
+import 'clinician/clinician_layout.dart';
 import 'login_dialog.dart';
 
 class _SlideData {
@@ -91,6 +92,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     } else if (role == 'dho') {
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DhoOverview()));
+    } else if (role == 'clinician') {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ClinicianDashboard()));
     }
   }
 

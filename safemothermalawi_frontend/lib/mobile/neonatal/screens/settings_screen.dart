@@ -355,7 +355,7 @@ class _SwitchTile extends StatelessWidget {
     trailing: Switch(
       value: value,
       onChanged: onChanged,
-      activeColor: AppColors.mobileNavy,
+      activeThumbColor: AppColors.mobileNavy,
     ),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
   );

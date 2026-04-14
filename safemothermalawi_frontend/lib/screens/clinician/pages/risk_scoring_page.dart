@@ -95,7 +95,9 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         if (_filterRisk != null && p.risk != _filterRisk) return false;
         if (_filterStatus != 'All' && p.status != _filterStatus) return false;
         if (_search.isNotEmpty &&
-            !p.name.toLowerCase().contains(_search.toLowerCase())) return false;
+            !p.name.toLowerCase().contains(_search.toLowerCase())) {
+          return false;
+        }
         return true;
       }).toList();
 
