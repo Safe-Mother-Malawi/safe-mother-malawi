@@ -1,7 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../screens/splash_screen.dart';
 import 'sidebar.dart';
+
+void _doLogout(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      title: const Row(children: [
+        Icon(Icons.logout_rounded, color: Color(0xFF0D47A1), size: 20),
+        SizedBox(width: 8),
+        Text('Log Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ]),
+      content: const Text('Are you sure you want to log out?',
+          style: TextStyle(fontSize: 13, color: Colors.black54)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.black45)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const SplashScreen()),
+              (_) => false,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF0D47A1),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: 0,
+          ),
+          child: const Text('Log Out'),
+        ),
+      ],
+    ),
+  );
+}
 
 class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
   final UserRole role;
@@ -63,7 +102,9 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
             offset: const Offset(0, 48),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: AppColors.surfaceContainerLowest,
-            onSelected: (_) {}, // logout functionality to be connected
+            onSelected: (value) {
+              if (value == 'logout') _doLogout(context);
+            },
             itemBuilder: (_) => [
               PopupMenuItem(
                 enabled: false,
@@ -76,17 +117,6 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
                       role == UserRole.admin ? 'System Admin' : 'District Health Officer',
                       style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
                     ),
-                  ],
-                ),
-              ),
-              const PopupMenuDivider(),
-              PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    const Icon(Icons.logout_rounded, size: 16, color: AppColors.criticalText),
-                    const SizedBox(width: 8),
-                    Text('Logout', style: GoogleFonts.inter(fontSize: 13, color: AppColors.criticalText)),
                   ],
                 ),
               ),
@@ -115,7 +145,6 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
                   ],
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: AppColors.mutedText),
               ],
             ),
           ),
