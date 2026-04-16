@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 import '../widgets/app_logo.dart';
-import '../../prenatal/prenatal_dashboard.dart';
-import '../../neonatal/neonatal_dashboard.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -36,23 +34,10 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
     await AuthService().seedDemoAccounts();
-    final user = await AuthService().getCurrentUser();
-    if (!mounted) return;
-    Widget dest;
-    if (user != null) {
-      if (user.role == 'prenatal') {
-        dest = const PrenatalDashboard();
-      } else if (user.role == 'neonatal') {
-        dest = const NeonatalDashboard();
-      } else {
-        dest = const LoginScreen(); // clinician always re-logs in
-      }
-    } else {
-      dest = const LoginScreen();
-    }
+    // Always start at login — let the user choose to sign in or sign up
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => dest),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 

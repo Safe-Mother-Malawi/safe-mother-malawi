@@ -26,6 +26,7 @@ class _LoginDialogState extends State<LoginDialog> {
   /// Real auth will replace this with a backend role check.
   String _detectRole() {
     final email = _emailCtrl.text.toLowerCase();
+    if (email.contains('clinician')) return 'clinician';
     if (email.contains('admin')) return 'admin';
     if (email.contains('dho')) return 'dho';
     return 'admin'; // default
