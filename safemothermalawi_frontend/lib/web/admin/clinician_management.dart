@@ -379,7 +379,6 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
   final _name = TextEditingController();
   final _contact = TextEditingController();
   final _facility = TextEditingController();
-  String _district = 'Blantyre';
   String _role = 'Clinician';
 
   @override
@@ -414,12 +413,6 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
               _FormField(label: 'Contact', controller: _contact, hint: '+265 999 000 000'),
               _FormField(label: 'Facility', controller: _facility, hint: 'Health facility name'),
               _DropField(
-                label: 'District',
-                value: _district,
-                items: const ['Blantyre', 'Lilongwe', 'Mzuzu', 'Zomba', 'Mangochi', 'Kasungu'],
-                onChanged: (v) => setState(() => _district = v!),
-              ),
-              _DropField(
                 label: 'Role',
                 value: _role,
                 items: const ['Clinician'],
@@ -435,7 +428,6 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
                 icon: Icons.save_rounded,
                 onTap: () => widget.onSubmit({
                   'name': _name.text.isEmpty ? 'New Clinician' : _name.text,
-                  'district': _district,
                   'facility': _facility.text.isEmpty ? 'N/A' : _facility.text,
                   'role': _role,
                   'status': 'Active',
