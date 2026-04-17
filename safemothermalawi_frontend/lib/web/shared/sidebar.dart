@@ -25,7 +25,6 @@ const List<NavItem> _flatItems = [
 
   // Admin only — national system management
   NavItem(label: 'System Users', icon: Icons.manage_accounts_rounded, route: '/clinicians', allowedRoles: [UserRole.admin]),
-  NavItem(label: 'System Logs', icon: Icons.receipt_long_rounded, route: '/system-logs', allowedRoles: [UserRole.admin]),
   NavItem(label: 'Audit Export', icon: Icons.download_for_offline_rounded, route: '/audit-export', allowedRoles: [UserRole.admin]),
   NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports', allowedRoles: [UserRole.admin]),
 
@@ -129,7 +128,7 @@ class _AppSidebarState extends State<AppSidebar> {
                 // Flat items before groups
                 ..._flatItems
                     .where((i) => i.allowedRoles.contains(widget.role))
-                    .where((i) => ['Overview', 'System Users', 'System Logs', 'Audit Export', 'Reports', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard'].contains(i.label))
+                    .where((i) => ['Overview', 'System Users', 'Audit Export', 'Reports', 'Clinician Management', 'Data Source', 'Generate Analytics', 'Analytics Dashboard'].contains(i.label))
                     .map((i) => _NavTile(item: i, isActive: widget.currentRoute == i.route, onTap: () => widget.onNavigate(i.route))),
 
                 // Insights group — Admin only
@@ -148,7 +147,7 @@ class _AppSidebarState extends State<AppSidebar> {
                       padding: const EdgeInsets.only(left: 12),
                       child: Column(
                         children: _insightsChildren
-                            .map((c) => _NavTile(item: c, isActive: isInsightsActive, onTap: () => widget.onNavigate(c.route), isChild: true))
+                            .map((c) => _NavTile(item: c, isActive: widget.currentRoute == c.route, onTap: () => widget.onNavigate(c.route), isChild: true))
                             .toList(),
                       ),
                     ),
@@ -173,7 +172,7 @@ class _AppSidebarState extends State<AppSidebar> {
                       child: Column(
                         children: _activityChildren
                             .where((c) => c.allowedRoles.contains(widget.role))
-                            .map((c) => _NavTile(item: c, isActive: isActivityActive, onTap: () => widget.onNavigate(c.route), isChild: true))
+                            .map((c) => _NavTile(item: c, isActive: widget.currentRoute == c.route, onTap: () => widget.onNavigate(c.route), isChild: true))
                             .toList(),
                       ),
                     ),
