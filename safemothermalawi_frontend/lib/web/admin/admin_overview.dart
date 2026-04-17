@@ -16,6 +16,7 @@ import 'question_insights.dart';
 import 'task_analytics.dart';
 import 'insights_screen.dart';
 import 'activity_logs_screen.dart';
+import '../../../screens/splash_screen.dart';
 
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});
@@ -29,6 +30,12 @@ class _AdminOverviewState extends State<AdminOverview> {
 
   void _navigate(String route) {
     setState(() => _currentRoute = route);
+  }
+
+  void _logout() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const SplashScreen()),
+    );
   }
 
   Widget _buildPage() {
@@ -80,6 +87,7 @@ class _AdminOverviewState extends State<AdminOverview> {
       currentRoute: _currentRoute,
       pageTitle: _pageTitle,
       onNavigate: _navigate,
+      onLogout: _logout,
       body: _buildPage(),
     );
   }

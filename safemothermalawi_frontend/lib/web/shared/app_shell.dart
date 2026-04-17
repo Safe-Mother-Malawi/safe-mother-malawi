@@ -10,6 +10,7 @@ class AppShell extends StatelessWidget {
   final String pageTitle;
   final Widget body;
   final ValueChanged<String> onNavigate;
+  final VoidCallback onLogout;
 
   const AppShell({
     super.key,
@@ -19,6 +20,7 @@ class AppShell extends StatelessWidget {
     required this.pageTitle,
     required this.body,
     required this.onNavigate,
+    required this.onLogout,
   });
 
   @override
@@ -39,6 +41,7 @@ class AppShell extends StatelessWidget {
                   role: role,
                   userName: userName,
                   pageTitle: pageTitle,
+                  onLogout: onLogout,
                 ),
                 Expanded(child: body),
               ],

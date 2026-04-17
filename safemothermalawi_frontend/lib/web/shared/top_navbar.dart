@@ -7,12 +7,14 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
   final UserRole role;
   final String userName;
   final String pageTitle;
+  final VoidCallback onLogout;
 
   const TopNavbar({
     super.key,
     required this.role,
     required this.userName,
     required this.pageTitle,
+    required this.onLogout,
   });
 
   @override
@@ -63,7 +65,9 @@ class TopNavbar extends StatelessWidget implements PreferredSizeWidget {
             offset: const Offset(0, 48),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             color: AppColors.surfaceContainerLowest,
-            onSelected: (_) {}, // logout functionality to be connected
+            onSelected: (value) {
+              if (value == 'logout') onLogout();
+            },
             itemBuilder: (_) => [
               PopupMenuItem(
                 enabled: false,

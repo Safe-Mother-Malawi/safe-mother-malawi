@@ -12,6 +12,7 @@ import '../admin/data_explorer.dart';
 import '../admin/generate_analytics.dart';
 import '../admin/analytics_dashboard.dart';
 import '../admin/reports_screen.dart';
+import '../../../screens/splash_screen.dart';
 
 class DhoOverview extends StatefulWidget {
   const DhoOverview({super.key});
@@ -24,6 +25,12 @@ class _DhoOverviewState extends State<DhoOverview> {
   String _currentRoute = '/overview';
 
   void _navigate(String route) => setState(() => _currentRoute = route);
+
+  void _logout() {
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const SplashScreen()),
+    );
+  }
 
   Widget _buildPage() {
     switch (_currentRoute) {
@@ -62,6 +69,7 @@ class _DhoOverviewState extends State<DhoOverview> {
       currentRoute: _currentRoute,
       pageTitle: _pageTitle,
       onNavigate: _navigate,
+      onLogout: _logout,
       body: _buildPage(),
     );
   }
