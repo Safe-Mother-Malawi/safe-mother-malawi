@@ -80,7 +80,9 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
         if (_filter == 'Prenatal') return a.status == 'Prenatal';
         if (_filter == 'Neonatal') return a.status == 'Neonatal';
         if (_search.text.isNotEmpty &&
-            !a.patientName.toLowerCase().contains(_search.text.toLowerCase())) return false;
+            !a.patientName.toLowerCase().contains(_search.text.toLowerCase())) {
+          return false;
+        }
         return true;
       }).toList();
 
@@ -96,8 +98,9 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     for (final a in list) {
       final d = DateTime(a.timestamp.year, a.timestamp.month, a.timestamp.day);
       String key;
-      if (d == today) key = 'Today';
-      else if (d == yesterday) key = 'Yesterday';
+      if (d == today) {
+        key = 'Today';
+      } else if (d == yesterday) key = 'Yesterday';
       else key = '${d.day}/${d.month}/${d.year}';
       map.putIfAbsent(key, () => []).add(a);
     }

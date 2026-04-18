@@ -157,7 +157,7 @@ Widget _dropdown(String label, String? value, List<String> items,
     ),
     const SizedBox(height: 6),
     DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         filled: true,
         fillColor: AppColors.bg,

@@ -69,7 +69,6 @@ class _DhoOverviewState extends State<DhoOverview> {
       currentRoute: _currentRoute,
       pageTitle: _pageTitle,
       onNavigate: _navigate,
-      onLogout: _logout,
       body: _buildPage(),
     );
   }

@@ -87,7 +87,6 @@ class _AdminOverviewState extends State<AdminOverview> {
       currentRoute: _currentRoute,
       pageTitle: _pageTitle,
       onNavigate: _navigate,
-      onLogout: _logout,
       body: _buildPage(),
     );
   }

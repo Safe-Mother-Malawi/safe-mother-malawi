@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../screens/splash_screen.dart';
 
 enum UserRole { admin, dho }
 
@@ -203,9 +204,31 @@ class _AppSidebarState extends State<AppSidebar> {
             ),
           ),
 
+          // Logout button
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _confirmLogout(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(children: [
+                    const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
+                    const SizedBox(width: 12),
+                    Text('Log Out',
+                        style: GoogleFonts.inter(fontSize: 13, color: Colors.white54)),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+
           // Footer
           Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Text('Ministry of Health\nMalawi',
                 style: GoogleFonts.inter(fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
           ),
@@ -321,4 +344,42 @@ class _NavTile extends StatelessWidget {
       ),
     );
   }
+}
+
+void _confirmLogout(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      title: const Row(children: [
+        Icon(Icons.logout_rounded, color: Color(0xFF0D47A1), size: 20),
+        SizedBox(width: 8),
+        Text('Log Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ]),
+      content: const Text('Are you sure you want to log out?',
+          style: TextStyle(fontSize: 13, color: Colors.black54)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: Colors.black45)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const SplashScreen()),
+              (_) => false,
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF0D47A1),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            elevation: 0,
+          ),
+          child: const Text('Log Out'),
+        ),
+      ],
+    ),
+  );
 }

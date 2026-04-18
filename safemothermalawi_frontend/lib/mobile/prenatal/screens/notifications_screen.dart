@@ -27,7 +27,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     _Notif(title: 'Medication Reminder', body: 'Take your prenatal vitamins with your morning meal.', time: '3 days ago', type: 'tip', read: true),
   ];
 
-  void _markAllRead() => setState(() { for (final n in _notifs) n.read = true; });
+  void _markAllRead() => setState(() { for (final n in _notifs) {
+    n.read = true;
+  } });
   void _markRead(int i) => setState(() => _notifs[i].read = true);
   void _delete(int i) => setState(() => _notifs.removeAt(i));
 
@@ -74,7 +76,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           : ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 12),
               itemCount: _notifs.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 2),
+              separatorBuilder: (_, _) => const SizedBox(height: 2),
               itemBuilder: (_, i) {
                 final n = _notifs[i];
                 return Dismissible(

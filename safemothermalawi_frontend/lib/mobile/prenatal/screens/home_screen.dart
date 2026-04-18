@@ -366,7 +366,7 @@ class _BabyThisWeekCard extends StatelessWidget {
                       width: double.infinity,
                       height: 230,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Center(
+                      errorBuilder: (_, _, _) => Center(
                         child: BabyFallbackPainter(week: data.currentWeek, size: 190),
                       ),
                     ),

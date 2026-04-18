@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class IvrScreen extends StatelessWidget {
   final VoidCallback? onOpenDrawer;
@@ -113,10 +114,15 @@ class _ContactCard extends StatelessWidget {
             ),
           ),
           GestureDetector(
-            onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Calling $number...'), backgroundColor: color),
-              );
+            onTap: () async {
+              final uri = Uri(scheme: 'tel', path: number);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Could not launch call to $number'), backgroundColor: color),
+                );
+              }
             },
             child: Container(
               width: 42,

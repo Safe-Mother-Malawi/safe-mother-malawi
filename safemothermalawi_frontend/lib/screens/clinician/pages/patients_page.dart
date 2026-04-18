@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
-import '../../../widgets/animated_pulse_dot.dart';
 
 // ── Data models ───────────────────────────────────────────────────────────────
 

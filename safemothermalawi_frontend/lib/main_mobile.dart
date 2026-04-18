@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'theme/app_colors.dart';
 import 'mobile/auth/screens/splash_screen.dart';
-import 'mobile/auth/screens/login_screen.dart';
+import 'mobile/auth/services/auth_service.dart';
 
 // Global navigator key — used by logout to always reach the root navigator
 final navigatorKey = GlobalKey<NavigatorState>();
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await AuthService().seedDemoAccounts(); // always sync demo data before app starts
   runApp(const SafeMotherMobileApp());
 }
 

@@ -95,6 +95,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     } else if (role == 'dho') {
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const DhoOverview()));
+    } else if (role == 'clinician') {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const ClinicianDashboard()));
     }
   }
 

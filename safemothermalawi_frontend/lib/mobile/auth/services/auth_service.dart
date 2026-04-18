@@ -120,27 +120,25 @@ class AuthService {
     // ── Demo prenatal account ──────────────────────────────────────────────
     const p1 = 'phone_0881234567';
     final k1 = '$_prefix$p1';
-    // Always ensure the seed is present (re-seeds if missing)
-    if (prefs.getString('${k1}_password') != 'demo1234') {
-      await prefs.setString('${k1}_email', '');
-      await prefs.setString('${k1}_accountId', p1);
-      await prefs.setString('${k1}_password', 'demo1234');
-      await prefs.setString('${k1}_role', 'prenatal');
-      await prefs.setString('${k1}_fullName', 'Grace Banda');
-      await prefs.setString('${k1}_phone', '0881234567');
-      await prefs.setString('${k1}_age', '26');
-      await prefs.setString('${k1}_nationality', 'Malawian');
-      await prefs.setString('${k1}_district', 'Lilongwe');
-      await prefs.setString('${k1}_healthCentre', 'Area 25 Health Centre');
-      await prefs.setString('${k1}_pregnancyMonths', '5');
-      await prefs.setString('${k1}_pregnancyWeeks', '2');
-      await prefs.setString('${k1}_expectedDeliveryDate', '2026-08-10');
-      await prefs.setString('${k1}_lmpDate', '');
-      await prefs.setString('${k1}_babyName', '');
-      await prefs.setString('${k1}_babyDob', '');
-      await prefs.setString('${k1}_babyGender', '');
-      await prefs.setString('${k1}_babyBirthWeight', '');
-    }
+    // Always re-seed to pick up any data changes
+    await prefs.setString('${k1}_email', '');
+    await prefs.setString('${k1}_accountId', p1);
+    await prefs.setString('${k1}_password', 'demo1234');
+    await prefs.setString('${k1}_role', 'prenatal');
+    await prefs.setString('${k1}_fullName', 'Grace Banda');
+    await prefs.setString('${k1}_phone', '0881234567');
+    await prefs.setString('${k1}_age', '26');
+    await prefs.setString('${k1}_nationality', 'Malawian');
+    await prefs.setString('${k1}_district', 'Lilongwe');
+    await prefs.setString('${k1}_healthCentre', 'Area 25 Health Centre');
+    await prefs.setString('${k1}_pregnancyMonths', '2');
+    await prefs.setString('${k1}_pregnancyWeeks', '2');
+    await prefs.setString('${k1}_expectedDeliveryDate', '2026-08-10');
+    await prefs.setString('${k1}_lmpDate', '');
+    await prefs.setString('${k1}_babyName', '');
+    await prefs.setString('${k1}_babyDob', '');
+    await prefs.setString('${k1}_babyGender', '');
+    await prefs.setString('${k1}_babyBirthWeight', '');
 
     // ── Demo neonatal account ──────────────────────────────────────────────
     const p2 = 'phone_0991234567';

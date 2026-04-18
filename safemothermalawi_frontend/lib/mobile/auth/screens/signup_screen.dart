@@ -327,7 +327,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _district,
+            initialValue: _district,
             decoration: _dd('District *'),
             style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
             hint: const Text('District *',
@@ -340,7 +340,7 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _healthCentre,
+            initialValue: _healthCentre,
             decoration: _dd('Health Centre / Zone *'),
             style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
             hint: const Text('Select health centre',
@@ -389,7 +389,7 @@ class _SignupScreenState extends State<SignupScreen> {
             Row(children: [
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  value: _pregMonth,
+                  initialValue: _pregMonth,
                   decoration: _dd('Month'),
                   style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
                   items: List.generate(9, (i) => i + 1)
@@ -402,7 +402,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<int>(
-                  value: _pregWeek,
+                  initialValue: _pregWeek,
                   decoration: _dd('Week'),
                   style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
                   items: List.generate(5, (i) => i)
@@ -497,7 +497,7 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _secQuestion,
+            initialValue: _secQuestion,
             decoration: _dd('Select a question'),
             style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
             items: _kQuestions

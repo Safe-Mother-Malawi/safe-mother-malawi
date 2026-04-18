@@ -26,7 +26,7 @@ class BabyIllustration extends StatelessWidget {
         width: size,
         height: size,
         fit: cover ? BoxFit.cover : BoxFit.contain,
-        errorBuilder: (_, __, ___) => CustomPaint(
+        errorBuilder: (_, _, _) => CustomPaint(
           size: Size(size, size),
           painter: _BabyPainter(week: week),
         ),

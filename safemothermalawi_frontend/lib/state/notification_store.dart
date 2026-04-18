@@ -40,7 +40,9 @@ class NotificationStore {
   }
 
   void markAllRead() {
-    for (final n in _items) n.read = true;
+    for (final n in _items) {
+      n.read = true;
+    }
     _notify();
   }
 
@@ -52,5 +54,7 @@ class NotificationStore {
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);
-  void _notify() { for (final l in _listeners) l(); }
+  void _notify() { for (final l in _listeners) {
+    l();
+  } }
 }
