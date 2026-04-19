@@ -259,7 +259,7 @@ class _LoginDialogState extends State<LoginDialog> {
   // ── Shared helpers ─────────────────────────────────────────────────────────
   Widget _buildHeader(String title) {
     return Row(children: [
-      Image.asset('assets/logo/LOGO6.png', width: 80, height: 80, fit: BoxFit.contain),
+      Image.asset('assets/logo/LOGO6.png', width: 110, height: 110, fit: BoxFit.contain),
       const SizedBox(width: 10),
       Expanded(
         child: Text(title,

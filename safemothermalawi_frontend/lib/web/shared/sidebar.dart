@@ -88,7 +88,7 @@ class _AppSidebarState extends State<AppSidebar> {
               children: [
                 Row(
                   children: [
-                    Image.asset('assets/logo/LOGO5.png', width: 80, height: 80, fit: BoxFit.contain),
+                    Image.asset('assets/logo/LOGO5.png', width: 110, height: 110, fit: BoxFit.contain),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text('Safe Mother',
