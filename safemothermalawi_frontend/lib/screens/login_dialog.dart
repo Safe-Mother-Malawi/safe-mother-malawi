@@ -2,16 +2,7 @@ import 'package:flutter/material.dart';
 import '../web/admin/admin_overview.dart';
 import '../web/dho/dho_overview.dart';
 import 'clinician/clinician_layout.dart';
-
-/// Web portal credentials.
-/// Admin     → admin@safemothermalawi.app      / admin1234
-/// DHO       → dho@safemothermalawi.app        / dho12345
-/// Clinician → clinician@safemothermalawi.app  / clinic1234
-const _credentials = {
-  'admin@safemothermalawi.app':     ('admin1234',  'admin'),
-  'dho@safemothermalawi.app':       ('dho12345',   'dho'),
-  'clinician@safemothermalawi.app': ('clinic1234', 'clinician'),
-};
+import '../services/api_service.dart';
 
 class LoginDialog extends StatefulWidget {
   const LoginDialog({super.key});
@@ -25,8 +16,9 @@ class _LoginDialogState extends State<LoginDialog> {
   final _passwordCtrl = TextEditingController();
   final _resetEmailCtrl = TextEditingController();
 
-  bool _obscure      = true;
-  bool _showReset    = false;   // toggles between login and forgot-password view
+  bool _obscure   = true;
+  bool _showReset = false;
+  bool _loading   = false;
   String? _error;
   String? _resetMessage;
 
@@ -42,47 +34,69 @@ class _LoginDialogState extends State<LoginDialog> {
   }
 
   // ── Login ──────────────────────────────────────────────────────────────────
-  void _submit() {
+  Future<void> _submit() async {
     final email    = _emailCtrl.text.trim().toLowerCase();
     final password = _passwordCtrl.text;
-    final entry    = _credentials[email];
-
-    if (entry == null || entry.$1 != password) {
-      setState(() => _error = 'Invalid email or password.');
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Please enter your email and password.');
       return;
     }
 
-    Widget dest;
-    if (entry.$2 == 'admin') {
-      dest = const AdminOverview();
-    } else if (entry.$2 == 'dho') {
-      dest = const DhoOverview();
-    } else {
-      dest = const ClinicianDashboard();
-    }
+    setState(() { _loading = true; _error = null; });
 
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => dest),
-      (_) => false,
-    );
+    try {
+      final user = await ApiService.login(email, password);
+      if (!mounted) return;
+
+      final role = user['role'] as String? ?? '';
+      Widget dest;
+      if (role == 'admin') {
+        dest = const AdminOverview();
+      } else if (role == 'dho') {
+        dest = const DhoOverview();
+      } else if (role == 'clinician') {
+        dest = const ClinicianDashboard();
+      } else {
+        setState(() { _loading = false; _error = 'This portal is for staff only. Use the mobile app.'; });
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => dest),
+        (_) => false,
+      );
+    } on ApiException catch (e) {
+      setState(() { _loading = false; _error = e.message; });
+    } catch (_) {
+      setState(() { _loading = false; _error = 'Could not connect to server. Is the backend running?'; });
+    }
   }
 
   // ── Forgot password ────────────────────────────────────────────────────────
-  void _submitReset() {
+  Future<void> _submitReset() async {
     final email = _resetEmailCtrl.text.trim().toLowerCase();
-    final entry = _credentials[email];
-    setState(() {
-      if (entry == null) {
-        _resetMessage = null;
-        _error = 'No account found for that email.';
-      } else {
-        _error = null;
-        _resetMessage = 'Your password is: ${entry.$1}';
-      }
-    });
+    if (email.isEmpty) {
+      setState(() => _error = 'Please enter your email address.');
+      return;
+    }
+    setState(() { _loading = true; _error = null; _resetMessage = null; });
+    try {
+      final res = await ApiService.post(
+        '/auth/forgot-password/question',
+        {'identifier': email},
+        auth: false,
+      );
+      setState(() {
+        _loading = false;
+        _resetMessage = 'Security question: ${res['question']}';
+      });
+    } on ApiException catch (e) {
+      setState(() { _loading = false; _error = e.message; });
+    } catch (_) {
+      setState(() { _loading = false; _error = 'Could not connect to server.'; });
+    }
   }
 
-  // ── Close button ───────────────────────────────────────────────────────────
   void _close() => Navigator.of(context, rootNavigator: true).pop();
 
   @override
@@ -102,7 +116,6 @@ class _LoginDialogState extends State<LoginDialog> {
     );
   }
 
-  // ── Login view ─────────────────────────────────────────────────────────────
   Widget _buildLoginView() {
     return Column(
       key: const ValueKey('login'),
@@ -114,16 +127,12 @@ class _LoginDialogState extends State<LoginDialog> {
         const Text('Enter your credentials to continue',
             style: TextStyle(fontSize: 13, color: Colors.black45)),
         const SizedBox(height: 24),
-
-        // Email
         TextFormField(
           controller: _emailCtrl,
           onChanged: (_) => setState(() => _error = null),
           decoration: _inputDecoration('Email address', Icons.email_outlined),
         ),
         const SizedBox(height: 14),
-
-        // Password
         TextFormField(
           controller: _passwordCtrl,
           obscureText: _obscure,
@@ -137,8 +146,6 @@ class _LoginDialogState extends State<LoginDialog> {
             ),
           ),
         ),
-
-        // Forgot password link
         const SizedBox(height: 6),
         Align(
           alignment: Alignment.centerRight,
@@ -153,38 +160,28 @@ class _LoginDialogState extends State<LoginDialog> {
                 style: TextStyle(fontSize: 13, color: _navy, fontWeight: FontWeight.w500)),
           ),
         ),
-
         if (_error != null) _buildError(_error!),
-
         const SizedBox(height: 20),
-
-        // Sign in button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _submit,
+            onPressed: _loading ? null : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: _navy, foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Sign In', style: TextStyle(fontSize: 15)),
+            child: _loading
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Sign In', style: TextStyle(fontSize: 15)),
           ),
         ),
 
-        const SizedBox(height: 16),
-        Center(
-          child: Text(
-            'Admin: admin@safemothermalawi.app\nDHO: dho@safemothermalawi.app\nClinician: clinician@safemothermalawi.app',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: Colors.black38, height: 1.6),
-          ),
-        ),
       ],
     );
   }
 
-  // ── Forgot password view ───────────────────────────────────────────────────
   Widget _buildResetView() {
     return Column(
       key: const ValueKey('reset'),
@@ -193,18 +190,15 @@ class _LoginDialogState extends State<LoginDialog> {
       children: [
         _buildHeader('Forgot password'),
         const SizedBox(height: 6),
-        const Text('Enter your email and we\'ll retrieve your password.',
+        const Text("Enter your email and we'll find your security question.",
             style: TextStyle(fontSize: 13, color: Colors.black45)),
         const SizedBox(height: 24),
-
         TextFormField(
           controller: _resetEmailCtrl,
           onChanged: (_) => setState(() { _error = null; _resetMessage = null; }),
           decoration: _inputDecoration('Email address', Icons.email_outlined),
         ),
-
         if (_error != null) ...[const SizedBox(height: 10), _buildError(_error!)],
-
         if (_resetMessage != null) ...[
           const SizedBox(height: 12),
           Container(
@@ -217,33 +211,29 @@ class _LoginDialogState extends State<LoginDialog> {
             child: Row(children: [
               const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32), size: 18),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(_resetMessage!,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF2E7D32),
-                        fontWeight: FontWeight.w600)),
-              ),
+              Expanded(child: Text(_resetMessage!,
+                  style: const TextStyle(fontSize: 13, color: Color(0xFF2E7D32),
+                      fontWeight: FontWeight.w600))),
             ]),
           ),
         ],
-
         const SizedBox(height: 20),
-
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _submitReset,
+            onPressed: _loading ? null : _submitReset,
             style: ElevatedButton.styleFrom(
               backgroundColor: _navy, foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Retrieve Password', style: TextStyle(fontSize: 15)),
+            child: _loading
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Find My Account', style: TextStyle(fontSize: 15)),
           ),
         ),
-
         const SizedBox(height: 12),
-
-        // Back to login
         Center(
           child: TextButton.icon(
             onPressed: () => setState(() { _showReset = false; _error = null; _resetMessage = null; }),
@@ -256,7 +246,6 @@ class _LoginDialogState extends State<LoginDialog> {
     );
   }
 
-  // ── Shared helpers ─────────────────────────────────────────────────────────
   Widget _buildHeader(String title) {
     return Row(children: [
       Container(
@@ -265,11 +254,9 @@ class _LoginDialogState extends State<LoginDialog> {
         child: const Icon(Icons.local_hospital, color: Colors.white, size: 20),
       ),
       const SizedBox(width: 10),
-      Expanded(
-        child: Text(title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold,
-                color: Color(0xFF0A1628))),
-      ),
+      Expanded(child: Text(title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold,
+              color: Color(0xFF0A1628)))),
       GestureDetector(
         onTap: _close,
         child: Container(
@@ -288,7 +275,7 @@ class _LoginDialogState extends State<LoginDialog> {
       child: Row(children: [
         const Icon(Icons.error_outline, color: Colors.red, size: 15),
         const SizedBox(width: 6),
-        Text(msg, style: const TextStyle(color: Colors.red, fontSize: 13)),
+        Expanded(child: Text(msg, style: const TextStyle(color: Colors.red, fontSize: 13))),
       ]),
     );
   }
