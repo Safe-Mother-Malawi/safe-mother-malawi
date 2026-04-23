@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
-import '../../../state/events_store.dart';
+import '../../../services/api_service.dart';
 
 // ── Model ─────────────────────────────────────────────────────────────────────
 
@@ -24,30 +24,34 @@ class CalEvent {
     required this.date,
   });
 
-  CalEvent copyWith({String? title, String? time, String? notes}) => CalEvent(
-        id: id, patientName: patientName, patientContact: patientContact,
-        patientStatus: patientStatus, type: type, date: date,
-        title: title ?? this.title,
-        time: time ?? this.time,
-        notes: notes ?? this.notes,
-      );
-}
+  /// Build from a backend appointment map
+  factory CalEvent.fromApi(Map<String, dynamic> a) {
+    final typeStr = (a['type'] ?? '').toString().toLowerCase();
+    final EventType evType = typeStr == 'prenatal'
+        ? EventType.prenatal
+        : typeStr == 'neonatal'
+            ? EventType.neonatal
+            : EventType.other;
 
-// ── Seed data ─────────────────────────────────────────────────────────────────
+    DateTime date;
+    try {
+      date = DateTime.parse(a['date']?.toString() ?? '');
+    } catch (_) {
+      date = DateTime.now();
+    }
 
-List<CalEvent> _seedEvents() {
-  final now = DateTime.now();
-  final y = now.year; final m = now.month;
-  return [
-    CalEvent(id: '1', title: 'ANC Check', patientName: 'Grace Banda',       patientContact: '+265 991 234 567', patientStatus: 'Prenatal',  time: '09:00 AM', notes: 'BP monitoring required', type: EventType.prenatal,  date: DateTime(y, m, 3)),
-    CalEvent(id: '2', title: 'Ultrasound', patientName: 'Faith Mwale',      patientContact: '+265 888 345 678', patientStatus: 'Prenatal',  time: '10:30 AM', notes: 'Growth scan at 34 weeks', type: EventType.prenatal, date: DateTime(y, m, 3)),
-    CalEvent(id: '3', title: 'PNC Visit',  patientName: 'Mercy Tembo',      patientContact: '+265 993 111 222', patientStatus: 'Neonatal', time: '11:00 AM', notes: 'Day 8 neonatal check',   type: EventType.neonatal, date: DateTime(y, m, 7)),
-    CalEvent(id: '4', title: 'ANC Visit',  patientName: 'Liness Kachali',   patientContact: '+265 999 456 789', patientStatus: 'Prenatal',  time: '02:00 PM', notes: 'Diabetes follow-up',      type: EventType.prenatal,  date: DateTime(y, m, 10)),
-    CalEvent(id: '5', title: 'Labour Assessment', patientName: 'Joyce Mwale', patientContact: '+265 992 678 901', patientStatus: 'Prenatal', time: '09:30 AM', notes: 'Week 30 assessment',     type: EventType.prenatal,  date: DateTime(y, m, now.day)),
-    CalEvent(id: '6', title: 'Counselling', patientName: 'Rose Phiri',      patientContact: '+265 994 222 333', patientStatus: 'Neonatal', time: '03:30 PM', notes: 'Neonatal mental health', type: EventType.neonatal, date: DateTime(y, m, now.day)),
-    CalEvent(id: '7', title: 'First Visit', patientName: 'Aisha Tembo',     patientContact: '+265 881 567 890', patientStatus: 'Prenatal',  time: '01:00 PM', notes: 'New registration',        type: EventType.prenatal,  date: DateTime(y, m, now.day + 2 > 28 ? 28 : now.day + 2)),
-    CalEvent(id: '8', title: 'PNC Day 14', patientName: 'Fatima Chirwa',    patientContact: '+265 995 333 444', patientStatus: 'Neonatal', time: '10:00 AM', notes: 'Routine day 14 check',    type: EventType.neonatal, date: DateTime(y, m, now.day + 4 > 28 ? 28 : now.day + 4)),
-  ];
+    return CalEvent(
+      id:             a['id']?.toString() ?? '',
+      title:          a['title']?.toString() ?? 'Appointment',
+      patientName:    a['patientName']?.toString() ?? '—',
+      patientContact: a['patientContact']?.toString() ?? '—',
+      patientStatus:  a['patientStatus']?.toString() ?? typeStr,
+      time:           a['time']?.toString() ?? '—',
+      notes:          a['notes']?.toString() ?? '',
+      type:           evType,
+      date:           date,
+    );
+  }
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -62,7 +66,8 @@ class _CalendarPageState extends State<CalendarPage> {
   late DateTime _month;
   DateTime? _selected;
 
-  List<CalEvent> get _events => EventsStore.instance.events;
+  List<CalEvent> _events = [];
+  bool _loading = true;
 
   @override
   void initState() {
@@ -70,25 +75,32 @@ class _CalendarPageState extends State<CalendarPage> {
     final now = DateTime.now();
     _month    = DateTime(now.year, now.month);
     _selected = DateTime(now.year, now.month, now.day);
-    // Seed initial events into the store if empty
-    if (_events.isEmpty) {
-      for (final e in _seedEvents()) {
-        EventsStore.instance.events.add(e);
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loading = true);
+    try {
+      final data = await ApiService.getAppointments();
+      if (mounted) {
+        setState(() {
+          _events = data
+              .cast<Map<String, dynamic>>()
+              .map(CalEvent.fromApi)
+              .toList();
+          _loading = false;
+        });
       }
+    } catch (_) {
+      if (mounted) setState(() => _loading = false);
     }
-    EventsStore.instance.addListener(_onStoreUpdate);
   }
-
-  @override
-  void dispose() {
-    EventsStore.instance.removeListener(_onStoreUpdate);
-    super.dispose();
-  }
-
-  void _onStoreUpdate() => setState(() {});
 
   List<CalEvent> _eventsOn(DateTime d) =>
-      _events.where((e) => e.date.year == d.year && e.date.month == d.month && e.date.day == d.day).toList();
+      _events.where((e) =>
+          e.date.year == d.year &&
+          e.date.month == d.month &&
+          e.date.day == d.day).toList();
 
   @override
   Widget build(BuildContext context) {
@@ -97,16 +109,22 @@ class _CalendarPageState extends State<CalendarPage> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         _buildHeader(),
         const SizedBox(height: 20),
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 3, child: _buildCalendar()),
-          const SizedBox(width: 16),
-          Expanded(flex: 2, child: _buildDayPanel()),
-        ]),
+        if (_loading)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(48),
+            child: CircularProgressIndicator(),
+          ))
+        else
+          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Expanded(flex: 3, child: _buildCalendar()),
+            const SizedBox(width: 16),
+            Expanded(flex: 2, child: _buildDayPanel()),
+          ]),
       ]),
     );
   }
 
-  // ── Header ────────────────────────────────────────────────────────────────────
+  // ── Header ────────────────────────────────────────────────────────────────
 
   Widget _buildHeader() {
     return Row(children: [
@@ -116,6 +134,12 @@ class _CalendarPageState extends State<CalendarPage> {
         Text('Calendar', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
         Text('Track appointments and maternal events.', style: TextStyle(fontSize: 13, color: AppColors.g400)),
       ])),
+      IconButton(
+        onPressed: _load,
+        icon: const Icon(Icons.refresh_rounded, color: AppColors.navy, size: 20),
+        tooltip: 'Refresh',
+      ),
+      const SizedBox(width: 8),
       ElevatedButton.icon(
         onPressed: _showAddDialog,
         icon: const Icon(Icons.add, size: 16),
@@ -130,12 +154,12 @@ class _CalendarPageState extends State<CalendarPage> {
     ]);
   }
 
-  // ── Calendar grid ─────────────────────────────────────────────────────────────
+  // ── Calendar grid ─────────────────────────────────────────────────────────
 
   Widget _buildCalendar() {
     final firstDay = DateTime(_month.year, _month.month, 1);
     final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
-    final startWeekday = firstDay.weekday % 7; // 0=Sun
+    final startWeekday = firstDay.weekday % 7;
     final today = DateTime.now();
 
     return Container(
@@ -143,7 +167,6 @@ class _CalendarPageState extends State<CalendarPage> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.g200)),
       child: Column(children: [
-        // Month nav
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: const BoxDecoration(
@@ -170,7 +193,6 @@ class _CalendarPageState extends State<CalendarPage> {
             ),
           ]),
         ),
-        // Day headers
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           child: Row(children: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']
@@ -179,7 +201,6 @@ class _CalendarPageState extends State<CalendarPage> {
                     fontWeight: FontWeight.bold, color: AppColors.g400)))))
               .toList()),
         ),
-        // Grid
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           child: GridView.builder(
@@ -194,8 +215,10 @@ class _CalendarPageState extends State<CalendarPage> {
               final date = DateTime(_month.year, _month.month, day);
               final events = _eventsOn(date);
               final isToday = date.year == today.year && date.month == today.month && date.day == today.day;
-              final isSelected = _selected != null && date.year == _selected!.year &&
-                  date.month == _selected!.month && date.day == _selected!.day;
+              final isSelected = _selected != null &&
+                  date.year == _selected!.year &&
+                  date.month == _selected!.month &&
+                  date.day == _selected!.day;
 
               return GestureDetector(
                 onTap: () => setState(() => _selected = date),
@@ -217,7 +240,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             children: events.take(3).map((e) => Container(
                               width: 5, height: 5, margin: const EdgeInsets.symmetric(horizontal: 1),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white.withOpacity(0.8) : _eventColor(e.type),
+                                color: isSelected ? Colors.white.withValues(alpha: 0.8) : AppColors.navy,
                                 shape: BoxShape.circle,
                               ),
                             )).toList()),
@@ -228,26 +251,19 @@ class _CalendarPageState extends State<CalendarPage> {
             },
           ),
         ),
-        // Legend
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: Row(children: [
-            _legend('Scheduled Event', AppColors.navy),
+            Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.navy, shape: BoxShape.circle)),
+            const SizedBox(width: 5),
+            const Text('Scheduled Event', style: TextStyle(fontSize: 11, color: AppColors.g400)),
           ]),
         ),
       ]),
     );
   }
 
-  Widget _legend(String label, Color color) {
-    return Row(children: [
-      Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-      const SizedBox(width: 5),
-      Text(label, style: const TextStyle(fontSize: 11, color: AppColors.g400)),
-    ]);
-  }
-
-  // ── Day panel ─────────────────────────────────────────────────────────────────
+  // ── Day panel ─────────────────────────────────────────────────────────────
 
   Widget _buildDayPanel() {
     final events = _selected != null ? _eventsOn(_selected!) : <CalEvent>[];
@@ -269,8 +285,7 @@ class _CalendarPageState extends State<CalendarPage> {
             const Icon(Icons.event_note_outlined, color: AppColors.navy, size: 18),
             const SizedBox(width: 8),
             Expanded(child: Text(label,
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold,
-                    color: AppColors.g800))),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.g800))),
             Text('${events.length} event${events.length == 1 ? '' : 's'}',
                 style: const TextStyle(fontSize: 11, color: AppColors.g400)),
           ]),
@@ -291,8 +306,6 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _eventCard(CalEvent e) {
-    final color = _eventColor(e.type);
-    final bg    = _eventBg(e.type);
     final typeLabel = e.type == EventType.prenatal ? 'Prenatal'
         : e.type == EventType.neonatal ? 'Neonatal' : 'Other';
 
@@ -301,32 +314,19 @@ class _CalendarPageState extends State<CalendarPage> {
       decoration: BoxDecoration(
         color: AppColors.bg,
         borderRadius: BorderRadius.circular(10),
-        border: Border(left: BorderSide(color: color, width: 3)),
+        border: const Border(left: BorderSide(color: AppColors.navy, width: 3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(child: Text(e.title,
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
-                    color: AppColors.g800))),
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800))),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8)),
               child: Text(typeLabel,
-                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
-            ),
-            const SizedBox(width: 8),
-            // Edit
-            GestureDetector(
-              onTap: () => _showEditDialog(e),
-              child: const Icon(Icons.edit_outlined, size: 15, color: AppColors.g400),
-            ),
-            const SizedBox(width: 8),
-            // Delete
-            GestureDetector(
-              onTap: () => setState(() => EventsStore.instance.events.removeWhere((ev) => ev.id == e.id)),
-              child: const Icon(Icons.delete_outline, size: 15, color: AppColors.red),
+                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.navy)),
             ),
           ]),
           const SizedBox(height: 6),
@@ -340,8 +340,7 @@ class _CalendarPageState extends State<CalendarPage> {
             const Icon(Icons.person_outline, size: 12, color: AppColors.g400),
             const SizedBox(width: 4),
             Text(e.patientName,
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                    color: AppColors.g800)),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.g800)),
             const SizedBox(width: 6),
             Text('· ${e.patientStatus}',
                 style: const TextStyle(fontSize: 11, color: AppColors.g400)),
@@ -356,15 +355,14 @@ class _CalendarPageState extends State<CalendarPage> {
           if (e.notes.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(e.notes,
-                style: const TextStyle(fontSize: 11, color: AppColors.g400,
-                    fontStyle: FontStyle.italic)),
+                style: const TextStyle(fontSize: 11, color: AppColors.g400, fontStyle: FontStyle.italic)),
           ],
         ]),
       ),
     );
   }
 
-  // ── Add / Edit dialogs ────────────────────────────────────────────────────────
+  // ── Add dialog ────────────────────────────────────────────────────────────
 
   void _showAddDialog() {
     final titleCtrl   = TextEditingController();
@@ -374,6 +372,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final notesCtrl   = TextEditingController();
     EventType type    = EventType.prenatal;
     DateTime date     = _selected ?? DateTime.now();
+    bool saving       = false;
 
     showDialog(
       context: context,
@@ -383,64 +382,34 @@ class _CalendarPageState extends State<CalendarPage> {
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
           contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
           type: type, date: date,
+          saving: saving,
           onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
-          onSave: () {
+          onSave: () async {
             if (titleCtrl.text.trim().isEmpty || patientCtrl.text.trim().isEmpty) return;
-              setState(() {
-                EventsStore.instance.add(CalEvent(
-                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                  title: titleCtrl.text.trim(),
-                  patientName: patientCtrl.text.trim(),
-                  patientContact: contactCtrl.text.trim(),
-                  patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Neonatal',
-                  time: timeCtrl.text.trim(),
-                  notes: notesCtrl.text.trim(),
-                  type: type, date: date,
-                ));
+            setS(() => saving = true);
+            try {
+              final created = await ApiService.createAppointment({
+                'title':         titleCtrl.text.trim(),
+                'patientName':   patientCtrl.text.trim(),
+                'patientContact': contactCtrl.text.trim(),
+                'patientStatus': type == EventType.prenatal ? 'Prenatal' : 'Neonatal',
+                'type':          type.name,
+                'time':          timeCtrl.text.trim(),
+                'notes':         notesCtrl.text.trim(),
+                'date':          '${date.year}-${date.month.toString().padLeft(2,'0')}-${date.day.toString().padLeft(2,'0')}',
               });
-            Navigator.pop(ctx);
-          },
-        );
-      }),
-    );
-  }
-
-  void _showEditDialog(CalEvent e) {
-    final titleCtrl   = TextEditingController(text: e.title);
-    final patientCtrl = TextEditingController(text: e.patientName);
-    final contactCtrl = TextEditingController(text: e.patientContact);
-    final timeCtrl    = TextEditingController(text: e.time);
-    final notesCtrl   = TextEditingController(text: e.notes);
-    EventType type    = e.type;
-    DateTime date     = e.date;
-
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
-        return _eventDialog(
-          title: 'Edit Event',
-          titleCtrl: titleCtrl, patientCtrl: patientCtrl,
-          contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
-          type: type, date: date,
-          onTypeChanged: (t) => setS(() => type = t),
-          onDateChanged: (d) => setS(() => date = d),
-          onSave: () {
-            setState(() {
-              final idx = EventsStore.instance.events.indexWhere((ev) => ev.id == e.id);
-              if (idx != -1) {
-                EventsStore.instance.events[idx] = CalEvent(
-                  id: e.id, title: titleCtrl.text.trim(),
-                  patientName: patientCtrl.text.trim(),
-                  patientContact: contactCtrl.text.trim(),
-                  patientStatus: type == EventType.prenatal ? 'Prenatal' : 'Neonatal',
-                  time: timeCtrl.text.trim(), notes: notesCtrl.text.trim(),
-                  type: type, date: date,
-                );
-                EventsStore.instance.notify();
+              if (mounted) {
+                setState(() => _events.add(CalEvent.fromApi(created)));
               }
-            });
-            Navigator.pop(ctx);
+              if (ctx.mounted) Navigator.pop(ctx);
+            } catch (e) {
+              setS(() => saving = false);
+              if (ctx.mounted) {
+                ScaffoldMessenger.of(ctx).showSnackBar(
+                  SnackBar(content: Text(e.toString()), backgroundColor: AppColors.red));
+              }
+            }
           },
         );
       }),
@@ -451,6 +420,7 @@ class _CalendarPageState extends State<CalendarPage> {
     required String title,
     required TextEditingController titleCtrl, patientCtrl, contactCtrl, timeCtrl, notesCtrl,
     required EventType type, required DateTime date,
+    required bool saving,
     required void Function(EventType) onTypeChanged,
     required void Function(DateTime) onDateChanged,
     required VoidCallback onSave,
@@ -465,15 +435,13 @@ class _CalendarPageState extends State<CalendarPage> {
             Row(children: [
               const Icon(Icons.event, color: AppColors.navy, size: 20),
               const SizedBox(width: 8),
-              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
-                  color: AppColors.g800)),
+              Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.g800)),
               const Spacer(),
               IconButton(onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.close, size: 18, color: AppColors.g400),
                   padding: EdgeInsets.zero, constraints: const BoxConstraints()),
             ]),
             const SizedBox(height: 20),
-            // Type toggle
             Row(children: [
               _typeBtn('Prenatal', EventType.prenatal, type, onTypeChanged),
               const SizedBox(width: 8),
@@ -490,7 +458,6 @@ class _CalendarPageState extends State<CalendarPage> {
             const SizedBox(height: 12),
             _dlgField('Time (e.g. 09:00 AM)', timeCtrl, Icons.access_time),
             const SizedBox(height: 12),
-            // Date picker
             GestureDetector(
               onTap: () async {
                 final picked = await showDatePicker(
@@ -528,14 +495,16 @@ class _CalendarPageState extends State<CalendarPage> {
                   child: const Text('Cancel', style: TextStyle(color: AppColors.g400))),
               const SizedBox(width: 8),
               ElevatedButton(
-                onPressed: onSave,
+                onPressed: saving ? null : onSave,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.navy, foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   elevation: 0,
                 ),
-                child: const Text('Save Event'),
+                child: saving
+                    ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Save Event'),
               ),
             ]),
           ]),
@@ -546,14 +515,13 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _typeBtn(String label, EventType t, EventType current, void Function(EventType) onChanged) {
     final sel = current == t;
-    final color = AppColors.navy;
     return GestureDetector(
       onTap: () => onChanged(t),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: sel ? color : AppColors.g100,
+          color: sel ? AppColors.navy : AppColors.g100,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
@@ -579,12 +547,6 @@ class _CalendarPageState extends State<CalendarPage> {
       ),
     );
   }
-
-  // ── Helpers ───────────────────────────────────────────────────────────────────
-
-  Color _eventColor(EventType t) => AppColors.navy;
-
-  Color _eventBg(EventType t) => AppColors.navyL;
 
   String _monthName(int m) => const [
     '', 'January', 'February', 'March', 'April', 'May', 'June',
