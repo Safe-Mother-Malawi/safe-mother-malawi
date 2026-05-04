@@ -20,7 +20,7 @@ class _IvrSimulatorScreenState extends State<IvrSimulatorScreen> {
   String _riskLevel = '';
   bool _isLoading = false;
   bool _isConnected = false;
-  final String _apiBaseUrl = 'http://localhost:3000/api/v1/ivr';
+  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1/ivr';
   
   // Call history
   List<Map<String, dynamic>> _callHistory = [];

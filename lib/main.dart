@@ -5,6 +5,7 @@ import 'theme/app_colors.dart';
 import 'screens/splash_screen.dart';
 import 'screens/reset_password_page.dart';
 import 'services/ivr_websocket_service.dart';
+import 'web/ivr/ivr_simulator_web.dart';
 
 void main() {
   runApp(const SafeMotherApp());
@@ -37,6 +38,7 @@ class SafeMotherApp extends StatelessWidget {
             final token = Uri.base.queryParameters['token'];
             return ResetPasswordPage(token: token);
           },
+          '/ivr-simulator': (context) => const IvrSimulatorWeb(),
         },
       ),
     );
