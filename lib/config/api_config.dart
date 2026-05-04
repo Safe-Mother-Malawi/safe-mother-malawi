@@ -3,19 +3,19 @@
 /// Switch between development and production environments
 class ApiConfig {
   // Environment flag - change this to switch environments
-  static const bool isProduction = false;
+  static const bool isProduction = true; // ✅ Production mode enabled
 
-  // Development URLs
-  static const String devBaseUrl = 'http://41.70.47.173:3001/api/v1';
+  // Development URLs (local development)
+  static const String devBaseUrl = 'http://localhost:3001/api/v1';
   
-  // Production URLs (update after deploying backend to Vercel)
-  static const String prodBaseUrl = 'https://backend-5fxl.vercel.app/api/v1';
+  // Production URLs (Render backend)
+  static const String prodBaseUrl = 'https://safemothermalawi-backend.onrender.com/api/v1';
 
   // Get current base URL based on environment
   static String get baseUrl => isProduction ? prodBaseUrl : devBaseUrl;
 
   // WebSocket URLs
   static String get wsUrl => isProduction 
-    ? 'wss://backend-5fxl.vercel.app'
-    : 'ws://41.70.47.173:3001';
+    ? 'wss://safemothermalawi-backend.onrender.com'
+    : 'ws://localhost:3001';
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -19,7 +20,8 @@ class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
 
-  static const String _base = 'http://41.70.47.173:3001/api/v1';
+  // Use ApiConfig for environment-based URL switching
+  static String get _base => ApiConfig.baseUrl;
 
   /// Exposed for direct URL construction (e.g. blob downloads)
   static String get baseUrl => _base;
