@@ -42,6 +42,8 @@ dependencies:
   socket_io_client: ^2.0.2
   provider: ^6.1.0
   flutter_tts: ^4.2.5
+  twilio_voice: ^0.2.0
+  permission_handler: ^11.0.1
 
 dev_dependencies:
   flutter_test:

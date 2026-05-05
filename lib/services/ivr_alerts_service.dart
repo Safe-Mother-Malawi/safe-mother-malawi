@@ -75,7 +75,7 @@ class IvrAlertsService extends ChangeNotifier {
   List<IvrAlert> _alerts = [];
   String? _userId;
   String? _district;
-  final String _apiBaseUrl = 'http://localhost:3000';
+  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com';
 
   bool get isConnected => _isConnected;
   List<IvrAlert> get alerts => _alerts;

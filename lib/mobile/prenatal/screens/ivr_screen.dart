@@ -17,7 +17,7 @@ class _IvrScreenState extends State<IvrScreen> {
   String _selectedLanguage = 'en';
   List<Map<String, String>> _supportedLanguages = [];
   bool _languagesLoading = true;
-  final String _apiBaseUrl = 'http://localhost:3000/api/v1/ivr';
+  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1/ivr';
 
   @override
   void initState() {
