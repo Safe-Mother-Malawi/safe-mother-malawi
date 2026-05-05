@@ -49,6 +49,20 @@ class _LoginDialogState extends State<LoginDialog> {
 
       if (!mounted) return;
 
+      // Web portal only allows CLINICIAN, DHO, and ADMIN
+      // Block PRENATAL and NEONATAL users
+      if (role == 'prenatal' || role == 'neonatal') {
+        // Logout the user immediately
+        await AuthServiceWeb.instance.logout();
+        
+        setState(() {
+          _loading = false;
+          _error = 'This web portal is for healthcare workers only. '
+                   '${role.toUpperCase()} users should use the mobile app.';
+        });
+        return;
+      }
+
       Widget dest;
       if (role == 'admin') {
         dest = const AdminOverview();
@@ -57,7 +71,12 @@ class _LoginDialogState extends State<LoginDialog> {
       } else if (role == 'clinician') {
         dest = const ClinicianDashboard();
       } else {
-        setState(() { _loading = false; _error = 'This portal is for Admin, DHO, and Clinician accounts only.'; });
+        // Unknown role
+        await AuthServiceWeb.instance.logout();
+        setState(() {
+          _loading = false;
+          _error = 'Invalid user role. This portal is for Admin, DHO, and Clinician accounts only.';
+        });
         return;
       }
 

@@ -39,19 +39,32 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
     if (!mounted) return;
     if (user != null) {
-      Widget dest;
+      // Mobile app only allows PRENATAL and NEONATAL users
       if (user.role == 'prenatal') {
-        dest = const PrenatalDashboard();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const PrenatalDashboard()),
+          (_) => false,
+        );
       } else if (user.role == 'neonatal') {
-        dest = const NeonatalDashboard();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const NeonatalDashboard()),
+          (_) => false,
+        );
       } else {
-        dest = const ClinicianDashboard();
+        // Block CLINICIAN, DHO, ADMIN roles
+        await AuthService().logout(); // Clear the token
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This mobile app is for patients only. ${user.role.toUpperCase()} users should use the web portal.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => dest),
-        (_) => false,
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

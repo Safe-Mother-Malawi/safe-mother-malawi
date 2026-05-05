@@ -13,7 +13,7 @@ import '../admin/generate_analytics.dart';
 import '../admin/analytics_dashboard.dart';
 import '../admin/task_analytics.dart';
 import '../admin/question_insights.dart';
-import '../admin/reports_screen.dart';
+import '../admin/reports_screen_export.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
