@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <base href="$FLUTTER_BASE_HREF">
+  <base href="/">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
@@ -21,29 +21,62 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
-    /* Remove splash/loading screen */
+    /* Loading screen */
     body {
       margin: 0;
       padding: 0;
       background-color: #F0F6FF;
     }
-    /* Hide the default Flutter loading indicator */
-    .flutter-loader {
-      display: none !important;
+    
+    #loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    
+    #loading h2 {
+      color: #1A237E;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #1A237E;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
+  <div id="loading">
+    <div class="spinner"></div>
+    <h2>Loading Safe Mother Malawi...</h2>
+  </div>
+  
   <script>
     window.addEventListener('load', function(ev) {
-      _flutter.loader.load({
+      // Download main.dart.js
+      _flutter.loader.loadEntrypoint({
+        serviceWorker: {
+          serviceWorkerVersion: serviceWorkerVersion,
+        },
         onEntrypointLoaded: async function(engineInitializer) {
           let appRunner = await engineInitializer.initializeEngine();
           await appRunner.runApp();
+          document.getElementById('loading').style.display = 'none';
         }
       });
     });
   </script>
-  <script src="flutter_bootstrap.js" async></script>
+  <script src="flutter.js" defer></script>
 </body>
 </html>
