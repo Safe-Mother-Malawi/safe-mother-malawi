@@ -21,57 +21,17 @@
   <link rel="manifest" href="manifest.json">
 
   <style>
-    /* Loading screen */
     body {
       margin: 0;
       padding: 0;
       background-color: #F0F6FF;
     }
-    
-    #loading {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      flex-direction: column;
-    }
-    
-    #loading h2 {
-      color: #1A237E;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    
-    .spinner {
-      border: 4px solid #f3f3f3;
-      border-top: 4px solid #1A237E;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
   </style>
 </head>
 <body>
-  <div id="loading">
-    <div class="spinner"></div>
-    <h2>Loading Safe Mother Malawi...</h2>
-  </div>
-  
   <script>
     window.addEventListener('load', function(ev) {
-      // Download main.dart.js
-      _flutter.loader.load({
-        onEntrypointLoaded: async function(engineInitializer) {
-          let appRunner = await engineInitializer.initializeEngine();
-          await appRunner.runApp();
-          document.getElementById('loading').style.display = 'none';
-        }
-      });
+      _flutter.loader.load();
     });
   </script>
   <script src="flutter.js" defer></script>
