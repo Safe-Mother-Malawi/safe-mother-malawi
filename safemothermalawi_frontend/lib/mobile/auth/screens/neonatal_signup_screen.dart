@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import '../data/malawi_health_centres.dart';
+import '../../../../services/api_service.dart';
+import '../../../../utils/validators.dart';
 
 class NeonatalSignupScreen extends StatefulWidget {
   const NeonatalSignupScreen({super.key});
@@ -25,7 +26,10 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
   final _emailCtrl  = TextEditingController();
   final _ageCtrl    = TextEditingController();
   String _district  = '';
-  String? _healthCentre;
+  String? _facilityName;
+  List<Map<String, dynamic>> _facilityObjects = [];
+  List<String> _facilities = [];
+  bool _loadingFacilities = false;
 
   // Step 2 – Baby
   final _babyNameCtrl = TextEditingController();
@@ -81,6 +85,30 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
   void _snack(String msg, Color c) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: c));
 
+  Future<void> _loadFacilities(String district) async {
+    setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
+    try {
+      final data = await ApiService.getFacilitiesByDistrict(district);
+      final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
+      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
+      objects.sort((a, b) {
+        final ta = (a['facilityType'] ?? '').toString();
+        final tb = (b['facilityType'] ?? '').toString();
+        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
+        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
+        if (ia != ib) return ia.compareTo(ib);
+        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
+      });
+      setState(() {
+        _facilityObjects = objects;
+        _facilities = objects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _loadingFacilities = false;
+      });
+    } catch (_) {
+      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
+    }
+  }
+
   void _next() {
     GlobalKey<FormState> key;
     if (_step == 0) {
@@ -110,7 +138,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
       phone: _phoneCtrl.text.trim(),
       age: _ageCtrl.text.trim(),
       district: _district,
-      healthCentre: _healthCentre ?? '',
+      facilityName: _facilityName ?? '',
       babyName: _babyNameCtrl.text.trim(),
       babyDob: _babyDob!.toIso8601String(),
       babyGender: _babyGender,
@@ -223,7 +251,15 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           _Field(label: 'Full Name *', child: TextFormField(
             controller: _nameCtrl,
             decoration: _dec('e.g. Grace Banda'),
-            validator: (v) => v!.trim().isEmpty ? 'Full name is required' : null,
+            validator: (v) {
+              if (v!.trim().isEmpty) return 'Full name is required';
+              final trimmed = v.trim();
+              final parts = trimmed.split(' ').where((p) => p.isNotEmpty).toList();
+              if (parts.length < 2) return 'Full name must include first and last name';
+              if (parts.any((p) => RegExp(r'\d').hasMatch(p))) return 'Name cannot contain digits';
+              if (parts.any((p) => !RegExp(r"^[a-zA-Z\-']+$").hasMatch(p))) return 'Name can only contain letters, hyphens, and apostrophes';
+              return null;
+            },
           )),
           const SizedBox(height: 14),
           _Field(label: 'Phone Number *', child: TextFormField(
@@ -232,7 +268,9 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
             decoration: _dec('e.g. 0881234567'),
             validator: (v) {
               if (v!.trim().isEmpty) return 'Phone number is required';
-              if (v.trim().length < 7) return 'Enter a valid phone number';
+              if (v.trim().length != 10) return 'Phone must be exactly 10 digits';
+              if (!v.trim().startsWith('0')) return 'Phone must start with 0';
+              if (!RegExp(r'^[0-9]+$').hasMatch(v.trim())) return 'Phone must contain only digits';
               return null;
             },
           )),
@@ -241,11 +279,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
             decoration: _dec('e.g. grace@email.com'),
-            validator: (v) {
-              if (v!.trim().isEmpty) return null;
-              if (!v.contains('@') || !v.contains('.')) return 'Enter a valid email';
-              return null;
-            },
+            validator: (v) => Validators.validateEmail(v, required: false),
           )),
           const SizedBox(height: 14),
           _Field(label: "Mother's Age *", child: TextFormField(
@@ -264,26 +298,45 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
             initialValue: _district.isEmpty ? null : _district,
             decoration: _dec('Select your district'),
             items: _districts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-            onChanged: (v) => setState(() {
-              _district = v!;
-              _healthCentre = null;
-            }),
+            onChanged: (v) {
+              setState(() => _district = v!);
+              _loadFacilities(v!);
+            },
             validator: (v) => v == null ? 'Please select your district' : null,
           )),
           const SizedBox(height: 14),
-          _Field(label: 'Health Centre / Zone *', child: DropdownButtonFormField<String>(
-            initialValue: _healthCentre,
-            decoration: _dec('Select health centre'),
-            items: (_district.isNotEmpty
-                    ? (kDistrictHealthCentres[_district] ?? [])
-                    : <String>[])
-                .map((h) => DropdownMenuItem(value: h, child: Text(h)))
-                .toList(),
-            onChanged: _district.isEmpty
-                ? null
-                : (v) => setState(() => _healthCentre = v),
-            validator: (v) => v == null ? 'Please select a health centre' : null,
-          )),
+          _Field(
+            label: 'Health Centre / Zone *',
+            child: _loadingFacilities
+                ? const Row(children: [
+                    SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A3A6B))),
+                    SizedBox(width: 10),
+                    Text('Loading facilities...', style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
+                  ])
+                : DropdownButtonFormField<String>(
+                    key: ValueKey(_district),
+                    value: _facilities.contains(_facilityName) ? _facilityName : null,
+                    decoration: _dec('Select health facility'),
+                    items: _facilityObjects.map((f) {
+                      final name = f['facilityName']?.toString() ?? '';
+                      final type = f['facilityType']?.toString() ?? '';
+                      return DropdownMenuItem<String>(
+                        value: name,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(name, style: const TextStyle(fontSize: 13, color: Color(0xFF212121))),
+                            if (type.isNotEmpty)
+                              Text(type, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                          ],
+                        ),
+                      );
+                    }).toList(),
+                    onChanged: _district.isEmpty ? null : (v) => setState(() => _facilityName = v),
+                    validator: (v) => v == null ? 'Please select a health facility' : null,
+                  ),
+          ),
           const SizedBox(height: 28),
           SizedBox(
             width: double.infinity, height: 50,
@@ -515,15 +568,15 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           _Field(label: 'Password *', child: TextFormField(
             controller: _passwordCtrl,
             obscureText: true,
-            decoration: _dec('Minimum 6 characters'),
-            validator: (v) => v!.length < 6 ? 'Minimum 6 characters' : null,
+            decoration: _dec('Min. 8 chars with uppercase, lowercase, number, special char'),
+            validator: Validators.validatePassword,
           )),
           const SizedBox(height: 14),
           _Field(label: 'Confirm Password *', child: TextFormField(
             controller: _confirmCtrl,
             obscureText: true,
             decoration: _dec('Re-enter your password'),
-            validator: (v) => v != _passwordCtrl.text ? 'Passwords do not match' : null,
+            validator: (v) => Validators.validatePasswordConfirmation(v, _passwordCtrl.text),
           )),
           const SizedBox(height: 28),
           SizedBox(
@@ -610,3 +663,5 @@ class _StepDot extends StatelessWidget {
     ),
   );
 }
+
+

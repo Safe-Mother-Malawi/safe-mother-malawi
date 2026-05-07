@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import '../web/admin/admin_overview.dart';
-import '../web/dho/dho_overview.dart';
 import 'clinician/clinician_layout.dart';
 import 'login_dialog.dart';
 
@@ -89,15 +87,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     if (role == 'clinician') {
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const ClinicianDashboard()));
-    } else if (role == 'admin') {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const AdminOverview()));
-    } else if (role == 'dho') {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DhoOverview()));
-    } else if (role == 'clinician') {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const ClinicianDashboard()));
+    } else {
+      // Web roles (admin, dho) are not supported in mobile app
+      // Show login dialog instead
+      showDialog(context: context, builder: (_) => const LoginDialog());
     }
   }
 
@@ -543,12 +536,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
           child: Icon(icon, color: _navy, size: 22),
         ),
         const SizedBox(width: 16),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 11, color: Colors.black45, letterSpacing: 0.5)),
-          const SizedBox(height: 2),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
-              color: Color(0xFF0A1628))),
-        ]),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label, style: const TextStyle(fontSize: 11, color: Colors.black45, letterSpacing: 0.5)),
+            const SizedBox(height: 2),
+            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600,
+                color: Color(0xFF0A1628))),
+          ]),
+        ),
       ]),
     );
   }

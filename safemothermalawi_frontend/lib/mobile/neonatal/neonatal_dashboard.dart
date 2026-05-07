@@ -305,7 +305,7 @@ class _NeoDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const NeonatalSettingsScreen()));
+                        builder: (_) => SettingsScreen()));
                   },
                 ),
                 _DrawerItem(
@@ -314,7 +314,7 @@ class _NeoDrawer extends StatelessWidget {
                   onTap: () {
                     Navigator.pop(context);
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (_) => const NeonatalHelpScreen()));
+                        builder: (_) => HelpScreen()));
                   },
                 ),
                 _DrawerItem(
@@ -350,15 +350,18 @@ class _DrawerSection extends StatelessWidget {
   final String label;
   const _DrawerSection(this.label);
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-    child: Text(label,
-        style: const TextStyle(
-            fontSize: 10,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textMuted,
-            letterSpacing: 1.2)),
-  );
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+              color: isDark ? Colors.grey[400] : AppColors.textMuted,
+              letterSpacing: 1.2)),
+    );
+  }
 }
 
 class _DrawerItem extends StatelessWidget {
@@ -370,12 +373,15 @@ class _DrawerItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = color ?? AppColors.mobileNavy;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final c = color ?? (isDark ? Colors.blue[300] : AppColors.mobileNavy);
+    final textColor = color ?? (isDark ? Colors.white : AppColors.textPrimary);
+    
     return ListTile(
       leading: Icon(icon, color: c, size: 22),
       title: Text(label,
           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500,
-              color: color ?? AppColors.textPrimary)),
+              color: textColor)),
       onTap: onTap,
       horizontalTitleGap: 8,
     );

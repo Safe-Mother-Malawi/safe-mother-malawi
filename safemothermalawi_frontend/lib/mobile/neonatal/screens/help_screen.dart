@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../services/api_service.dart';
 
-class NeonatalHelpScreen extends StatefulWidget {
-  const NeonatalHelpScreen({super.key});
+class HelpScreen extends StatefulWidget {
+  const HelpScreen({super.key});
   @override
-  State<NeonatalHelpScreen> createState() => _NeonatalHelpScreenState();
+  State<HelpScreen> createState() => _HelpScreenState();
 }
 
-class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
+class _HelpScreenState extends State<HelpScreen> {
   int? _expanded;
+  bool _isSubmitting = false;
 
   static const _faqs = [
     {'q': 'How is my baby\'s age calculated?', 'a': 'Your baby\'s age in days is calculated from the date of birth you entered during registration. It updates automatically every day.'},
@@ -20,6 +23,161 @@ class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
     {'q': 'Can I use the app without internet?', 'a': 'Yes. Core features like the baby tracker, feeding log, sleep log, and health information work offline. Data is stored locally on your device.'},
     {'q': 'How do I update my baby\'s information?', 'a': 'Go to Profile from the side menu to view your baby\'s details. Contact support if you need to correct registration information.'},
   ];
+
+  Future<void> _callHelpline() async {
+    const phoneNumber = 'tel:116';
+    try {
+      if (await canLaunchUrl(Uri.parse(phoneNumber))) {
+        await launchUrl(Uri.parse(phoneNumber));
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to make call. Please dial 116 manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendEmail() async {
+    const email = 'support@safemothermalawi.org';
+    final emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+      queryParameters: {
+        'subject': 'SafeMother Support Request',
+        'body': 'Hello,\n\nI need help with...\n\nThank you',
+      },
+    );
+    try {
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unable to open email. Please email $email manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _findNearestHealthCentre() async {
+    const mapsUrl = 'https://maps.google.com/?q=health+centre+malawi';
+    try {
+      if (await canLaunchUrl(Uri.parse(mapsUrl))) {
+        await launchUrl(Uri.parse(mapsUrl), mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open maps. Please search manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showContactForm() async {
+    final subjectController = TextEditingController();
+    final messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Contact Support'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: subjectController,
+                decoration: InputDecoration(
+                  labelText: 'Subject',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: messageController,
+                decoration: InputDecoration(
+                  labelText: 'Message',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  hintText: 'Describe your issue...',
+                ),
+                maxLines: 5,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isSubmitting
+                ? null
+                : () async {
+                    if (subjectController.text.isEmpty || messageController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill in all fields')),
+                      );
+                      return;
+                    }
+
+                    setState(() => _isSubmitting = true);
+                    try {
+                      await ApiService.instance.submitContactForm(
+                        subject: subjectController.text,
+                        message: messageController.text,
+                      );
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Thank you! Your message has been sent to our support team.'),
+                            backgroundColor: AppColors.statusGreen,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isSubmitting = false);
+                      }
+                    }
+                  },
+            child: _isSubmitting
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,9 +227,7 @@ class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
                     foregroundColor: AppColors.mobileNavy,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   ),
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Opening contact form...'), backgroundColor: AppColors.mobileNavy),
-                  ),
+                  onPressed: _showContactForm,
                   child: const Text('Contact Us', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ],
@@ -93,9 +249,7 @@ class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
                 label: 'SafeMother Helpline',
                 subtitle: '116 (Free call)',
                 color: AppColors.statusRed,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Calling 116...'), backgroundColor: AppColors.statusRed),
-                ),
+                onTap: _callHelpline,
               ),
               const Divider(height: 1, indent: 56),
               _LinkTile(
@@ -103,9 +257,7 @@ class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
                 label: 'Email Support',
                 subtitle: 'support@safemothermalawi.org',
                 color: AppColors.mobileNavy,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Opening email...'), backgroundColor: AppColors.mobileNavy),
-                ),
+                onTap: _sendEmail,
               ),
               const Divider(height: 1, indent: 56),
               _LinkTile(
@@ -113,9 +265,7 @@ class _NeonatalHelpScreenState extends State<NeonatalHelpScreen> {
                 label: 'Nearest Health Centre',
                 subtitle: 'Find a clinic near you',
                 color: AppColors.statusGreen,
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Opening map...'), backgroundColor: AppColors.statusGreen),
-                ),
+                onTap: _findNearestHealthCentre,
               ),
             ]),
           ),

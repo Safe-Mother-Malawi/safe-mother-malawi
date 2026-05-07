@@ -4,7 +4,8 @@ import '../services/auth_service.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
 import 'login_screen.dart';
-import '../data/malawi_health_centres.dart';
+import '../../../../services/api_service.dart';
+import '../../../../utils/validators.dart';
 
 const _kDistricts = [
   'Balaka','Blantyre','Chikwawa','Chiradzulu','Chitipa','Dedza',
@@ -40,7 +41,10 @@ class _SignupScreenState extends State<SignupScreen> {
   final _nationalityCtrl  = TextEditingController();
   final _emailCtrl        = TextEditingController();
   String? _district;
-  String? _healthCentre;
+  String? _facilityName;
+  List<Map<String, dynamic>> _facilityObjects = [];
+  List<String> _facilities = [];
+  bool _loadingFacilities = false;
 
   // ── Step 2: Pregnancy / Baby Details ──
   int _pregMonth = 1;
@@ -76,6 +80,42 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _snack(String msg, Color c) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: c));
+
+  Future<void> _loadFacilities(String district) async {
+    setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
+    try {
+      final data = await ApiService.getFacilitiesByDistrict(district);
+      final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
+      
+      // Remove duplicates by facility name (keep first occurrence)
+      final seen = <String>{};
+      final uniqueObjects = objects.where((f) {
+        final name = (f['facilityName'] ?? '').toString();
+        if (seen.contains(name)) return false;
+        seen.add(name);
+        return true;
+      }).toList();
+      
+      // Sort: Hospitals first, then Health Centres, then others alphabetically
+      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
+      uniqueObjects.sort((a, b) {
+        final ta = (a['facilityType'] ?? '').toString();
+        final tb = (b['facilityType'] ?? '').toString();
+        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
+        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
+        if (ia != ib) return ia.compareTo(ib);
+        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
+      });
+      
+      setState(() {
+        _facilityObjects = uniqueObjects;
+        _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _loadingFacilities = false;
+      });
+    } catch (_) {
+      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
+    }
+  }
 
   GlobalKey<FormState> get _currentKey {
     if (_step == 0) return _step1Key;
@@ -146,7 +186,7 @@ class _SignupScreenState extends State<SignupScreen> {
       age: _ageCtrl.text.trim(),
       nationality: _nationalityCtrl.text.trim(),
       district: _district ?? '',
-      healthCentre: _healthCentre ?? '',
+      facilityName: _facilityName ?? '',
       pregnancyMonths: _isPrenatal ? _pregMonth.toString() : '',
       pregnancyWeeks:  _isPrenatal ? _pregWeek.toString()  : '',
       expectedDeliveryDate: _isPrenatal ? _dueDateCtrl.text : '',
@@ -294,7 +334,15 @@ class _SignupScreenState extends State<SignupScreen> {
           AuthTextField(
             hint: 'Full Name *',
             controller: _nameCtrl,
-            validator: (v) => v!.trim().isEmpty ? 'Full name is required' : null,
+            validator: (v) {
+              if (v!.trim().isEmpty) return 'Full name is required';
+              final trimmed = v.trim();
+              final parts = trimmed.split(' ').where((p) => p.isNotEmpty).toList();
+              if (parts.length < 2) return 'Full name must include first and last name';
+              if (parts.any((p) => RegExp(r'\d').hasMatch(p))) return 'Name cannot contain digits';
+              if (parts.any((p) => !RegExp(r"^[a-zA-Z\-']+$").hasMatch(p))) return 'Name can only contain letters, hyphens, and apostrophes';
+              return null;
+            },
           ),
           const SizedBox(height: 12),
           AuthTextField(
@@ -303,7 +351,9 @@ class _SignupScreenState extends State<SignupScreen> {
             keyboardType: TextInputType.phone,
             validator: (v) {
               if (v!.trim().isEmpty) return 'Phone number is required';
-              if (v.trim().length < 7) return 'Enter a valid phone number';
+              if (v.trim().length != 10) return 'Phone must be exactly 10 digits';
+              if (!v.trim().startsWith('0')) return 'Phone must start with 0';
+              if (!RegExp(r'^[0-9]+$').hasMatch(v.trim())) return 'Phone must contain only digits';
               return null;
             },
           ),
@@ -335,37 +385,66 @@ class _SignupScreenState extends State<SignupScreen> {
             items: _kDistricts
                 .map((d) => DropdownMenuItem(value: d, child: Text(d)))
                 .toList(),
-            onChanged: (v) => setState(() => _district = v),
+            onChanged: (v) => setState(() {
+              _district = v;
+              _loadFacilities(v!);
+            }),
             validator: (v) => v == null ? 'Please select a district' : null,
           ),
           const SizedBox(height: 12),
+          if (_loadingFacilities)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A237E))),
+                SizedBox(width: 10),
+                Text('Loading facilities...', style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
+              ]),
+            )
+          else if (_facilityObjects.isEmpty && _district != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No health facilities found for this district',
+                style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+              ),
+            )
+          else
           DropdownButtonFormField<String>(
-            initialValue: _healthCentre,
+            key: ValueKey(_district),
+            value: _facilities.contains(_facilityName) ? _facilityName : null,
             decoration: _dd('Health Centre / Zone *'),
             style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
-            hint: const Text('Select health centre',
-                style: TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
-            items: (_district != null
-                    ? (kDistrictHealthCentres[_district] ?? [])
-                    : <String>[])
-                .map((h) => DropdownMenuItem(value: h, child: Text(h)))
-                .toList(),
-            onChanged: _district == null
+            isExpanded: true,
+            hint: Text(
+              _district == null ? 'Select district first' : 'Select health facility',
+              style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
+            items: _facilityObjects.isEmpty ? [] : _facilityObjects.map((f) {
+              final name = f['facilityName']?.toString() ?? '';
+              return DropdownMenuItem<String>(
+                value: name,
+                child: SizedBox(
+                  width: double.infinity,
+                  child: Text(
+                    name,
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: _district == null || _facilityObjects.isEmpty
                 ? null
-                : (v) => setState(() => _healthCentre = v),
-            validator: (v) =>
-                v == null ? 'Please select a health centre' : null,
+                : (v) => setState(() => _facilityName = v),
+            validator: (v) => v == null ? 'Please select a health facility' : null,
           ),
           const SizedBox(height: 12),
           AuthTextField(
             hint: 'Email Address (optional)',
             controller: _emailCtrl,
             keyboardType: TextInputType.emailAddress,
-            validator: (v) {
-              if (v == null || v.trim().isEmpty) return null;
-              if (!v.contains('@') || !v.contains('.')) return 'Enter a valid email';
-              return null;
-            },
+            validator: (v) => Validators.validateEmail(v, required: false),
           ),
         ],
       ),
@@ -531,15 +610,14 @@ class _SignupScreenState extends State<SignupScreen> {
             hint: 'Password *',
             controller: _passwordCtrl,
             obscure: true,
-            validator: (v) => v!.length < 6 ? 'Minimum 6 characters' : null,
+            validator: (v) => Validators.validatePassword(v),
           ),
           const SizedBox(height: 12),
           AuthTextField(
             hint: 'Confirm Password *',
             controller: _confirmCtrl,
             obscure: true,
-            validator: (v) =>
-                v != _passwordCtrl.text ? 'Passwords do not match' : null,
+            validator: (v) => Validators.validatePasswordConfirmation(v, _passwordCtrl.text),
           ),
         ],
       ),
@@ -625,3 +703,5 @@ class _SL extends StatelessWidget {
     ]);
   }
 }
+
+

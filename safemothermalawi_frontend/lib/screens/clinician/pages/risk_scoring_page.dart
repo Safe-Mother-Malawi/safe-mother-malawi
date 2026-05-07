@@ -1,81 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
-import '../../../widgets/animated_pulse_dot.dart';
-
-// ── Data model ────────────────────────────────────────────────────────────────
-
-enum RiskLevel { low, medium, high }
-
-class _Patient {
-  final String name;
-  final int age;
-  final String status; // Prenatal / Neonatal
-  final RiskLevel risk;
-  final String bp;
-  final String pregnancyOrBabyAge;
-  final List<String> symptoms;
-  final List<String> complications;
-  final bool overdueCheckup;
-
-  const _Patient({
-    required this.name,
-    required this.age,
-    required this.status,
-    required this.risk,
-    required this.bp,
-    required this.pregnancyOrBabyAge,
-    required this.symptoms,
-    required this.complications,
-    this.overdueCheckup = false,
-  });
-}
-
-const _patients = [
-  _Patient(
-    name: 'Grace Banda', age: 28, status: 'Prenatal', risk: RiskLevel.high,
-    bp: '148 / 96 mmHg', pregnancyOrBabyAge: '28 weeks',
-    symptoms: ['Severe headache', 'Reduced fetal movement', 'Blurred vision'],
-    complications: ['Pre-eclampsia (previous)'],
-    overdueCheckup: true,
-  ),
-  _Patient(
-    name: 'Faith Mwale', age: 22, status: 'Prenatal', risk: RiskLevel.high,
-    bp: '152 / 98 mmHg', pregnancyOrBabyAge: '34 weeks',
-    symptoms: ['Oedema', 'Proteinuria', 'Dizziness'],
-    complications: [],
-    overdueCheckup: false,
-  ),
-  _Patient(
-    name: 'Mercy Tembo', age: 26, status: 'Neonatal', risk: RiskLevel.medium,
-    bp: '118 / 78 mmHg', pregnancyOrBabyAge: 'Baby: 8 days old',
-    symptoms: ['Mild fever (37.9°C)', 'Breast tenderness'],
-    complications: [],
-    overdueCheckup: true,
-  ),
-  _Patient(
-    name: 'Liness Kachali', age: 31, status: 'Prenatal', risk: RiskLevel.medium,
-    bp: '126 / 84 mmHg', pregnancyOrBabyAge: '30 weeks',
-    symptoms: ['Gestational diabetes', 'Fatigue'],
-    complications: ['Gestational diabetes (current)'],
-    overdueCheckup: false,
-  ),
-  _Patient(
-    name: 'Rose Phiri', age: 24, status: 'Neonatal', risk: RiskLevel.low,
-    bp: '112 / 72 mmHg', pregnancyOrBabyAge: 'Baby: 14 days old',
-    symptoms: [],
-    complications: [],
-    overdueCheckup: false,
-  ),
-  _Patient(
-    name: 'Aisha Tembo', age: 19, status: 'Prenatal', risk: RiskLevel.low,
-    bp: '110 / 70 mmHg', pregnancyOrBabyAge: '16 weeks',
-    symptoms: ['Mild nausea'],
-    complications: [],
-    overdueCheckup: false,
-  ),
-];
-
-// ── Page ──────────────────────────────────────────────────────────────────────
+import '../../../services/api_service.dart';
 
 class RiskScoringPage extends StatefulWidget {
   const RiskScoringPage({super.key});
@@ -85,30 +10,114 @@ class RiskScoringPage extends StatefulWidget {
 }
 
 class _RiskScoringPageState extends State<RiskScoringPage> {
-  _Patient? _selected;
-  RiskLevel? _filterRisk;
-  String _filterStatus = 'All';
+  List<Map<String, dynamic>> _prenatal = [];
+  List<Map<String, dynamic>> _neonatal = [];
+  bool _loading = true;
+  String? _error;
 
+  Map<String, dynamic>? _selected;
+  String _selectedType = '';
+  String _filterStatus = 'All'; // All | Prenatal | Neonatal
+  String _filterRisk   = 'All'; // All | High Risk | Moderate Risk | Low Risk
   String _search = '';
-
-  List<_Patient> get _filtered => _patients.where((p) {
-        if (_filterRisk != null && p.risk != _filterRisk) return false;
-        if (_filterStatus != 'All' && p.status != _filterStatus) return false;
-        if (_search.isNotEmpty &&
-            !p.name.toLowerCase().contains(_search.toLowerCase())) {
-          return false;
-        }
-        return true;
-      }).toList();
 
   @override
   void initState() {
     super.initState();
-    _selected = null;
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        ApiService.instance.get('/patients/prenatal'),
+        ApiService.instance.get('/patients/neonatal'),
+      ]);
+      setState(() {
+        _prenatal = (results[0] as List).cast<Map<String, dynamic>>();
+        _neonatal = (results[1] as List).cast<Map<String, dynamic>>();
+        _loading  = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  // Combine prenatal + neonatal with a _type tag
+  List<Map<String, dynamic>> get _all {
+    final list = <Map<String, dynamic>>[];
+    if (_filterStatus != 'Neonatal') {
+      for (final p in _prenatal) list.add({...p, '_type': 'prenatal'});
+    }
+    if (_filterStatus != 'Prenatal') {
+      for (final p in _neonatal) list.add({...p, '_type': 'neonatal'});
+    }
+    return list;
+  }
+
+  List<Map<String, dynamic>> get _filtered {
+    final q = _search.toLowerCase();
+    return _all.where((p) {
+      final name = _patientName(p).toLowerCase();
+      if (q.isNotEmpty && !name.contains(q)) return false;
+      if (_filterRisk != 'All') {
+        // Filter by latest risk assessment level if available
+        final risk = (p['latestRiskLevel'] ?? '').toString();
+        if (!risk.contains(_filterRisk.split(' ').first)) return false;
+      }
+      return true;
+    }).toList();
+  }
+
+  String _patientName(Map<String, dynamic> p) =>
+      p['_type'] == 'prenatal'
+          ? (p['fullName'] ?? 'Unknown').toString()
+          : (p['motherName'] ?? 'Unknown').toString();
+
+  String _patientSub(Map<String, dynamic> p) =>
+      p['_type'] == 'prenatal'
+          ? 'Prenatal · ${p['pregnancyMonths'] ?? '?'} months'
+          : 'Neonatal · ${p['babyName'] ?? 'Baby'}';
+
+  int get _highCount   => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('High')).length;
+  int get _medCount    => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('Moderate')).length;
+  int get _lowCount    => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('Low')).length;
+
+  Color _riskColor(String? level) {
+    if (level == null || level.isEmpty) return AppColors.g400;
+    if (level.contains('High') || level.contains('Seek')) return AppColors.red;
+    if (level.contains('Moderate')) return AppColors.orange;
+    return AppColors.green;
+  }
+
+  Color _riskBg(String? level) {
+    if (level == null || level.isEmpty) return AppColors.g100;
+    if (level.contains('High') || level.contains('Seek')) return AppColors.redL;
+    if (level.contains('Moderate')) return AppColors.orangeL;
+    return AppColors.greenL;
+  }
+
+  String _riskLabel(String? level) {
+    if (level == null || level.isEmpty) return 'No data';
+    if (level.contains('High') || level.contains('Seek')) return 'High';
+    if (level.contains('Moderate')) return 'Medium';
+    return 'Low';
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline, color: AppColors.red, size: 40),
+        const SizedBox(height: 12),
+        Text(_error!, style: const TextStyle(color: AppColors.red)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -130,39 +139,29 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
     );
   }
 
-  // ── Header ──────────────────────────────────────────────────────────────────
-
   Widget _buildHeader() {
     return Row(children: [
       const Icon(Icons.assessment_outlined, color: AppColors.navy, size: 22),
       const SizedBox(width: 10),
-      const Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Risk Monitoring',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
-          Text('Track and assess patient risk levels in real time.',
-              style: TextStyle(fontSize: 13, color: AppColors.g400)),
-        ]),
-      ),
-      // Status filter
-      _filterChip('All', null, isStatus: true),
+      const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Risk Monitoring',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
+        Text('Track and assess patient risk levels in real time.',
+            style: TextStyle(fontSize: 13, color: AppColors.g400)),
+      ])),
+      IconButton(onPressed: _load, icon: const Icon(Icons.refresh, color: AppColors.navy), tooltip: 'Refresh'),
       const SizedBox(width: 6),
-      _filterChip('Prenatal', null, isStatus: true),
+      _chip('All', _filterStatus == 'All', () => setState(() { _filterStatus = 'All'; _selected = null; })),
       const SizedBox(width: 6),
-      _filterChip('Neonatal', null, isStatus: true),
+      _chip('Prenatal', _filterStatus == 'Prenatal', () => setState(() { _filterStatus = 'Prenatal'; _selected = null; })),
+      const SizedBox(width: 6),
+      _chip('Neonatal', _filterStatus == 'Neonatal', () => setState(() { _filterStatus = 'Neonatal'; _selected = null; })),
     ]);
   }
 
-  Widget _filterChip(String label, RiskLevel? risk, {bool isStatus = false}) {
-    final selected = isStatus ? _filterStatus == label : _filterRisk == risk;
+  Widget _chip(String label, bool selected, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () => setState(() {
-        if (isStatus) {
-          _filterStatus = label;
-        } else {
-          _filterRisk = selected ? null : risk;
-        }
-      }),
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
@@ -170,70 +169,44 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           color: selected ? AppColors.navy : AppColors.g100,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(label,
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.g600)),
+        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.g600)),
       ),
     );
   }
 
-  // ── Summary cards ────────────────────────────────────────────────────────────
-
   Widget _buildSummaryRow() {
-    final high   = _patients.where((p) => p.risk == RiskLevel.high).length;
-    final medium = _patients.where((p) => p.risk == RiskLevel.medium).length;
-    final low    = _patients.where((p) => p.risk == RiskLevel.low).length;
-    final overdue = _patients.where((p) => p.overdueCheckup).length;
-
     return Row(children: [
-      Expanded(child: _summaryCard('High Risk', '$high', AppColors.red, AppColors.redL,
-          Icons.warning_amber_rounded)),
+      Expanded(child: _summaryCard('High Risk', '$_highCount', AppColors.red, AppColors.redL, Icons.warning_amber_rounded)),
       const SizedBox(width: 12),
-      Expanded(child: _summaryCard('Medium Risk', '$medium', AppColors.orange, AppColors.orangeL,
-          Icons.info_outline)),
+      Expanded(child: _summaryCard('Medium Risk', '$_medCount', AppColors.orange, AppColors.orangeL, Icons.info_outline)),
       const SizedBox(width: 12),
-      Expanded(child: _summaryCard('Low Risk', '$low', AppColors.green, AppColors.greenL,
-          Icons.check_circle_outline)),
+      Expanded(child: _summaryCard('Low Risk', '$_lowCount', AppColors.green, AppColors.greenL, Icons.check_circle_outline)),
       const SizedBox(width: 12),
-      Expanded(child: _summaryCard('Overdue Checkups', '$overdue', AppColors.navy, AppColors.navyL,
-          Icons.schedule)),
+      Expanded(child: _summaryCard('Total Patients', '${_all.length}', AppColors.navy, AppColors.navyL, Icons.people_outline)),
     ]);
   }
 
   Widget _summaryCard(String label, String value, Color color, Color bg, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.g200)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.g200)),
       child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, color: color, size: 20),
-        ),
+        Container(width: 40, height: 40, decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 20)),
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value,
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
+          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           Text(label, style: const TextStyle(fontSize: 11, color: AppColors.g400)),
         ]),
       ]),
     );
   }
 
-  // ── Patient list ─────────────────────────────────────────────────────────────
-
   Widget _buildPatientList() {
     final list = _filtered;
     return Container(
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.g200)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.g200)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Padding(
           padding: const EdgeInsets.all(16),
@@ -241,17 +214,16 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
             const Icon(Icons.people_outline, color: AppColors.navy, size: 18),
             const SizedBox(width: 8),
             Text('Patients (${list.length})',
-                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold,
-                    color: AppColors.g800)),
+                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.g800)),
             const Spacer(),
-            _riskChip('H', RiskLevel.high, AppColors.red, AppColors.redL),
+            // Risk filter chips
+            _riskFilterChip('H', 'High', AppColors.red, AppColors.redL),
             const SizedBox(width: 4),
-            _riskChip('M', RiskLevel.medium, AppColors.orange, AppColors.orangeL),
+            _riskFilterChip('M', 'Moderate', AppColors.orange, AppColors.orangeL),
             const SizedBox(width: 4),
-            _riskChip('L', RiskLevel.low, AppColors.green, AppColors.greenL),
+            _riskFilterChip('L', 'Low', AppColors.green, AppColors.greenL),
           ]),
         ),
-        // Search bar
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
           child: TextField(
@@ -262,47 +234,45 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
               prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
               filled: true, fillColor: AppColors.bg,
               contentPadding: const EdgeInsets.symmetric(vertical: 8),
-              border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             ),
           ),
         ),
         const Divider(height: 1, color: AppColors.g200),
         if (list.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: Text('No patients match the filter.',
-                style: TextStyle(color: AppColors.g400))),
-          )
+          const Padding(padding: EdgeInsets.all(24),
+              child: Center(child: Text('No patients found.', style: TextStyle(color: AppColors.g400))))
         else
           ...list.map((p) => _patientListItem(p)),
       ]),
     );
   }
 
-  Widget _riskChip(String label, RiskLevel risk, Color color, Color bg) {
-    final selected = _filterRisk == risk;
+  Widget _riskFilterChip(String short, String level, Color color, Color bg) {
+    final selected = _filterRisk.contains(level);
     return GestureDetector(
-      onTap: () => setState(() => _filterRisk = selected ? null : risk),
+      onTap: () => setState(() => _filterRisk = selected ? 'All' : level),
       child: Container(
         width: 24, height: 24,
-        decoration: BoxDecoration(
-            color: selected ? color : bg,
-            shape: BoxShape.circle),
-        child: Center(
-          child: Text(label,
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
-                  color: selected ? Colors.white : color)),
-        ),
+        decoration: BoxDecoration(color: selected ? color : bg, shape: BoxShape.circle),
+        child: Center(child: Text(short,
+            style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
+                color: selected ? Colors.white : color))),
       ),
     );
   }
 
-  Widget _patientListItem(_Patient p) {
-    final isSelected = _selected?.name == p.name;
-    final (riskColor, _, label) = _riskStyle(p.risk);
+  Widget _patientListItem(Map<String, dynamic> p) {
+    final isSelected = _selected?['id'] == p['id'];
+    final level = (p['latestRiskLevel'] ?? '').toString();
+    final riskColor = _riskColor(level);
+    final label = _riskLabel(level);
+
     return GestureDetector(
-      onTap: () => setState(() => _selected = p),
+      onTap: () {
+        setState(() { _selected = p; _selectedType = p['_type'] as String; });
+        _loadPatientHistory(p['id'].toString(), p['_type'] as String);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -311,250 +281,183 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           border: const Border(bottom: BorderSide(color: AppColors.g200, width: 0.5)),
         ),
         child: Row(children: [
-          // Risk level indicator dot (only colored element)
-          Container(
-            width: 8, height: 8,
-            margin: const EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle),
-          ),
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.navyL,
-            child: Text(p.name[0],
-                style: const TextStyle(color: AppColors.navy, fontSize: 12,
-                    fontWeight: FontWeight.bold)),
-          ),
+          Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle)),
+          CircleAvatar(radius: 16, backgroundColor: AppColors.navyL,
+              child: Text(_patientName(p)[0],
+                  style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
           const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Text(p.name,
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                        color: AppColors.g800)),
-                if (p.overdueCheckup) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                    decoration: BoxDecoration(
-                        color: AppColors.orangeL, borderRadius: BorderRadius.circular(4)),
-                    child: const Text('Overdue',
-                        style: TextStyle(fontSize: 9, color: AppColors.orange,
-                            fontWeight: FontWeight.bold)),
-                  ),
-                ],
-              ]),
-              Text('${p.age} yrs · ${p.status}',
-                  style: const TextStyle(fontSize: 10, color: AppColors.g400)),
-            ]),
-          ),
-          // Risk label badge — colored per risk level
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(_patientName(p), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.g800)),
+            Text(_patientSub(p), style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+          ])),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-                color: AppColors.g100, borderRadius: BorderRadius.circular(10)),
-            child: Text(label,
-                style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold,
-                    color: riskColor)),
+            decoration: BoxDecoration(color: AppColors.g100, borderRadius: BorderRadius.circular(10)),
+            child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: riskColor)),
           ),
         ]),
       ),
     );
   }
 
-  // ── Detail panel ─────────────────────────────────────────────────────────────
+  // ── Detail panel ──────────────────────────────────────────────────────────
+
+  List<Map<String, dynamic>> _riskHistory = [];
+  bool _historyLoading = false;
+
+  Future<void> _loadPatientHistory(String id, String type) async {
+    setState(() { _historyLoading = true; _riskHistory = []; });
+    try {
+      final data = await ApiService.instance.get('/risk-assessments/patient/$id') as List;
+      setState(() { _riskHistory = data.cast<Map<String, dynamic>>(); _historyLoading = false; });
+    } catch (_) {
+      setState(() => _historyLoading = false);
+    }
+  }
 
   Widget _buildDetailPanel() {
     if (_selected == null) return const SizedBox.shrink();
-    final p = _selected!;
-    final (color, bg, label) = _riskStyle(p.risk);
+    final p     = _selected!;
+    final type  = _selectedType;
+    final level = (p['latestRiskLevel'] ?? '').toString();
+    final color = _riskColor(level);
+    final label = _riskLabel(level);
 
     return Container(
-      decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.g200)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.g200)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Patient header
+        // Header
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: AppColors.navyL, // consistent for all risk levels
-            borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-          ),
+          decoration: const BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
           child: Row(children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: Colors.white,
-              child: Text(p.name[0],
-                  style: const TextStyle(color: AppColors.navy, fontSize: 16,
-                      fontWeight: FontWeight.bold)),
-            ),
+            CircleAvatar(radius: 22, backgroundColor: Colors.white,
+                child: Text(_patientName(p)[0],
+                    style: const TextStyle(color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.bold))),
             const SizedBox(width: 14),
-            Expanded(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(p.name,
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
-                        color: AppColors.g800)),
-              ]),
-            ),
-            // Risk badge — only this retains risk color
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                  color: AppColors.g100,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withOpacity(0.5))),
-              child: Row(children: [
-                Container(
-                  width: 8, height: 8,
-                  margin: const EdgeInsets.only(right: 6),
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                ),
-                Text('$label Risk',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
-              ]),
-            ),
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(_patientName(p), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.g800)),
+              Text(type == 'prenatal' ? 'Prenatal Patient' : 'Neonatal — Mother',
+                  style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+            ])),
+            if (level.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(color: AppColors.g100, borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color.withValues(alpha: 0.5))),
+                child: Row(children: [
+                  Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6),
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+                  Text('$label Risk', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+                ]),
+              ),
             const SizedBox(width: 8),
-            // Close button
-            GestureDetector(
-              onTap: () => setState(() => _selected = null),
-              child: const Icon(Icons.close, size: 18, color: AppColors.g400),
-            ),
+            GestureDetector(onTap: () => setState(() { _selected = null; _selectedType = ''; }),
+                child: const Icon(Icons.close, size: 18, color: AppColors.g400)),
           ]),
         ),
 
         Padding(
           padding: const EdgeInsets.all(20),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _detailSection('Clinical Readings', [
-              _detailRow(Icons.favorite_border, 'Blood Pressure', p.bp,
-                  valueColor: _bpColor(p.bp)),
-              _detailRow(Icons.pregnant_woman, p.status == 'Prenatal' ? 'Pregnancy Duration' : 'Baby Age',
-                  p.pregnancyOrBabyAge, valueColor: AppColors.navy),
+            // Contact info
+            _section('Contact', [
+              if (type == 'prenatal') ...[
+                _row(Icons.phone, 'Phone', p['phone'] ?? 'N/A'),
+                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
+                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+              ] else ...[
+                _row(Icons.phone, 'Mother Phone', p['motherPhone'] ?? 'N/A'),
+                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
+                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+              ],
             ]),
             const SizedBox(height: 16),
 
-            if (p.symptoms.isNotEmpty)
-              _detailSection('Reported Symptoms', [
-                ...p.symptoms.map((s) => _detailRow(Icons.report_outlined, s, '', valueColor: AppColors.g800)),
+            if (type == 'prenatal')
+              _section('Pregnancy', [
+                _row(Icons.pregnant_woman, 'Duration', '${p['pregnancyMonths'] ?? '?'} months'),
+                if (p['expectedDeliveryDate'] != null)
+                  _row(Icons.calendar_today_outlined, 'EDD', p['expectedDeliveryDate'].toString().substring(0, 10)),
+              ])
+            else
+              _section('Baby Details', [
+                _row(Icons.child_friendly_outlined, 'Baby Name', p['babyName'] ?? 'N/A'),
+                _row(Icons.cake_outlined, 'Date of Birth', (p['babyDob'] ?? 'N/A').toString().substring(0, 10)),
+                _row(Icons.wc_outlined, 'Gender', p['babyGender'] ?? 'N/A'),
               ]),
 
-            if (p.complications.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              _detailSection('Previous / Current Complications', [
-                ...p.complications.map((c) => _detailRow(Icons.medical_information_outlined, c, '', valueColor: AppColors.g800)),
-              ]),
-            ],
+            const SizedBox(height: 16),
 
-            if (p.symptoms.isEmpty && p.complications.isEmpty) ...[
-              const SizedBox(height: 8),
+            // Risk assessment history
+            _section('Risk Assessment History', []),
+            const SizedBox(height: 8),
+            if (_historyLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_riskHistory.isEmpty)
               Container(
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                    color: AppColors.greenL, borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
                 child: const Row(children: [
-                  Icon(Icons.check_circle_outline, color: AppColors.green, size: 18),
-                  SizedBox(width: 10),
-                  Text('No symptoms or complications reported.',
-                      style: TextStyle(fontSize: 13, color: AppColors.green)),
+                  Icon(Icons.info_outline, color: AppColors.g400, size: 16),
+                  SizedBox(width: 8),
+                  Text('No risk assessments recorded yet.', style: TextStyle(fontSize: 12, color: AppColors.g400)),
                 ]),
-              ),
-            ],
+              )
+            else
+              ..._riskHistory.take(5).map((r) {
+                final rl    = (r['riskLevel'] ?? '').toString();
+                final score = r['score']?.toString() ?? '0';
+                final date  = (r['submittedAt'] ?? r['createdAt'] ?? '').toString();
+                final dateStr = date.length >= 10 ? date.substring(0, 10) : date;
+                final rc    = _riskColor(rl);
+                final rb    = _riskBg(rl);
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: rb, borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: rc.withValues(alpha: 0.2))),
+                  child: Row(children: [
+                    Container(width: 7, height: 7, decoration: BoxDecoration(color: rc, shape: BoxShape.circle)),
+                    const SizedBox(width: 8),
+                    Text(rl, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: rc)),
+                    const SizedBox(width: 8),
+                    Text('Score: $score', style: const TextStyle(fontSize: 11, color: AppColors.g600)),
+                    const Spacer(),
+                    Text(dateStr, style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+                  ]),
+                );
+              }),
           ]),
         ),
       ]),
     );
   }
 
-  Widget _alertBanner(_Patient p) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.redL,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.red.withOpacity(0.3)),
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        if (p.risk == RiskLevel.high)
-          const Row(children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.red, size: 16),
-            SizedBox(width: 8),
-            Text('High-risk patient — immediate attention required.',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.red)),
-          ]),
-        if (p.overdueCheckup) ...[
-          if (p.risk == RiskLevel.high) const SizedBox(height: 6),
-          const Row(children: [
-            Icon(Icons.schedule, color: AppColors.orange, size: 16),
-            SizedBox(width: 8),
-            Text('Checkup is overdue — please schedule immediately.',
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.orange)),
-          ]),
-        ],
-      ]),
-    );
-  }
-
-  Widget _detailSection(String title, List<Widget> children) {
+  Widget _section(String title, List<Widget> children) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
-        Container(width: 3, height: 14, color: AppColors.navy,
-            margin: const EdgeInsets.only(right: 8)),
-        Text(title,
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
+        Container(width: 3, height: 14, color: AppColors.navy, margin: const EdgeInsets.only(right: 8)),
+        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
       ]),
       const SizedBox(height: 10),
       ...children,
     ]);
   }
 
-  Widget _detailRow(IconData icon, String label, String value, {Color valueColor = AppColors.g800}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-          color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
-      child: Row(children: [
-        Icon(icon, size: 16, color: AppColors.navy),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
-        ),
-        if (value.isNotEmpty)
-          Text(value,
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor)),
-      ]),
-    );
-  }
-
-  Widget _tagRow(String text, Color color, Color bg) {
+  Widget _row(IconData icon, String label, String value) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
       child: Row(children: [
-        Icon(Icons.circle, size: 7, color: color),
+        Icon(icon, size: 15, color: AppColors.navy),
         const SizedBox(width: 10),
-        Text(text, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w500)),
+        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        const Spacer(),
+        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
       ]),
     );
-  }
-
-  // ── Helpers ──────────────────────────────────────────────────────────────────
-
-  (Color, Color, String) _riskStyle(RiskLevel r) => switch (r) {
-        RiskLevel.high   => (AppColors.red,    AppColors.redL,    'High'),
-        RiskLevel.medium => (AppColors.orange,  AppColors.orangeL, 'Medium'),
-        RiskLevel.low    => (AppColors.green,   AppColors.greenL,  'Low'),
-      };
-
-  Color _bpColor(String bp) {
-    final parts = bp.replaceAll(RegExp(r'[^0-9/]'), '').split('/');
-    if (parts.length < 2) return AppColors.g800;
-    final sys = int.tryParse(parts[0]) ?? 0;
-    if (sys >= 140) return AppColors.red;
-    if (sys >= 130) return AppColors.orange;
-    return AppColors.green;
   }
 }

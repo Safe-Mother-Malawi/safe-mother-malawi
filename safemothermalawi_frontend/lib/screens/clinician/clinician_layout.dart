@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../state/notification_store.dart';
+import '../../state/user_store.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/patients_page.dart';
 import 'pages/alerts_page.dart';
 import 'pages/register_page.dart';
-import 'pages/consult_page.dart';
 import 'pages/risk_scoring_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/profile_page.dart';
@@ -19,21 +22,97 @@ class ClinicianDashboard extends StatefulWidget {
 
 class _ClinicianDashboardState extends State<ClinicianDashboard> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = [];
+  Key _patientsKey = UniqueKey();
+  String _userName = 'Clinician';
 
   @override
   void initState() {
     super.initState();
-    _pages.addAll([
-      ClinicianDashboardPage(onRegisterPatient: () => setState(() => _selectedIndex = 3)),
-      const ClinicianPatientsPage(),
-      ClinicianAlertsPage(onNavigate: (i) => setState(() => _selectedIndex = i)),
-      const ClinicianRegisterPage(),
-      const ClinicianConsultPage(),
-      const RiskScoringPage(),
-      const CalendarPage(),
-      MyProfilePage(onClose: () => setState(() => _selectedIndex = 0)),
-    ]);
+    _loadUserName();
+    NotificationStore.instance.addListener(_onNotif);
+    NotificationStore.instance.load();
+    UserStore.instance.addListener(_onUserChanged);
+  }
+
+  @override
+  void dispose() {
+    NotificationStore.instance.removeListener(_onNotif);
+    UserStore.instance.removeListener(_onUserChanged);
+    super.dispose();
+  }
+
+  void _onNotif() => setState(() {});
+
+  void _onUserChanged() {
+    final fresh = UserStore.instance.fullName;
+    if (fresh != _userName) setState(() => _userName = fresh);
+  }
+
+  Future<void> _loadUserName() async {
+    try {
+      await ApiService.instance.loadToken();
+      final data = await ApiService.instance.currentUser();
+      if (data != null && mounted) {
+        setState(() {
+          _userName = (data['fullName'] ?? data['email'] ?? 'Clinician').toString();
+        });
+      }
+    } catch (_) {}
+  }
+
+  void _onPatientRegistered() {
+    setState(() {
+      _patientsKey = UniqueKey();
+      _selectedIndex = 1;
+    });
+  }
+
+  void _showProfile() {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: MyProfilePage(onClose: () => Navigator.pop(context)),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showNotifications() {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+          child: Column(children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
+                color: AppColors.navy,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(children: [
+                const Icon(Icons.notifications_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                const Expanded(child: Text('Notifications',
+                    style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))),
+                TextButton(
+                  onPressed: () => NotificationStore.instance.markAllRead(),
+                  child: const Text('Mark all read', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                ),
+              ]),
+            ),
+            Expanded(child: _NotificationList()),
+          ]),
+        ),
+      ),
+    );
   }
 
   @override
@@ -45,30 +124,68 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
         Expanded(
           child: Column(children: [
             _buildTopBar(),
-            Expanded(child: _pages[_selectedIndex]),
+            Expanded(child: _buildPage()),
           ]),
         ),
       ]),
     );
   }
 
+  Widget _buildPage() {
+    switch (_selectedIndex) {
+      case 0: return ClinicianDashboardPage(onRegisterPatient: () => setState(() => _selectedIndex = 3));
+      case 1: return ClinicianPatientsPage(key: _patientsKey);
+      case 2: return ClinicianAlertsPage(onNavigate: (i) => setState(() => _selectedIndex = i));
+      case 3: return ClinicianRegisterPage(onPatientRegistered: _onPatientRegistered);
+      case 4: return const RiskScoringPage();
+      case 5: return const CalendarPage();
+      case 6: return MyProfilePage(onClose: () => setState(() => _selectedIndex = 0));
+      default: return ClinicianDashboardPage(onRegisterPatient: () => setState(() => _selectedIndex = 3));
+    }
+  }
+
   Widget _buildTopBar() {
+    final unread = NotificationStore.instance.unreadCount;
+
     return Container(
       height: 52,
       color: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(children: [
         const Spacer(),
+
+        // Notifications bell
+        Stack(clipBehavior: Clip.none, children: [
+          IconButton(
+            onPressed: _showNotifications,
+            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.g600, size: 22),
+          ),
+          if (unread > 0)
+            Positioned(top: 6, right: 6, child: Container(
+              width: 14, height: 14,
+              decoration: const BoxDecoration(color: AppColors.red, shape: BoxShape.circle),
+              child: Center(child: Text('$unread',
+                  style: GoogleFonts.inter(fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white))),
+            )),
+        ]),
+        const SizedBox(width: 4),
+
+        // Name — clicking opens profile dialog
         GestureDetector(
-          onTap: () => setState(() => _selectedIndex = 7),
-          child: const Icon(Icons.person_outline, color: AppColors.g600, size: 22),
-        ),
-        const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => setState(() => _selectedIndex = 7),
-          child: const Text('Dr. Rachel',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
-                  color: AppColors.g800)),
+          onTap: _showProfile,
+          child: Row(children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: AppColors.navy,
+              child: Text(
+                _userName.trim().split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join(),
+                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(_userName,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.g800)),
+          ]),
         ),
       ]),
     );
@@ -76,56 +193,96 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
 
   Widget _buildSidebar() {
     return Container(
-      width: 200,
-      color: AppColors.navy,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Row(children: [
-              Container(
-                width: 32, height: 32,
-                decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(8)),
-                child: const Icon(Icons.local_hospital, color: Colors.white, size: 18),
-              ),
-              const SizedBox(width: 8),
-              const Text('Safe Mother MW',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-            ]),
-            const SizedBox(height: 4),
-            const Text('Clinician Portal',
-                style: TextStyle(color: Colors.white54, fontSize: 10)),
-          ]),
-        ),
-        const SizedBox(height: 8),
-        _sidebarLabel('OVERVIEW'),
-        _sidebarItem(0, Icons.dashboard_outlined, 'Dashboard'),
-        _sidebarItem(1, Icons.people_outline, 'Patients'),
-        _sidebarItem(2, Icons.notifications_outlined, 'Alerts'),
-        const SizedBox(height: 8),
-        _sidebarLabel('CLINICAL'),
-        _sidebarItem(3, Icons.person_add_outlined, 'Register Patient'),
-        _sidebarItem(4, Icons.favorite_border, 'Health Data'),
-        _sidebarItem(5, Icons.assessment_outlined, 'Risk Monitoring'),
-        _sidebarItem(6, Icons.calendar_today_outlined, 'Calendar'),
-        const Spacer(),
-        const Divider(color: Colors.white12, height: 1),
-        _sidebarItem(7, Icons.account_circle_outlined, 'My Profile'),
-        InkWell(
-          onTap: _confirmLogout,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: const Row(children: [
-              Icon(Icons.logout, size: 18, color: Colors.white54),
-              SizedBox(width: 10),
-              Text('Logout', style: TextStyle(fontSize: 13, color: Colors.white54)),
-            ]),
+      width: 240,
+      color: AppColors.sidebarBg,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Brand
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Image.asset('assets/logo/LOGO5.png', width: 110, height: 110, fit: BoxFit.contain),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text('Safe Mother',
+                        style: GoogleFonts.publicSans(
+                            fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ),
+                ]),
+                const SizedBox(height: 6),
+                Text('Malawi',
+                    style: GoogleFonts.inter(
+                        fontSize: 11, color: AppColors.sidebarMuted, letterSpacing: 1.5)),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 8),
-      ]),
+
+          // Role chip
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20)),
+              child: Text('Clinician Portal',
+                  style: GoogleFonts.inter(
+                      fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.sidebarMuted)),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Nav items
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                _sidebarItem(0, Icons.dashboard_rounded,      'Dashboard'),
+                _sidebarItem(1, Icons.people_alt_rounded,     'Patients'),
+                _sidebarItem(2, Icons.notifications_rounded,  'Alerts'),
+                _sidebarItem(3, Icons.person_add_rounded,     'Register Patient'),
+                _sidebarItem(4, Icons.assessment_rounded,     'Risk Monitoring'),
+                _sidebarItem(5, Icons.calendar_today_rounded, 'Calendar'),
+              ],
+            ),
+          ),
+
+          // Logout
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: _confirmLogout,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(children: [
+                    const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
+                    const SizedBox(width: 12),
+                    Text('Log Out',
+                        style: GoogleFonts.inter(fontSize: 13, color: Colors.white54)),
+                  ]),
+                ),
+              ),
+            ),
+          ),
+
+          // Footer
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Text('Ministry of Health\nMalawi',
+                style: GoogleFonts.inter(
+                    fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
+          ),
+        ],
+      ),
     );
   }
 
@@ -167,48 +324,106 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
     );
   }
 
-  Widget _sidebarLabel(String label) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, bottom: 6, top: 4),
-      child: Text(label,
-          style: const TextStyle(
-              fontSize: 9, fontWeight: FontWeight.bold,
-              color: Colors.white38, letterSpacing: 1.2)),
-    );
-  }
-
   Widget _sidebarItem(int index, IconData icon, String title, {String? badge}) {
     final selected = _selectedIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 1),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? Colors.white.withOpacity(0.15) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Row(children: [
-          Icon(icon, size: 17, color: selected ? Colors.white : Colors.white60),
-          const SizedBox(width: 10),
-          Text(title,
-              style: TextStyle(
-                  fontSize: 12,
-                  color: selected ? Colors.white : Colors.white60,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
-          if (badge != null) ...[
-            const Spacer(),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                  color: AppColors.red, borderRadius: BorderRadius.circular(10)),
-              child: Text(badge,
-                  style: const TextStyle(color: Colors.white, fontSize: 9,
-                      fontWeight: FontWeight.bold)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => setState(() => _selectedIndex = index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.sidebarActive : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ]),
+            child: Row(children: [
+              Icon(icon, size: 18, color: selected ? Colors.white : AppColors.sidebarMuted),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title,
+                    style: GoogleFonts.inter(
+                        fontSize: 13,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        color: selected ? Colors.white : AppColors.sidebarText)),
+              ),
+              if (badge != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                      color: AppColors.criticalText,
+                      borderRadius: BorderRadius.circular(10)),
+                  child: Text(badge,
+                      style: GoogleFonts.inter(
+                          color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
+                ),
+            ]),
+          ),
+        ),
       ),
+    );
+  }
+}
+
+// ── Notification list widget ──────────────────────────────────────────────────
+
+class _NotificationList extends StatefulWidget {
+  @override
+  State<_NotificationList> createState() => _NotificationListState();
+}
+
+class _NotificationListState extends State<_NotificationList> {
+  @override
+  void initState() {
+    super.initState();
+    NotificationStore.instance.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    NotificationStore.instance.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = NotificationStore.instance.all;
+    if (items.isEmpty) {
+      return const Center(child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No notifications.', style: TextStyle(color: Colors.black45)),
+      ));
+    }
+    return ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final n = items[i];
+        final color = n.type == NotifType.alert ? Colors.red
+            : n.type == NotifType.appointment ? AppColors.navy : Colors.green;
+        final icon  = n.type == NotifType.alert ? Icons.warning_amber_rounded
+            : n.type == NotifType.appointment ? Icons.calendar_today_rounded : Icons.info_outline_rounded;
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withValues(alpha: 0.1),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          title: Text(n.title,
+              style: TextStyle(fontSize: 13, fontWeight: n.read ? FontWeight.normal : FontWeight.bold)),
+          subtitle: Text(n.body,
+              style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+          trailing: n.read
+              ? null
+              : Container(width: 8, height: 8,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          onTap: () => NotificationStore.instance.markRead(n.id),
+        );
+      },
     );
   }
 }

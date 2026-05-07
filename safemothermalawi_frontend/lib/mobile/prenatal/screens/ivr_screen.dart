@@ -1,18 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../widgets/notification_icon.dart';
+import '../screens/notifications_screen.dart';
+import '../../ivr/screens/ivr_simulator_screen.dart';
 
-class IvrScreen extends StatelessWidget {
+class IvrScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
   const IvrScreen({super.key, this.onOpenDrawer});
 
-  static const _contacts = [
-    {'name': 'Emergency Hotline', 'number': '116', 'icon': Icons.emergency, 'color': 0xFFD32F2F},
-    {'name': 'Clinician Helpline', 'number': '+265 888 000 111', 'icon': Icons.support_agent, 'color': 0xFF3949AB},
-    {'name': 'Ambulance Services', 'number': '998', 'icon': Icons.airport_shuttle, 'color': 0xFFE65100},
-  ];
+  @override
+  State<IvrScreen> createState() => _IvrScreenState();
+}
+
+class _IvrScreenState extends State<IvrScreen> {
+  String _selectedLanguage = 'en';
+  List<Map<String, String>> _supportedLanguages = [];
+  bool _languagesLoading = true;
+  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1/ivr';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSupportedLanguages();
+  }
+
+  Future<void> _loadSupportedLanguages() async {
+    try {
+      final response = await http.get(
+        Uri.parse('$_apiBaseUrl/languages'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _supportedLanguages = List<Map<String, String>>.from(
+            (data['languages'] as List).map((lang) => {
+              'code': lang['code'] as String,
+              'name': lang['name'] as String,
+              'nativeName': lang['nativeName'] as String,
+            }),
+          );
+          _languagesLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() => _languagesLoading = false);
+    }
+  }
+
+  void _startIVR() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => IvrSimulatorScreen(selectedLanguage: _selectedLanguage)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Show language selection first
+    if (_languagesLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF5F7FF),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF1A237E),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => widget.onOpenDrawer?.call(),
+          ),
+          title: const Text('IVR — Quick Call', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(color: Color(0xFF1A237E)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
@@ -20,159 +85,105 @@ class IvrScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => onOpenDrawer?.call(),
+          onPressed: () => widget.onOpenDrawer?.call(),
         ),
         title: const Text('IVR — Quick Call', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: NotificationIcon(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+              ),
+              iconColor: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFD32F2F), Color(0xFFB71C1C)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
+            const Icon(Icons.language, size: 64, color: Color(0xFF1A237E)),
+            const SizedBox(height: 24),
+            const Text(
+              'Select Language',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1A237E),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text('Need Help Now?', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        SizedBox(height: 6),
-                        Text('Tap any contact below to call immediately', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                      ],
+            ),
+            const SizedBox(height: 32),
+            ..._supportedLanguages.map((lang) {
+              final isSelected = _selectedLanguage == lang['code'];
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isSelected ? const Color(0xFF1A237E) : Colors.white,
+                    foregroundColor: isSelected ? Colors.white : const Color(0xFF1A237E),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                    side: BorderSide(
+                      color: const Color(0xFF1A237E),
+                      width: isSelected ? 0 : 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  const Icon(Icons.phone_in_talk, color: Colors.white54, size: 48),
-                ],
+                  onPressed: () {
+                    setState(() => _selectedLanguage = lang['code']!);
+                  },
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            lang['name']!,
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                          Text(
+                            lang['nativeName']!,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                      if (isSelected)
+                        const Icon(Icons.check_circle, color: Colors.white),
+                    ],
+                  ),
+                ),
+              );
+            }).toList(),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1A237E),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: _startIVR,
+                child: const Text(
+                  'Start Call',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ),
-            const SizedBox(height: 24),
-            const Text('Healthcare Contacts', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
-            const SizedBox(height: 14),
-            ..._contacts.map((c) => _ContactCard(
-              name: c['name'] as String,
-              number: c['number'] as String,
-              icon: c['icon'] as IconData,
-              color: Color(c['color'] as int),
-            )),
-            const SizedBox(height: 24),
-            const Text('IVR Menu Guide', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
-            const SizedBox(height: 12),
-            _IvrMenuCard(),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _ContactCard extends StatelessWidget {
-  final String name;
-  final String number;
-  final IconData icon;
-  final Color color;
-
-  const _ContactCard({required this.name, required this.number, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 24),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: Color(0xFF212121))),
-                const SizedBox(height: 3),
-                Text(number, style: const TextStyle(fontSize: 13, color: Color(0xFF757575))),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: () async {
-              final uri = Uri(scheme: 'tel', path: number);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri);
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Could not launch call to $number'), backgroundColor: color),
-                );
-              }
-            },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: const Icon(Icons.phone, color: Colors.white, size: 20),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _IvrMenuCard extends StatelessWidget {
-  final _steps = const [
-    {'key': 'Press 1', 'value': 'Appointment booking'},
-    {'key': 'Press 2', 'value': 'Emergency assistance'},
-    {'key': 'Press 3', 'value': 'Lab results inquiry'},
-    {'key': 'Press 4', 'value': 'Speak to a clinician'},
-    {'key': 'Press 0', 'value': 'Repeat menu'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE3E8FF)),
-      ),
-      child: Column(
-        children: _steps.map((s) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1A237E),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(s['key']!, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-              const SizedBox(width: 12),
-              Text(s['value']!, style: const TextStyle(fontSize: 13, color: Color(0xFF424242))),
-            ],
-          ),
-        )).toList(),
       ),
     );
   }

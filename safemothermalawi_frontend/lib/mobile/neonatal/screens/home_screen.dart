@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
+import '../../widgets/notification_icon.dart';
 import 'notifications_screen.dart';
 import 'daily_feed_detail_screen.dart';
 import '../models/neonatal_data.dart';
@@ -42,12 +44,16 @@ class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
   }
 
   Future<void> _load() async {
+    setState(() => _loading = true);
+    // Ensure token is loaded before API calls
+    await ApiService.instance.loadToken();
     final user = await AuthService().getCurrentUser();
     if (!mounted) return;
     if (user == null) { setState(() => _loading = false); return; }
-    final firstName = user.fullName.split(' ').first;
+    final firstName = user.fullName.isNotEmpty ? user.fullName.split(' ').first : 'Mama';
+    // Use babyDob if available, otherwise default to today (newborn)
     final babyDob = user.babyDob.isNotEmpty
-        ? DateTime.tryParse(user.babyDob) ?? DateTime.now()
+        ? (DateTime.tryParse(user.babyDob) ?? DateTime.now())
         : DateTime.now();
     final babyName = user.babyName.isNotEmpty ? user.babyName : 'Baby';
     setState(() {
@@ -122,7 +128,7 @@ class _NoDataView extends StatelessWidget {
 
 // ── Home Body ─────────────────────────────────────────────────────────────────
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends StatefulWidget {
   final NeonatalData data;
   final String firstName;
   final bool tipDismissed;
@@ -138,6 +144,46 @@ class _HomeBody extends StatelessWidget {
   });
 
   @override
+  State<_HomeBody> createState() => _HomeBodyState();
+}
+
+class _HomeBodyState extends State<_HomeBody> {
+  List<Map<String, dynamic>> _todayAppointments = [];
+  bool _loadingAppointments = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayAppointments();
+  }
+
+  Future<void> _loadTodayAppointments() async {
+    try {
+      final allAppointments = await ApiService.getAppointments();
+      final today = DateTime.now();
+      final todayAppointments = (allAppointments as List)
+          .cast<Map<String, dynamic>>()
+          .where((a) {
+            final date = DateTime.tryParse(a['date'] ?? '');
+            if (date == null) return false;
+            return date.year == today.year && date.month == today.month && date.day == today.day;
+          })
+          .toList();
+      
+      if (mounted) {
+        setState(() {
+          _todayAppointments = todayAppointments;
+          _loadingAppointments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingAppointments = false);
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [
@@ -149,33 +195,17 @@ class _HomeBody extends StatelessWidget {
             child: Row(
               children: [
                 GestureDetector(
-                  onTap: () => onOpenDrawer?.call(),
+                  onTap: () => widget.onOpenDrawer?.call(),
                   child: const Icon(Icons.menu, color: _kBrown, size: 24),
                 ),
                 const Spacer(),
-                GestureDetector(
-                  onTap: () => Navigator.push(context,
-                      MaterialPageRoute(builder: (_) => const NeonatalNotificationsScreen())),
-                  child: Stack(
-                    children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                          color: _kCard,
-                          shape: BoxShape.circle,
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 6, offset: const Offset(0, 2))],
-                        ),
-                        child: const Icon(Icons.notifications_outlined, color: _kBrown, size: 20),
-                      ),
-                      Positioned(
-                        top: 6, right: 6,
-                        child: Container(
-                          width: 8, height: 8,
-                          decoration: const BoxDecoration(color: Color(0xFFE53935), shape: BoxShape.circle),
-                        ),
-                      ),
-                    ],
+                NotificationIcon(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NeonatalNotificationsScreen()),
                   ),
+                  iconColor: _kBrown,
+                  badgeColor: const Color(0xFFE53935),
                 ),
               ],
             ),
@@ -188,13 +218,16 @@ class _HomeBody extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
             child: Column(
               children: [
-                _WelcomeCard(firstName: firstName, data: data),
+                _WelcomeCard(firstName: widget.firstName, data: widget.data),
                 const SizedBox(height: 14),
-                _BabyInfoCard(data: data),
+                _BabyInfoCard(data: widget.data),
                 const SizedBox(height: 14),
-                _DailyFeedsCard(data: data),
+                _DailyFeedsCard(data: widget.data),
                 const SizedBox(height: 14),
-                _TodayAppointmentCard(data: data),
+                if (!_loadingAppointments && _todayAppointments.isNotEmpty)
+                  _TodayAppointmentsCard(appointments: _todayAppointments)
+                else
+                  _TodayAppointmentCard(data: widget.data),
               ],
             ),
           ),
@@ -656,3 +689,125 @@ class _TodayAppointmentCard extends StatelessWidget {
 
 
 
+
+
+// ── Today's Appointments Card ────────────────────────────────────────────────
+
+class _TodayAppointmentsCard extends StatelessWidget {
+  final List<Map<String, dynamic>> appointments;
+  const _TodayAppointmentsCard({required this.appointments});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            "TODAY'S APPOINTMENTS",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF757575),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        ...appointments.map((appointment) {
+          final time = (appointment['time'] ?? 'TBD').toString();
+          final title = (appointment['title'] ?? 'Appointment').toString();
+          final location = (appointment['location'] ?? appointment['facility'] ?? 'TBD').toString();
+          final doctor = (appointment['doctor'] ?? appointment['clinician']?['fullName'] ?? 'TBD').toString();
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE3E8FF), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1A237E).withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8EAF6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_today, color: Color(0xFF1A237E), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF212121),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time, size: 12, color: const Color(0xFF9E9E9E)),
+                            const SizedBox(width: 4),
+                            Text(
+                              time,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(Icons.location_on, size: 12, color: const Color(0xFF9E9E9E)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                location,
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (doctor != 'TBD') ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Dr: $doctor',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A237E),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+}

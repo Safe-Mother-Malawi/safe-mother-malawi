@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
+import '../../../utils/validators.dart';
+import '../../../widgets/password_strength_indicator.dart';
 import 'login_screen.dart';
 
 /// 3-step self-service password reset:
@@ -68,8 +70,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   // ── Step 2: reset password ────────────────────────────────────────────────
   Future<void> _resetPassword() async {
-    if (_newPwCtrl.text.length < 6) {
-      _snack('Password must be at least 6 characters', Colors.red);
+    final passwordError = Validators.validatePassword(_newPwCtrl.text);
+    if (passwordError != null) {
+      _snack(passwordError, Colors.red);
       return;
     }
     if (_newPwCtrl.text != _confirmCtrl.text) {
@@ -214,7 +217,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const Text('Set new password',
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF212121))),
         const SizedBox(height: 6),
-        const Text('Choose a strong password you will remember.',
+        const Text('Password must be 6-10 characters with uppercase, lowercase, number, and special character.',
             style: TextStyle(fontSize: 13, color: Color(0xFF757575), height: 1.4)),
         const SizedBox(height: 24),
         AuthTextField(
@@ -222,6 +225,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           controller: _newPwCtrl,
           obscure: true,
         ),
+        const SizedBox(height: 12),
+        PasswordStrengthIndicator(password: _newPwCtrl.text),
         const SizedBox(height: 14),
         AuthTextField(
           hint: 'Confirm new password *',

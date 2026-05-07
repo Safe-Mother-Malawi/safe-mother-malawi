@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
 
 class GenerateAnalytics extends StatefulWidget {
   const GenerateAnalytics({super.key});
@@ -27,11 +28,25 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
 
   Future<void> _generate() async {
     setState(() { _loading = true; _done = false; _progress = 0; });
-    for (int i = 1; i <= 5; i++) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      setState(() => _progress = i * 20);
+    try {
+      // Simulate progress while fetching
+      for (int i = 1; i <= 4; i++) {
+        await Future.delayed(const Duration(milliseconds: 300));
+        setState(() => _progress = i * 20);
+      }
+      // Call real analytics endpoint
+      await ApiService.getAnalyticsOverview();
+      setState(() => _progress = 100);
+      await Future.delayed(const Duration(milliseconds: 200));
+      setState(() { _loading = false; _done = true; });
+    } catch (e) {
+      setState(() { _loading = false; _done = false; _progress = 0; });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: AppColors.criticalText),
+        );
+      }
     }
-    setState(() { _loading = false; _done = true; });
   }
 
   @override

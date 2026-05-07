@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../../services/auth_service_web.dart';
 import '../shared/widgets/status_badge.dart';
 
 class DataExplorer extends StatefulWidget {
@@ -14,12 +16,12 @@ class _DataExplorerState extends State<DataExplorer>
     with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   final _searchCtrl = TextEditingController();
-  String _dateFilter = 'Last 30 days';
 
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 4, vsync: this);
+    final isAdmin = AuthServiceWeb.instance.userRole.toLowerCase() == 'admin';
+    _tabCtrl = TabController(length: isAdmin ? 4 : 3, vsync: this);
   }
 
   @override
@@ -36,7 +38,6 @@ class _DataExplorerState extends State<DataExplorer>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Text('Data Source',
               style: GoogleFonts.publicSans(
                   fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
@@ -73,30 +74,12 @@ class _DataExplorerState extends State<DataExplorer>
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                _DropFilter(
-                  value: _dateFilter,
-                  items: const ['Today', 'Last 7 days', 'Last 30 days', 'Last 3 months', 'All time'],
-                  onChanged: (v) => setState(() => _dateFilter = v!),
-                ),
-                const Spacer(),
-                OutlinedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
-                  label: Text('Export CSV',
-                      style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  ),
-                ),
               ],
             ),
           ),
           const SizedBox(height: 16),
 
-          // Tabs + table — fills remaining space
+          // Tabs + table
           Expanded(
             child: Container(
               decoration: BoxDecoration(
@@ -108,7 +91,6 @@ class _DataExplorerState extends State<DataExplorer>
                 borderRadius: BorderRadius.circular(16),
                 child: Column(
                   children: [
-                    // Tab bar
                     Container(
                       color: AppColors.surfaceContainerLowest,
                       child: TabBar(
@@ -119,20 +101,21 @@ class _DataExplorerState extends State<DataExplorer>
                         unselectedLabelColor: AppColors.mutedText,
                         indicatorColor: AppColors.primary,
                         indicatorSize: TabBarIndicatorSize.label,
-                        tabs: const [
-                          Tab(text: 'System Logs'),
-                          Tab(text: 'IVR Interactions'),
-                          Tab(text: 'Question Responses'),
-                          Tab(text: 'Task Data'),
+                        tabs: [
+                          if (AuthServiceWeb.instance.userRole.toLowerCase() == 'admin')
+                            const Tab(text: 'System Logs'),
+                          const Tab(text: 'IVR Interactions'),
+                          const Tab(text: 'Question Responses'),
+                          const Tab(text: 'Task Data'),
                         ],
                       ),
                     ),
-                    // Tab content fills rest
                     Expanded(
                       child: TabBarView(
                         controller: _tabCtrl,
                         children: [
-                          _SystemLogsTab(search: _searchCtrl.text),
+                          if (AuthServiceWeb.instance.userRole.toLowerCase() == 'admin')
+                            _SystemLogsTab(search: _searchCtrl.text),
                           _IvrTab(search: _searchCtrl.text),
                           _QuestionTab(search: _searchCtrl.text),
                           _TaskTab(search: _searchCtrl.text),
@@ -156,18 +139,23 @@ class _FullTable extends StatelessWidget {
   final List<String> columns;
   final List<int> flexes;
   final List<List<Widget>> rows;
+  final bool loading;
+  final String? error;
+  final VoidCallback? onRetry;
 
   const _FullTable({
     required this.columns,
     required this.flexes,
     required this.rows,
+    this.loading = false,
+    this.error,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Header
         Container(
           color: AppColors.pageBg,
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -186,169 +174,303 @@ class _FullTable extends StatelessWidget {
             ],
           ),
         ),
-        // Rows
         Expanded(
-          child: rows.isEmpty
-              ? Center(
-                  child: Text('No records found',
-                      style: GoogleFonts.inter(fontSize: 14, color: AppColors.mutedText)))
-              : ListView.builder(
-                  itemCount: rows.length,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      color: index.isEven
-                          ? AppColors.surfaceContainerLowest
-                          : AppColors.pageBg.withValues(alpha: 0.4),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
-                      child: Row(
-                        children: [
-                          for (int i = 0; i < rows[index].length; i++)
-                            Expanded(flex: flexes[i], child: rows[index][i]),
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : error != null
+                  ? Center(
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 36),
+                        const SizedBox(height: 8),
+                        Text(error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.criticalText)),
+                        if (onRetry != null) ...[
+                          const SizedBox(height: 12),
+                          ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
                         ],
-                      ),
-                    );
-                  },
-                ),
+                      ]),
+                    )
+                  : rows.isEmpty
+                      ? Center(
+                          child: Text('No records found',
+                              style: GoogleFonts.inter(fontSize: 14, color: AppColors.mutedText)))
+                      : ListView.builder(
+                          itemCount: rows.length,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              color: index.isEven
+                                  ? AppColors.surfaceContainerLowest
+                                  : AppColors.pageBg.withValues(alpha: 0.4),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                              child: Row(
+                                children: [
+                                  for (int i = 0; i < rows[index].length; i++)
+                                    Expanded(flex: flexes[i], child: rows[index][i]),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
         ),
       ],
     );
   }
 }
 
-// ── Tab content ──────────────────────────────────────────────────────────────
+// ── System Logs Tab ──────────────────────────────────────────────────────────
 
-class _SystemLogsTab extends StatelessWidget {
+class _SystemLogsTab extends StatefulWidget {
   final String search;
   const _SystemLogsTab({required this.search});
+  @override
+  State<_SystemLogsTab> createState() => _SystemLogsTabState();
+}
+
+class _SystemLogsTabState extends State<_SystemLogsTab> {
+  List<dynamic> _data = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getActivityLogs(limit: 100);
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = [
-      ['2026-03-26 08:12', 'LOGIN', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 08:45', 'CREATE_CLINICIAN', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 09:10', 'DEACTIVATE_USER', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 10:02', 'EXPORT_REPORT', 'DHO Blantyre', '10.0.0.5', 'Success'],
-      ['2026-03-26 10:45', 'LOGIN_FAILED', 'Unknown', '203.0.113.5', 'Failed'],
-      ['2026-03-26 11:00', 'GENERATE_ANALYTICS', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 11:30', 'UPDATE_RULE', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 12:05', 'DELETE_CLINICIAN', 'Admin', '192.168.1.10', 'Success'],
-      ['2026-03-26 12:40', 'LOGIN', 'DHO Mzuzu', '10.0.0.12', 'Success'],
-      ['2026-03-26 13:10', 'VIEW_HEATMAP', 'DHO Mzuzu', '10.0.0.12', 'Success'],
-    ].where((r) => search.isEmpty || r.any((c) => c.toLowerCase().contains(search.toLowerCase()))).toList();
+    final filtered = _data.where((r) {
+      if (widget.search.isEmpty) return true;
+      final s = widget.search.toLowerCase();
+      return r.toString().toLowerCase().contains(s);
+    }).toList();
 
     return _FullTable(
+      loading: _loading,
+      error: _error,
+      onRetry: _load,
       columns: const ['#', 'Timestamp', 'Event', 'User', 'IP Address', 'Status'],
-      flexes: const [1, 3, 3, 2, 3, 2],
-      rows: data.asMap().entries.map((e) => [
-        _cell('${e.key + 1}', muted: true),
-        _cell(e.value[0]),
-        _cell(e.value[1], bold: true),
-        _cell(e.value[2]),
-        _cell(e.value[3], muted: true),
-        StatusBadge(label: e.value[4], type: e.value[4] == 'Success' ? BadgeType.success : BadgeType.critical),
-      ]).toList(),
+      flexes: const [1, 3, 3, 4, 3, 2],
+      rows: filtered.asMap().entries.map((e) {
+        final r = e.value as Map<String, dynamic>;
+        final status = (r['status'] ?? 'Success').toString();
+        return [
+          _cell('${e.key + 1}', muted: true),
+          _cell((r['createdAt'] ?? r['timestamp'] ?? '—').toString()),
+          _cell((r['action'] ?? r['event'] ?? '—').toString(), bold: true),
+          _cell((r['user']?['email'] ?? r['user'] ?? '—').toString()),
+          _cell((r['ipAddress'] ?? r['ip'] ?? '—').toString(), muted: true),
+          StatusBadge(
+            label: status,
+            type: status == 'Success' ? BadgeType.success : BadgeType.critical,
+          ),
+        ];
+      }).toList(),
     );
   }
 }
 
-class _IvrTab extends StatelessWidget {
+// ── IVR Tab ──────────────────────────────────────────────────────────────────
+
+class _IvrTab extends StatefulWidget {
   final String search;
   const _IvrTab({required this.search});
+  @override
+  State<_IvrTab> createState() => _IvrTabState();
+}
+
+class _IvrTabState extends State<_IvrTab> {
+  List<dynamic> _data = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getIvrCalls(limit: 100);
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = [
-      ['2026-03-26 07:00', '+265 999 111 222', 'Baby Issues', '3m 12s', 'Completed'],
-      ['2026-03-26 07:45', '+265 888 333 444', 'Mother Issues', '1m 05s', 'Dropped'],
-      ['2026-03-26 08:20', '+265 777 555 666', 'Immunization', '5m 40s', 'Completed'],
-      ['2026-03-26 09:00', '+265 666 777 888', 'Feeding Guidance', '2m 18s', 'Completed'],
-      ['2026-03-26 09:30', '+265 555 888 999', 'Baby Issues', '4m 02s', 'Completed'],
-      ['2026-03-26 10:10', '+265 444 222 111', 'Mother Issues', '0m 45s', 'Dropped'],
-      ['2026-03-26 10:55', '+265 333 111 000', 'Immunization', '6m 10s', 'Completed'],
-      ['2026-03-26 11:20', '+265 222 000 333', 'Feeding Guidance', '3m 55s', 'Completed'],
-    ].where((r) => search.isEmpty || r.any((c) => c.toLowerCase().contains(search.toLowerCase()))).toList();
+    final filtered = _data.where((r) {
+      if (widget.search.isEmpty) return true;
+      return r.toString().toLowerCase().contains(widget.search.toLowerCase());
+    }).toList();
 
     return _FullTable(
+      loading: _loading,
+      error: _error,
+      onRetry: _load,
       columns: const ['#', 'Time', 'Caller', 'Topic', 'Duration', 'Status'],
       flexes: const [1, 3, 3, 3, 2, 2],
-      rows: data.asMap().entries.map((e) => [
-        _cell('${e.key + 1}', muted: true),
-        _cell(e.value[0]),
-        _cell(e.value[1]),
-        _cell(e.value[2], bold: true),
-        _cell(e.value[3]),
-        StatusBadge(label: e.value[4], type: e.value[4] == 'Completed' ? BadgeType.success : BadgeType.warning),
-      ]).toList(),
+      rows: filtered.asMap().entries.map((e) {
+        final r = e.value as Map<String, dynamic>;
+        final status = (r['status'] ?? r['callStatus'] ?? 'Completed').toString();
+        final duration = r['duration'] != null ? '${r['duration']}s' : '—';
+        return [
+          _cell('${e.key + 1}', muted: true),
+          _cell((r['createdAt'] ?? r['startTime'] ?? '—').toString()),
+          _cell((r['callerPhone'] ?? r['caller'] ?? '—').toString()),
+          _cell((r['topic'] ?? r['category'] ?? '—').toString(), bold: true),
+          _cell(duration),
+          StatusBadge(
+            label: status,
+            type: status == 'Completed' ? BadgeType.success : BadgeType.warning,
+          ),
+        ];
+      }).toList(),
     );
   }
 }
 
-class _QuestionTab extends StatelessWidget {
+// ── Question Responses Tab ───────────────────────────────────────────────────
+
+class _QuestionTab extends StatefulWidget {
   final String search;
   const _QuestionTab({required this.search});
+  @override
+  State<_QuestionTab> createState() => _QuestionTabState();
+}
+
+class _QuestionTabState extends State<_QuestionTab> {
+  List<dynamic> _data = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getRiskAssessments(limit: 100);
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = [
-      ['2026-03-26 06:30', 'Mother (Postnatal)', 'Severe headache', 'High', '7/7'],
-      ['2026-03-26 07:10', 'Baby (Newborn)', 'Difficulty breathing', 'High', '7/7'],
-      ['2026-03-26 08:00', 'Mother (Postnatal)', 'Mild fatigue', 'Low', '5/7'],
-      ['2026-03-26 09:15', 'Baby (Newborn)', 'Normal feeding', 'Low', '7/7'],
-      ['2026-03-26 10:00', 'Mother (Postnatal)', 'Swollen feet', 'Medium', '6/7'],
-      ['2026-03-26 10:45', 'Baby (Newborn)', 'Reduced movement', 'High', '7/7'],
-      ['2026-03-26 11:30', 'Mother (Postnatal)', 'Headache + vision', 'High', '7/7'],
-      ['2026-03-26 12:00', 'Baby (Newborn)', 'Normal weight', 'Low', '7/7'],
-    ].where((r) => search.isEmpty || r.any((c) => c.toLowerCase().contains(search.toLowerCase()))).toList();
+    final filtered = _data.where((r) {
+      if (widget.search.isEmpty) return true;
+      return r.toString().toLowerCase().contains(widget.search.toLowerCase());
+    }).toList();
 
     return _FullTable(
-      columns: const ['#', 'Time', 'Category', 'Top Symptom', 'Risk', 'Completion'],
+      loading: _loading,
+      error: _error,
+      onRetry: _load,
+      columns: const ['#', 'Time', 'Category', 'Top Symptom', 'Risk', 'Score'],
       flexes: const [1, 3, 3, 4, 2, 2],
-      rows: data.asMap().entries.map((e) => [
-        _cell('${e.key + 1}', muted: true),
-        _cell(e.value[0]),
-        _cell(e.value[1]),
-        _cell(e.value[2], bold: true),
-        StatusBadge(
-          label: e.value[3],
-          type: e.value[3] == 'High' ? BadgeType.critical : e.value[3] == 'Medium' ? BadgeType.warning : BadgeType.success,
-        ),
-        _cell(e.value[4]),
-      ]).toList(),
+      rows: filtered.asMap().entries.map((e) {
+        final r = e.value as Map<String, dynamic>;
+        final risk = (r['riskLevel'] ?? r['risk'] ?? 'Low').toString();
+        final category = (r['patientType'] ?? r['category'] ?? '—').toString();
+        final symptom = (r['topSymptom'] ?? r['primarySymptom'] ?? '—').toString();
+        final score = (r['score'] ?? r['riskScore'] ?? '—').toString();
+        return [
+          _cell('${e.key + 1}', muted: true),
+          _cell((r['createdAt'] ?? '—').toString()),
+          _cell(category),
+          _cell(symptom, bold: true),
+          StatusBadge(
+            label: risk,
+            type: risk == 'High' ? BadgeType.critical
+                : risk == 'Medium' ? BadgeType.warning
+                : BadgeType.success,
+          ),
+          _cell(score),
+        ];
+      }).toList(),
     );
   }
 }
 
-class _TaskTab extends StatelessWidget {
+// ── Task Data Tab ────────────────────────────────────────────────────────────
+
+class _TaskTab extends StatefulWidget {
   final String search;
   const _TaskTab({required this.search});
+  @override
+  State<_TaskTab> createState() => _TaskTabState();
+}
+
+class _TaskTabState extends State<_TaskTab> {
+  List<dynamic> _data = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getAppointments();
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final data = [
-      ['ANC Visit Reminder', 'Dr. Banda', 'Blantyre', 'Completed', '2026-03-25'],
-      ['Postnatal Check', 'Dr. Phiri', 'Lilongwe', 'Missed', '2026-03-24'],
-      ['Vaccination Follow-up', 'Dr. Mwale', 'Mzuzu', 'Pending', '2026-03-26'],
-      ['Risk Assessment', 'Dr. Chirwa', 'Zomba', 'Completed', '2026-03-25'],
-      ['ANC Visit Reminder', 'Dr. Tembo', 'Mangochi', 'Missed', '2026-03-23'],
-      ['Postnatal Check', 'Dr. Nyirenda', 'Kasungu', 'Completed', '2026-03-25'],
-      ['Vaccination Follow-up', 'Dr. Kamanga', 'Salima', 'Pending', '2026-03-26'],
-      ['Risk Assessment', 'Dr. Msiska', 'Karonga', 'Completed', '2026-03-24'],
-    ].where((r) => search.isEmpty || r.any((c) => c.toLowerCase().contains(search.toLowerCase()))).toList();
+    final filtered = _data.where((r) {
+      if (widget.search.isEmpty) return true;
+      return r.toString().toLowerCase().contains(widget.search.toLowerCase());
+    }).toList();
 
     return _FullTable(
+      loading: _loading,
+      error: _error,
+      onRetry: _load,
       columns: const ['#', 'Task', 'Assigned To', 'District', 'Status', 'Due Date'],
       flexes: const [1, 4, 3, 3, 2, 3],
-      rows: data.asMap().entries.map((e) => [
-        _cell('${e.key + 1}', muted: true),
-        _cell(e.value[0], bold: true),
-        _cell(e.value[1]),
-        _cell(e.value[2]),
-        StatusBadge(
-          label: e.value[3],
-          type: e.value[3] == 'Completed' ? BadgeType.success : e.value[3] == 'Missed' ? BadgeType.critical : BadgeType.warning,
-        ),
-        _cell(e.value[4]),
-      ]).toList(),
+      rows: filtered.asMap().entries.map((e) {
+        final r = e.value as Map<String, dynamic>;
+        final status = (r['status'] ?? 'Pending').toString();
+        final assignee = r['clinician']?['fullName'] ?? r['assignedTo'] ?? '—';
+        final district = r['clinician']?['district'] ?? r['district'] ?? '—';
+        return [
+          _cell('${e.key + 1}', muted: true),
+          _cell((r['title'] ?? r['type'] ?? '—').toString(), bold: true),
+          _cell(assignee.toString()),
+          _cell(district.toString()),
+          StatusBadge(
+            label: status,
+            type: status == 'Completed' ? BadgeType.success
+                : status == 'Missed' ? BadgeType.critical
+                : BadgeType.warning,
+          ),
+          _cell((r['scheduledDate'] ?? r['dueDate'] ?? '—').toString()),
+        ];
+      }).toList(),
     );
   }
 }
@@ -362,28 +484,4 @@ Widget _cell(String text, {bool bold = false, bool muted = false}) {
         fontWeight: bold ? FontWeight.w500 : FontWeight.w400,
         color: muted ? AppColors.mutedText : AppColors.onSurface,
       ));
-}
-
-class _DropFilter extends StatelessWidget {
-  final String value;
-  final List<String> items;
-  final ValueChanged<String?> onChanged;
-  const _DropFilter({required this.value, required this.items, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-          color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(8)),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: value,
-          onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
-        ),
-      ),
-    );
-  }
 }

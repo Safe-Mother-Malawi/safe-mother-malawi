@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/models/user_model.dart';
 import '../models/neonatal_data.dart';
+import 'edit_profile_screen.dart';
 
 class NeonatalProfileScreen extends StatefulWidget {
   const NeonatalProfileScreen({super.key});
@@ -16,11 +17,16 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
   @override
   void initState() {
     super.initState();
-    AuthService().getCurrentUser().then((u) {
-      if (u == null) return;
-      final dob = u.babyDob.isNotEmpty
-          ? DateTime.tryParse(u.babyDob) ?? DateTime.now()
-          : DateTime.now();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final u = await AuthService().getCurrentUser();
+    if (u == null) return;
+    final dob = u.babyDob.isNotEmpty
+        ? DateTime.tryParse(u.babyDob) ?? DateTime.now()
+        : DateTime.now();
+    if (mounted) {
       setState(() {
         _user = u;
         _data = NeonatalData(
@@ -28,7 +34,19 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
           babyName: u.babyName.isNotEmpty ? u.babyName : 'Baby',
         );
       });
-    });
+    }
+  }
+
+  Future<void> _editProfile() async {
+    if (_user == null) return;
+    final result = await Navigator.push<UserModel>(
+      context,
+      MaterialPageRoute(builder: (_) => NeonatalEditProfileScreen(user: _user!)),
+    );
+    if (result != null) {
+      setState(() => _user = result);
+      _loadUser();
+    }
   }
 
   @override
@@ -52,7 +70,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined, color: Colors.white),
-            onPressed: () {},
+            onPressed: _editProfile,
           ),
         ],
       ),
@@ -152,7 +170,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                     _InfoRow(
                         icon: Icons.local_hospital_outlined,
                         label: 'Health Centre',
-                        value: u?.healthCentre ?? '—'),
+                        value: u?.facilityName ?? '—'),
                   ]),
                   const SizedBox(height: 16),
                   const _SectionLabel('Baby Information'),

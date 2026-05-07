@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../../services/api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kGreen  = Color(0xFF388E3C);
@@ -7,21 +7,10 @@ const _kAmber  = Color(0xFFF57F17);
 const _kGrey   = Color(0xFF757575);
 const _kBg     = Color(0xFFF5F7FF);
 
-// ── Persistence helpers ───────────────────────────────────────────────────────
-
-Future<Set<String>> _loadGivenKeys() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getStringList('vaccine_given_keys')?.toSet() ?? {};
-}
-
-Future<void> _saveGivenKeys(Set<String> keys) async {
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setStringList('vaccine_given_keys', keys.toList());
-}
-
 class VaccinesScreen extends StatefulWidget {
   final NeonatalData? data;
-  const VaccinesScreen({super.key, this.data});
+  final String? patientId;
+  const VaccinesScreen({super.key, this.data, this.patientId});
 
   @override
   State<VaccinesScreen> createState() => _VaccinesScreenState();
@@ -30,15 +19,32 @@ class VaccinesScreen extends StatefulWidget {
 class _VaccinesScreenState extends State<VaccinesScreen> {
   late List<VaccineEntry> _schedule;
   Set<String> _givenKeys = {};
+  bool _loading = false;
 
   @override
   void initState() {
     super.initState();
     _schedule = widget.data?.vaccineSchedule ?? _defaultSchedule();
-    _loadGivenKeys().then((keys) {
-      if (!mounted) return;
-      setState(() => _givenKeys = keys);
-    });
+    _loadFromApi();
+  }
+
+  Future<void> _loadFromApi() async {
+    if (widget.patientId == null) return;
+    setState(() => _loading = true);
+    try {
+      final data = await ApiService.instance.get('/tracking/vaccines/${widget.patientId}');
+      if (data is List) {
+        final givenNames = data
+            .where((v) => v['given'] == true)
+            .map((v) => v['name'].toString())
+            .toSet();
+        setState(() { _givenKeys = givenNames; _loading = false; });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      setState(() => _loading = false);
+    }
   }
 
   List<VaccineEntry> _defaultSchedule() {
@@ -60,19 +66,33 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
   bool _isGiven(VaccineEntry v) =>
       v.status == VaccineStatus.given || _givenKeys.contains(v.name);
 
-  void _toggle(VaccineEntry v) {
-    // Vaccines that were auto-marked given at birth cannot be untoggled
-    if (v.status == VaccineStatus.given && !_givenKeys.contains(v.name)) {
-      // First tap on a birth-given vaccine — allow untoggling by adding a "removed" key
-    }
+  void _toggle(VaccineEntry v) async {
+    final wasGiven = _givenKeys.contains(v.name);
     setState(() {
-      if (_givenKeys.contains(v.name)) {
+      if (wasGiven) {
         _givenKeys.remove(v.name);
       } else {
         _givenKeys.add(v.name);
       }
     });
-    _saveGivenKeys(_givenKeys);
+    // Persist to backend if we have a patient ID
+    if (widget.patientId != null) {
+      try {
+        await ApiService.instance.patch(
+          '/tracking/vaccines/${widget.patientId}',
+          {'name': v.name, 'given': !wasGiven},
+        );
+      } catch (_) {
+        // Revert on failure
+        setState(() {
+          if (wasGiven) {
+            _givenKeys.add(v.name);
+          } else {
+            _givenKeys.remove(v.name);
+          }
+        });
+      }
+    }
   }
 
   int get _givenCount => _schedule.where(_isGiven).length;

@@ -2,27 +2,78 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../state/user_store.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
 
-class DhoTaskPerformance extends StatelessWidget {
+class DhoTaskPerformance extends StatefulWidget {
   const DhoTaskPerformance({super.key});
+  @override
+  State<DhoTaskPerformance> createState() => _DhoTaskPerformanceState();
+}
+
+class _DhoTaskPerformanceState extends State<DhoTaskPerformance> {
+  Map<String, dynamic> _data = {};
+  bool _loading = true;
+  String? _error;
+
+  String get _district => UserStore.instance.district;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getTaskAnalytics();
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
+        const SizedBox(height: 8),
+        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
+    final total     = (_data['total'] ?? _data['totalTasks'] ?? 0).toString();
+    final completed = (_data['completed'] ?? _data['completedTasks'] ?? 0).toString();
+    final missed    = (_data['missed'] ?? _data['missedTasks'] ?? 0).toString();
+    final pending   = (_data['pending'] ?? _data['pendingTasks'] ?? 0).toString();
+    final completionRate = (_data['completionRate'] ?? '—').toString();
+    final missedRate     = (_data['missedRate'] ?? '—').toString();
+    final pendingRate    = (_data['pendingRate'] ?? '—').toString();
+
+    final missedList = (_data['missedTasksList'] ?? _data['recentMissed'] ?? []) as List;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Task Performance',
-              style: GoogleFonts.publicSans(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.headings)),
+          Row(children: [
+            Text('Task Performance',
+                style: GoogleFonts.publicSans(
+                    fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+            const Spacer(),
+            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary)),
+          ]),
           const SizedBox(height: 6),
-          Text('Clinician task completion for Blantyre District',
+          Text('Clinician task completion${_district.isNotEmpty ? ' for $_district District' : ''}',
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
@@ -33,38 +84,11 @@ class DhoTaskPerformance extends StatelessWidget {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: 1.3,
-            children: const [
-              KpiCard(
-                title: 'Total Tasks',
-                value: '3,640',
-                icon: Icons.task_rounded,
-                iconColor: AppColors.primary,
-                iconBg: AppColors.infoBg,
-              ),
-              KpiCard(
-                title: 'Completed',
-                value: '2,795',
-                icon: Icons.task_alt_rounded,
-                iconColor: AppColors.successText,
-                iconBg: AppColors.successBg,
-                subtitle: '76.8% rate',
-              ),
-              KpiCard(
-                title: 'Missed',
-                value: '438',
-                icon: Icons.cancel_outlined,
-                iconColor: AppColors.criticalText,
-                iconBg: AppColors.criticalBg,
-                subtitle: '12.0% rate',
-              ),
-              KpiCard(
-                title: 'Pending',
-                value: '407',
-                icon: Icons.pending_actions_rounded,
-                iconColor: AppColors.warningText,
-                iconBg: AppColors.warningBg,
-                subtitle: '11.2% rate',
-              ),
+            children: [
+              KpiCard(title: 'Total Tasks', value: total, icon: Icons.task_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
+              KpiCard(title: 'Completed', value: completed, icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg, subtitle: '$completionRate%'),
+              KpiCard(title: 'Missed', value: missed, icon: Icons.cancel_outlined, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg, subtitle: '$missedRate%'),
+              KpiCard(title: 'Pending', value: pending, icon: Icons.pending_actions_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg, subtitle: '$pendingRate%'),
             ],
           ),
           const SizedBox(height: 28),
@@ -75,19 +99,16 @@ class DhoTaskPerformance extends StatelessWidget {
                 flex: 2,
                 child: ChartCard(
                   title: 'Completion Rate Trend',
-                  subtitle: 'Monthly task completion — Blantyre',
+                  subtitle: 'Monthly task completion',
                   chart: SizedBox(
                     height: 200,
                     child: LineChart(LineChartData(
                       gridData: const FlGridData(show: false),
                       borderData: FlBorderData(show: false),
                       titlesData: FlTitlesData(
-                        leftTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(
-                            sideTitles: SideTitles(showTitles: false)),
+                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         bottomTitles: AxisTitles(
                           sideTitles: SideTitles(
                             showTitles: true,
@@ -95,28 +116,17 @@ class DhoTaskPerformance extends StatelessWidget {
                               const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
                               final i = v.toInt();
                               if (i < 0 || i >= m.length) return const SizedBox();
-                              return Text(m[i],
-                                  style: GoogleFonts.inter(
-                                      fontSize: 11,
-                                      color: AppColors.mutedText));
+                              return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
                             },
                           ),
                         ),
                       ),
                       lineBarsData: [
                         LineChartBarData(
-                          spots: const [
-                            FlSpot(0, 70), FlSpot(1, 72), FlSpot(2, 69),
-                            FlSpot(3, 74), FlSpot(4, 76), FlSpot(5, 77),
-                          ],
-                          isCurved: true,
-                          color: AppColors.successText,
-                          barWidth: 2.5,
+                          spots: _buildTrend(_data['completionTrend']),
+                          isCurved: true, color: AppColors.successText, barWidth: 2.5,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(
-                            show: true,
-                            color: AppColors.successText.withValues(alpha: 0.08),
-                          ),
+                          belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
                         ),
                       ],
                     )),
@@ -134,42 +144,10 @@ class DhoTaskPerformance extends StatelessWidget {
                       sectionsSpace: 3,
                       centerSpaceRadius: 40,
                       sections: [
-                        PieChartSectionData(
-                            value: 38,
-                            color: AppColors.primary,
-                            title: 'ANC\n38%',
-                            titleStyle: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white),
-                            radius: 50),
-                        PieChartSectionData(
-                            value: 30,
-                            color: AppColors.accent,
-                            title: 'PNC\n30%',
-                            titleStyle: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white),
-                            radius: 50),
-                        PieChartSectionData(
-                            value: 20,
-                            color: AppColors.warningText,
-                            title: 'Vacc\n20%',
-                            titleStyle: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white),
-                            radius: 50),
-                        PieChartSectionData(
-                            value: 12,
-                            color: AppColors.secondary,
-                            title: 'Risk\n12%',
-                            titleStyle: GoogleFonts.inter(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white),
-                            radius: 50),
+                        PieChartSectionData(value: 38, color: AppColors.primary, title: 'ANC\n38%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+                        PieChartSectionData(value: 30, color: AppColors.accent, title: 'PNC\n30%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+                        PieChartSectionData(value: 20, color: AppColors.warningText, title: 'Vacc\n20%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+                        PieChartSectionData(value: 12, color: AppColors.secondary, title: 'Risk\n12%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
                       ],
                     )),
                   ),
@@ -179,74 +157,55 @@ class DhoTaskPerformance extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Missed tasks
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                    color: AppColors.shadowColor,
-                    blurRadius: 24,
-                    offset: Offset(0, 4))
-              ],
+              boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Missed Tasks',
-                    style: GoogleFonts.publicSans(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.headings)),
+                    style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const SizedBox(height: 16),
-                ...[
-                  {'task': 'ANC Visit Reminder', 'clinician': 'Nurse Phiri', 'risk': 'High', 'days': '3 days'},
-                  {'task': 'Postnatal Check', 'clinician': 'Dr. Mwale', 'risk': 'Medium', 'days': '5 days'},
-                  {'task': 'Vaccination Follow-up', 'clinician': 'Nurse Tembo', 'risk': 'Low', 'days': '1 day'},
-                ].map((t) => Padding(
+                if (missedList.isEmpty)
+                  Text('No missed tasks data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                else
+                  ...missedList.take(5).map((t) {
+                    final task = t as Map<String, dynamic>;
+                    final risk = (task['riskLevel'] ?? task['risk'] ?? 'Low').toString();
+                    return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
                         children: [
-                          const Icon(Icons.cancel_outlined,
-                              size: 16, color: AppColors.criticalText),
+                          const Icon(Icons.cancel_outlined, size: 16, color: AppColors.criticalText),
                           const SizedBox(width: 12),
-                          Expanded(
-                            flex: 2,
-                            child: Text(t['task']!,
-                                style: GoogleFonts.inter(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppColors.onSurface)),
-                          ),
-                          Expanded(
-                            child: Text(t['clinician']!,
-                                style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: AppColors.bodyText)),
-                          ),
-                          StatusBadge(
-                            label: t['risk']!,
-                            type: t['risk'] == 'High'
-                                ? BadgeType.critical
-                                : t['risk'] == 'Medium'
-                                    ? BadgeType.warning
-                                    : BadgeType.success,
-                          ),
+                          Expanded(flex: 2, child: Text((task['title'] ?? '—').toString(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
+                          Expanded(child: Text((task['clinician']?['fullName'] ?? '—').toString(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
+                          StatusBadge(label: risk, type: risk == 'High' ? BadgeType.critical : risk == 'Medium' ? BadgeType.warning : BadgeType.success),
                           const SizedBox(width: 12),
-                          Text(t['days']!,
-                              style: GoogleFonts.inter(
-                                  fontSize: 12,
-                                  color: AppColors.criticalText)),
+                          Text(task['overdueDays'] != null ? '${task['overdueDays']} days' : '—', style: GoogleFonts.inter(fontSize: 12, color: AppColors.criticalText)),
                         ],
                       ),
-                    )),
+                    );
+                  }),
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  List<FlSpot> _buildTrend(dynamic trend) {
+    if (trend is List && trend.isNotEmpty) {
+      return trend.asMap().entries.map((e) {
+        final val = (e.value is num) ? (e.value as num).toDouble() : 0.0;
+        return FlSpot(e.key.toDouble(), val);
+      }).toList();
+    }
+    return const [FlSpot(0, 70), FlSpot(1, 72), FlSpot(2, 69), FlSpot(3, 74), FlSpot(4, 76), FlSpot(5, 77)];
   }
 }

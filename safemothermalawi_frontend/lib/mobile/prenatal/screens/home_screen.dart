@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
+import '../../widgets/notification_icon.dart';
 import '../models/pregnancy_data.dart';
 import '../widgets/baby_illustration.dart';
 import 'pregnancy_detail_screen.dart';
 import 'notifications_screen.dart';
+import 'nutrition_detail_screen.dart';
+import 'exercise_detail_screen.dart';
 
 class PrenatalHomeScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -26,14 +30,18 @@ class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
   }
 
   Future<void> _load() async {
+    await ApiService.instance.loadToken();
     final user = await AuthService().getCurrentUser();
-    if (user == null) return;
-    final firstName = user.fullName.split(' ').first;
+    if (user == null) { setState(() => _loading = false); return; }
+    final firstName = user.fullName.isNotEmpty ? user.fullName.split(' ').first : 'Mama';
     PregnancyData? data;
     if (user.lmpDate.isNotEmpty) {
-      data = PregnancyData(lmp: DateTime.parse(user.lmpDate));
+      data = PregnancyData(lmp: DateTime.tryParse(user.lmpDate) ?? DateTime.now());
     } else if (user.totalPregnancyWeeks > 0) {
       data = PregnancyData.fromTotalWeeks(user.totalPregnancyWeeks);
+    } else {
+      // Default: assume 20 weeks pregnant if no data
+      data = PregnancyData.fromTotalWeeks(20);
     }
     setState(() {
       _firstName = firstName;
@@ -119,17 +127,12 @@ class _Header extends StatelessWidget {
                 child: const Icon(Icons.menu, color: Colors.white, size: 24),
               ),
               const Spacer(),
-              GestureDetector(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NotificationsScreen())),
-                child: Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.notifications_outlined, color: Colors.white, size: 20),
+              NotificationIcon(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationsScreen()),
                 ),
+                iconColor: Colors.white,
               ),
             ],
           ),
@@ -181,11 +184,51 @@ class _NoDataView extends StatelessWidget {
 
 // ─── Main Body ────────────────────────────────────────────────────────────────
 
-class _Body extends StatelessWidget {
+class _Body extends StatefulWidget {
   final PregnancyData data;
   final String firstName;
   final VoidCallback onEditDueDate;
   const _Body({required this.data, required this.firstName, required this.onEditDueDate});
+
+  @override
+  State<_Body> createState() => _BodyState();
+}
+
+class _BodyState extends State<_Body> {
+  List<Map<String, dynamic>> _todayAppointments = [];
+  bool _loadingAppointments = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayAppointments();
+  }
+
+  Future<void> _loadTodayAppointments() async {
+    try {
+      final allAppointments = await ApiService.getAppointments();
+      final today = DateTime.now();
+      final todayAppointments = (allAppointments as List)
+          .cast<Map<String, dynamic>>()
+          .where((a) {
+            final date = DateTime.tryParse(a['date'] ?? '');
+            if (date == null) return false;
+            return date.year == today.year && date.month == today.month && date.day == today.day;
+          })
+          .toList();
+      
+      if (mounted) {
+        setState(() {
+          _todayAppointments = todayAppointments;
+          _loadingAppointments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingAppointments = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +254,7 @@ class _Body extends StatelessWidget {
                 Row(
                   children: [
                     Text(
-                      firstName,
+                      widget.firstName,
                       style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),
@@ -227,13 +270,20 @@ class _Body extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 16),
-                _ProgressCard(data: data),
+                _ProgressCard(data: widget.data),
                 const SizedBox(height: 20),
-                _BabyThisWeekCard(data: data),
+                
+                // Today's Appointments Section
+                if (!_loadingAppointments && _todayAppointments.isNotEmpty) ...[
+                  _TodayAppointmentsCard(appointments: _todayAppointments),
+                  const SizedBox(height: 20),
+                ],
+                
+                _BabyThisWeekCard(data: widget.data),
                 const SizedBox(height: 16),
-                _DueDateCard(data: data, onEdit: onEditDueDate),
+                _DueDateCard(data: widget.data, onEdit: widget.onEditDueDate),
                 const SizedBox(height: 20),
-                _ThisWeekForYou(data: data),
+                _ThisWeekForYou(data: widget.data),
                 const SizedBox(height: 8),
               ],
             ),
@@ -556,8 +606,13 @@ class _ThisWeekForYou extends StatelessWidget {
           emojiBackground: const Color(0xFFFFF0F0),
           title: 'Nutrition tips',
           subtitle: data.nutritionTip,
-          onTap: () => Navigator.pushNamed(context, '/nutrition')
-              .catchError((_) => null),
+          description: data.nutritionSubtitle,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NutritionDetailScreen(data: data),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         _WeeklyTipCard(
@@ -565,7 +620,13 @@ class _ThisWeekForYou extends StatelessWidget {
           emojiBackground: const Color(0xFFEFF8F0),
           title: 'Gentle exercises',
           subtitle: data.exerciseTip,
-          onTap: () {},
+          description: data.exerciseSubtitle,
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ExerciseDetailScreen(data: data),
+            ),
+          ),
         ),
       ],
     );
@@ -577,6 +638,7 @@ class _WeeklyTipCard extends StatelessWidget {
   final Color emojiBackground;
   final String title;
   final String subtitle;
+  final String? description;
   final VoidCallback onTap;
 
   const _WeeklyTipCard({
@@ -584,6 +646,7 @@ class _WeeklyTipCard extends StatelessWidget {
     required this.emojiBackground,
     required this.title,
     required this.subtitle,
+    this.description,
     required this.onTap,
   });
 
@@ -631,8 +694,17 @@ class _WeeklyTipCard extends StatelessWidget {
                   Text(subtitle,
                       style: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF9E9E9E),
-                          height: 1.3)),
+                          color: Color(0xFF616161),
+                          height: 1.3,
+                          fontWeight: FontWeight.w500)),
+                  if (description != null) ...[
+                    const SizedBox(height: 2),
+                    Text(description!,
+                        style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF9E9E9E),
+                            height: 1.2)),
+                  ],
                 ],
               ),
             ),
@@ -650,6 +722,127 @@ class _WeeklyTipCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ─── Today's Appointments Card ────────────────────────────────────────────────
+
+class _TodayAppointmentsCard extends StatelessWidget {
+  final List<Map<String, dynamic>> appointments;
+  const _TodayAppointmentsCard({required this.appointments});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            "TODAY'S APPOINTMENTS",
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF757575),
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        ...appointments.map((appointment) {
+          final time = (appointment['time'] ?? 'TBD').toString();
+          final title = (appointment['title'] ?? 'Appointment').toString();
+          final location = (appointment['location'] ?? appointment['facility'] ?? 'TBD').toString();
+          final doctor = (appointment['doctor'] ?? appointment['clinician']?['fullName'] ?? 'TBD').toString();
+          
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE3E8FF), width: 1),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF1A237E).withValues(alpha: 0.08),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8EAF6),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_today, color: Color(0xFF1A237E), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF212121),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.access_time, size: 12, color: const Color(0xFF9E9E9E)),
+                            const SizedBox(width: 4),
+                            Text(
+                              time,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(Icons.location_on, size: 12, color: const Color(0xFF9E9E9E)),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                location,
+                                style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (doctor != 'TBD') ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'Dr: $doctor',
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E)),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A237E),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ],
     );
   }
 }

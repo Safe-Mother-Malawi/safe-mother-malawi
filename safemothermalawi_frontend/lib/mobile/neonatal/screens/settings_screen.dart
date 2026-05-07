@@ -1,439 +1,762 @@
 import 'package:flutter/material.dart';
-import '../../../../theme/app_colors.dart';
-import '../../auth/services/logout_helper.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../widgets/notification_icon.dart';
+import 'notifications_screen.dart';
+import '../../../services/api_service.dart';
+import '../../auth/services/auth_service.dart';
+import '../../../providers/theme_provider.dart';
+import '../../../utils/validators.dart';
 
-class NeonatalSettingsScreen extends StatefulWidget {
-  const NeonatalSettingsScreen({super.key});
+class SettingsScreen extends StatefulWidget {
+  final VoidCallback? onOpenDrawer;
+  const SettingsScreen({super.key, this.onOpenDrawer});
 
   @override
-  State<NeonatalSettingsScreen> createState() => _NeonatalSettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _NeonatalSettingsScreenState extends State<NeonatalSettingsScreen> {
-  bool _feedingReminders   = true;
-  bool _vaccineAlerts      = true;
-  bool _sleepReminders     = false;
-  bool _dailyTips          = true;
-  bool _appointmentAlerts  = true;
-  bool _darkMode           = false;
-  String _language         = 'English';
-  String _units            = 'Metric (kg / cm)';
+class _SettingsScreenState extends State<SettingsScreen> {
+  late ApiService _apiService;
+  late AuthService _authService;
+
+  // Notification preferences
+  bool _appointmentReminders = true;
+  bool _dailyTips = true;
+  bool _babyMilestones = true;
+  bool _healthAlerts = true;
+
+  // App preferences
+  bool _darkMode = false;
+  bool _offlineMode = true;
+  String _selectedLanguage = 'English';
+
+  @override
+  void initState() {
+    super.initState();
+    _apiService = ApiService.instance;
+    _authService = AuthService();
+    _loadPreferences();
+  }
+
+  Future<void> _loadPreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      setState(() {
+        // Load notification preferences
+        _appointmentReminders = prefs.getBool('appointmentReminders') ?? true;
+        _dailyTips = prefs.getBool('dailyTips') ?? true;
+        _babyMilestones = prefs.getBool('babyMilestones') ?? true;
+        _healthAlerts = prefs.getBool('healthAlerts') ?? true;
+        
+        // Load app preferences
+        _darkMode = prefs.getBool('darkMode') ?? false;
+        _offlineMode = prefs.getBool('offlineMode') ?? true;
+        _selectedLanguage = prefs.getString('appLanguage') ?? 'English';
+      });
+      
+      // Try to load from API as well (don't overwrite local prefs if API is slow)
+      try {
+        final apiPrefs = await _apiService.getPreferences();
+        if (apiPrefs.isNotEmpty && mounted) {
+          // Only update if values are different (avoid unnecessary rebuilds)
+          final needsUpdate = 
+            apiPrefs['appointmentReminders'] != _appointmentReminders ||
+            apiPrefs['dailyTips'] != _dailyTips ||
+            apiPrefs['babyMilestones'] != _babyMilestones ||
+            apiPrefs['healthAlerts'] != _healthAlerts ||
+            apiPrefs['darkMode'] != _darkMode ||
+            apiPrefs['offlineMode'] != _offlineMode ||
+            apiPrefs['appLanguage'] != _selectedLanguage;
+          
+          if (needsUpdate) {
+            setState(() {
+              _appointmentReminders = apiPrefs['appointmentReminders'] ?? _appointmentReminders;
+              _dailyTips = apiPrefs['dailyTips'] ?? _dailyTips;
+              _babyMilestones = apiPrefs['babyMilestones'] ?? _babyMilestones;
+              _healthAlerts = apiPrefs['healthAlerts'] ?? _healthAlerts;
+              _darkMode = apiPrefs['darkMode'] ?? _darkMode;
+              _offlineMode = apiPrefs['offlineMode'] ?? _offlineMode;
+              _selectedLanguage = apiPrefs['appLanguage'] ?? _selectedLanguage;
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Failed to load preferences from API: $e');
+        // Silently fail - local prefs are already loaded
+      }
+    } catch (e) {
+      debugPrint('Error loading preferences: $e');
+    }
+  }
+
+  Future<void> _savePreferences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Save to local storage
+      await prefs.setBool('appointmentReminders', _appointmentReminders);
+      await prefs.setBool('dailyTips', _dailyTips);
+      await prefs.setBool('babyMilestones', _babyMilestones);
+      await prefs.setBool('healthAlerts', _healthAlerts);
+      await prefs.setBool('darkMode', _darkMode);
+      await prefs.setBool('offlineMode', _offlineMode);
+      await prefs.setString('appLanguage', _selectedLanguage);
+      
+      // Save to API
+      try {
+        await _apiService.savePreferences({
+          'appointmentReminders': _appointmentReminders,
+          'dailyTips': _dailyTips,
+          'babyMilestones': _babyMilestones,
+          'healthAlerts': _healthAlerts,
+          'darkMode': _darkMode,
+          'offlineMode': _offlineMode,
+          'appLanguage': _selectedLanguage,
+        });
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Failed to sync preferences to server'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        debugPrint('Failed to save preferences to API: $e');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error saving preferences: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _changePassword() async {
+    showDialog(
+      context: context,
+      builder: (context) => _ChangePasswordDialog(
+        onPasswordChanged: () {
+          if (mounted) {
+            Navigator.pop(context);
+          }
+        },
+      ),
+    );
+  }
+
+  Future<void> _showPrivacyPolicy() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Privacy Policy'),
+        content: const SingleChildScrollView(
+          child: Text(
+            'Your privacy is important to us. This app collects health information to provide better maternal and neonatal care. '
+            'All data is encrypted and stored securely. We do not share your information with third parties without your consent. '
+            'For more information, please contact our support team.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteAccount() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account? This action cannot be undone. '
+          'All your data will be permanently deleted.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _apiService.deleteAccount();
+                await _authService.logout();
+                if (mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error deleting account: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _signOut() async {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Sign Out'),
+        content: const Text('Are you sure you want to sign out?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              try {
+                await _authService.logout();
+                if (mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error signing out: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.mobilePageBg,
+      backgroundColor: const Color(0xFFF5F7FF),
       appBar: AppBar(
-        backgroundColor: AppColors.navbarBg,
+        backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Settings',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+        title: const Text(
+          'Settings',
+          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+        ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: NotificationIcon(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const NeonatalNotificationsScreen()),
+              ),
+              iconColor: Colors.white,
+            ),
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Notifications
-            _SectionHeader('NOTIFICATIONS'),
-            _SettingsCard(children: [
-              _SwitchTile(
-                icon: Icons.local_drink_outlined,
-                label: 'Feeding Reminders',
-                subtitle: 'Remind me every 2–3 hours to feed baby',
-                value: _feedingReminders,
-                onChanged: (v) => setState(() => _feedingReminders = v),
-              ),
-              const _Divider(),
-              _SwitchTile(
-                icon: Icons.vaccines_outlined,
-                label: 'Vaccine Alerts',
-                subtitle: 'Notify me when a vaccine is due',
-                value: _vaccineAlerts,
-                onChanged: (v) => setState(() => _vaccineAlerts = v),
-              ),
-              const _Divider(),
-              _SwitchTile(
-                icon: Icons.bedtime_outlined,
-                label: 'Sleep Reminders',
-                subtitle: 'Remind me to log sleep sessions',
-                value: _sleepReminders,
-                onChanged: (v) => setState(() => _sleepReminders = v),
-              ),
-              const _Divider(),
-              _SwitchTile(
-                icon: Icons.lightbulb_outline,
-                label: 'Daily Tips',
-                subtitle: 'Receive a daily baby care tip',
-                value: _dailyTips,
-                onChanged: (v) => setState(() => _dailyTips = v),
-              ),
-              const _Divider(),
-              _SwitchTile(
-                icon: Icons.event_outlined,
-                label: 'Appointment Alerts',
-                subtitle: 'Remind me 24 hours before appointments',
-                value: _appointmentAlerts,
-                onChanged: (v) => setState(() => _appointmentAlerts = v),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // Preferences
-            _SectionHeader('PREFERENCES'),
-            _SettingsCard(children: [
-              _SelectTile(
-                icon: Icons.language_outlined,
-                label: 'Language',
-                value: _language,
-                options: const ['English', 'Chichewa'],
-                onChanged: (v) => setState(() => _language = v),
-              ),
-              const _Divider(),
-              _SelectTile(
-                icon: Icons.straighten_outlined,
-                label: 'Units',
-                value: _units,
-                options: const ['Metric (kg / cm)', 'Imperial (lb / in)'],
-                onChanged: (v) => setState(() => _units = v),
-              ),
-              const _Divider(),
-              _SwitchTile(
-                icon: Icons.dark_mode_outlined,
-                label: 'Dark Mode',
-                subtitle: 'Switch to dark theme',
-                value: _darkMode,
-                onChanged: (v) => setState(() => _darkMode = v),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // Privacy & Security
-            _SectionHeader('PRIVACY & SECURITY'),
-            _SettingsCard(children: [
-              _ActionTile(
-                icon: Icons.lock_outline,
-                label: 'Change Password',
-                onTap: () => _showChangePasswordDialog(context),
-              ),
-              const _Divider(),
-              _ActionTile(
-                icon: Icons.privacy_tip_outlined,
-                label: 'Privacy Policy',
-                onTap: () => _showInfoDialog(context, 'Privacy Policy',
-                    'Safe Mother Malawi collects only the data necessary to provide maternal and neonatal health services. Your data is stored securely and never shared with third parties without your consent.'),
-              ),
-              const _Divider(),
-              _ActionTile(
-                icon: Icons.description_outlined,
-                label: 'Terms of Service',
-                onTap: () => _showInfoDialog(context, 'Terms of Service',
-                    'By using Safe Mother Malawi, you agree to use the app for personal health tracking purposes only. The app does not replace professional medical advice.'),
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // About
-            _SectionHeader('ABOUT'),
-            _SettingsCard(children: [
-              _ActionTile(
-                icon: Icons.info_outline,
-                label: 'App Version',
-                trailing: const Text('v1.0.0',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
-                onTap: () {},
-              ),
-              const _Divider(),
-              _ActionTile(
-                icon: Icons.help_outline,
-                label: 'Help & Support',
-                onTap: () => _showInfoDialog(context, 'Help & Support',
-                    'For assistance, contact us at support@safemothermalawi.org or call the SafeMother Helpline on 116.'),
-              ),
-              const _Divider(),
-              _ActionTile(
-                icon: Icons.star_outline,
-                label: 'Rate the App',
-                onTap: () {},
-              ),
-            ]),
-
-            const SizedBox(height: 20),
-
-            // Danger zone
-            _SectionHeader('ACCOUNT'),
-            _SettingsCard(children: [
-              _ActionTile(
-                icon: Icons.delete_outline,
-                label: 'Clear All Data',
-                color: AppColors.statusAmber,
-                onTap: () => _confirmClearData(context),
-              ),
-              const _Divider(),
-              _ActionTile(
-                icon: Icons.logout,
-                label: 'Sign Out',
-                color: AppColors.statusRed,
-                onTap: () => _confirmLogout(context),
-              ),
-            ]),
-
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showChangePasswordDialog(BuildContext context) {
-    final currentCtrl = TextEditingController();
-    final newCtrl     = TextEditingController();
-    final confirmCtrl = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Change Password',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _DialogField(hint: 'Current password', controller: currentCtrl, obscure: true),
-            const SizedBox(height: 10),
-            _DialogField(hint: 'New password', controller: newCtrl, obscure: true),
-            const SizedBox(height: 10),
-            _DialogField(hint: 'Confirm new password', controller: confirmCtrl, obscure: true),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Password updated'), backgroundColor: AppColors.statusGreen),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.mobileNavy,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            // NOTIFICATIONS SECTION
+            _buildSectionHeader('NOTIFICATIONS'),
+            _buildToggleSetting(
+              icon: Icons.calendar_today,
+              title: 'Appointment Reminders',
+              subtitle: 'Get reminded before appointments',
+              value: _appointmentReminders,
+              onChanged: (value) {
+                setState(() => _appointmentReminders = value);
+                _savePreferences();
+              },
             ),
-            child: const Text('Update'),
+            _buildToggleSetting(
+              icon: Icons.lightbulb,
+              title: 'Daily Tips',
+              subtitle: 'Receive daily health & nutrition tips',
+              value: _dailyTips,
+              onChanged: (value) {
+                setState(() => _dailyTips = value);
+                _savePreferences();
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.star,
+              title: 'Baby Milestones',
+              subtitle: 'Weekly development updates',
+              value: _babyMilestones,
+              onChanged: (value) {
+                setState(() => _babyMilestones = value);
+                _savePreferences();
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.warning,
+              title: 'Health Alerts',
+              subtitle: 'Important health notifications',
+              value: _healthAlerts,
+              onChanged: (value) {
+                setState(() => _healthAlerts = value);
+                _savePreferences();
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // APP PREFERENCES SECTION
+            _buildSectionHeader('APP PREFERENCES'),
+            _buildToggleSetting(
+              icon: Icons.dark_mode,
+              title: 'Dark Mode',
+              subtitle: 'Switch to dark theme',
+              value: _darkMode,
+              onChanged: (value) {
+                setState(() => _darkMode = value);
+                context.read<ThemeProvider>().setDarkMode(value);
+                _savePreferences();
+              },
+            ),
+            _buildToggleSetting(
+              icon: Icons.cloud_off,
+              title: 'Offline Mode',
+              subtitle: 'Cache data for offline access',
+              value: _offlineMode,
+              onChanged: (value) {
+                setState(() => _offlineMode = value);
+                _savePreferences();
+              },
+            ),
+            _buildLanguageSetting(),
+            const SizedBox(height: 24),
+
+            // PRIVACY & SECURITY SECTION
+            _buildSectionHeader('PRIVACY & SECURITY'),
+            _buildActionSetting(
+              icon: Icons.lock,
+              title: 'Change Password',
+              onTap: _changePassword,
+            ),
+            _buildActionSetting(
+              icon: Icons.privacy_tip,
+              title: 'Privacy Policy',
+              onTap: _showPrivacyPolicy,
+            ),
+            _buildActionSetting(
+              icon: Icons.delete,
+              title: 'Delete Account',
+              titleColor: Colors.red,
+              onTap: _deleteAccount,
+            ),
+            const SizedBox(height: 24),
+
+            // ACCOUNT SECTION
+            _buildSectionHeader('ACCOUNT'),
+            _buildActionSetting(
+              icon: Icons.logout,
+              title: 'Sign Out',
+              titleColor: Colors.red,
+              onTap: _signOut,
+            ),
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12, top: 8),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF9E9E9E),
+          letterSpacing: 0.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildToggleSetting({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool value,
+    required Function(bool) onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE3E8FF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A237E).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFF1A237E), size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF212121),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF757575),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeColor: const Color(0xFF1A237E),
           ),
         ],
       ),
     );
   }
 
-  void _showInfoDialog(BuildContext context, String title, String body) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        content: Text(body,
-            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5)),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close', style: TextStyle(color: AppColors.mobileNavy)),
+  Widget _buildLanguageSetting() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE3E8FF)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A237E).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.language, color: Color(0xFF1A237E), size: 22),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Language',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF212121),
+                  ),
+                ),
+                const SizedBox(height: 4),
+                DropdownButton<String>(
+                  value: _selectedLanguage,
+                  underline: const SizedBox(),
+                  items: const [
+                    DropdownMenuItem(value: 'English', child: Text('English')),
+                    DropdownMenuItem(value: 'Chichewa', child: Text('Chichewa')),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() => _selectedLanguage = value);
+                      _savePreferences();
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _confirmClearData(BuildContext context) async {
+  Widget _buildActionSetting({
+    required IconData icon,
+    required String title,
+    Color titleColor = const Color(0xFF212121),
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE3E8FF)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: titleColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: titleColor, size: 22),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: titleColor,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: titleColor.withOpacity(0.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Change Password Dialog ────────────────────────────────────────────────────
+
+class _ChangePasswordDialog extends StatefulWidget {
+  final VoidCallback? onPasswordChanged;
+  const _ChangePasswordDialog({this.onPasswordChanged});
+
+  @override
+  State<_ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
+  late TextEditingController _currentPasswordController;
+  late TextEditingController _newPasswordController;
+  late TextEditingController _confirmPasswordController;
+  bool _isLoading = false;
+  bool _showCurrentPassword = false;
+  bool _showNewPassword = false;
+  bool _showConfirmPassword = false;
+  String? _passwordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPasswordController = TextEditingController();
+    _newPasswordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    // Validate current password
+    if (_currentPasswordController.text.isEmpty) {
+      setState(() => _passwordError = 'Current password is required');
+      return;
+    }
+
+    // Validate new password
+    final newPasswordError = Validators.validatePassword(_newPasswordController.text);
+    if (newPasswordError != null) {
+      setState(() => _passwordError = newPasswordError);
+      return;
+    }
+
+    // Validate password confirmation
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      setState(() => _passwordError = 'Passwords do not match');
+      return;
+    }
+
+    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear All Data',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        content: const Text('This will remove all locally stored data. This action cannot be undone.',
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Password Change'),
+        content: const Text('Are you sure you want to change your password?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.statusAmber,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('Clear'),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Change'),
           ),
         ],
       ),
-    );
-    if (confirmed == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data cleared'), backgroundColor: AppColors.statusAmber),
+    ) ?? false;
+
+    if (!confirmed) return;
+
+    setState(() => _isLoading = true);
+    try {
+      final apiService = ApiService.instance;
+      await apiService.changePassword(
+        currentPassword: _currentPasswordController.text,
+        newPassword: _newPasswordController.text,
       );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password changed successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        widget.onPasswordChanged?.call();
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _passwordError = 'Error: ${e.toString()}');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
-  void _confirmLogout(BuildContext context) async {
-    await confirmAndLogout(context);
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Change Password'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _currentPasswordController,
+              obscureText: !_showCurrentPassword,
+              decoration: InputDecoration(
+                labelText: 'Current Password',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                suffixIcon: IconButton(
+                  icon: Icon(_showCurrentPassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _showCurrentPassword = !_showCurrentPassword),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _newPasswordController,
+              obscureText: !_showNewPassword,
+              onChanged: (_) => setState(() => _passwordError = null),
+              decoration: InputDecoration(
+                labelText: 'New Password',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                suffixIcon: IconButton(
+                  icon: Icon(_showNewPassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _showNewPassword = !_showNewPassword),
+                ),
+                helperText: 'Min 6 chars, uppercase, lowercase, number, special char',
+                helperMaxLines: 2,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _confirmPasswordController,
+              obscureText: !_showConfirmPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirm Password',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                suffixIcon: IconButton(
+                  icon: Icon(_showConfirmPassword ? Icons.visibility : Icons.visibility_off),
+                  onPressed: () => setState(() => _showConfirmPassword = !_showConfirmPassword),
+              ),
+              ),
+            ),
+            if (_passwordError != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.withOpacity(0.3)),
+                ),
+                child: Text(
+                  _passwordError!,
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _changePassword,
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Change'),
+        ),
+      ],
+    );
   }
-}
-
-// ── Shared Widgets ─────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  const _SectionHeader(this.label);
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 8, top: 4),
-    child: Text(label,
-        style: const TextStyle(
-            fontSize: 10, fontWeight: FontWeight.w800,
-            color: AppColors.textMuted, letterSpacing: 1.2)),
-  );
-}
-
-class _SettingsCard extends StatelessWidget {
-  final List<Widget> children;
-  const _SettingsCard({required this.children});
-  @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(14),
-      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-    ),
-    child: Column(children: children),
-  );
-}
-
-class _Divider extends StatelessWidget {
-  const _Divider();
-  @override
-  Widget build(BuildContext context) =>
-      const Divider(height: 1, indent: 56, endIndent: 16, color: AppColors.border);
-}
-
-class _SwitchTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? subtitle;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-  const _SwitchTile({required this.icon, required this.label, this.subtitle, required this.value, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(
-        color: AppColors.mobileLightBg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: AppColors.mobileNavy, size: 20),
-    ),
-    title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
-    subtitle: subtitle != null
-        ? Text(subtitle!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary))
-        : null,
-    trailing: Switch(
-      value: value,
-      onChanged: onChanged,
-      activeThumbColor: AppColors.mobileNavy,
-    ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  );
-}
-
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  final Color? color;
-  final Widget? trailing;
-  const _ActionTile({required this.icon, required this.label, required this.onTap, this.color, this.trailing});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(
-        color: (color ?? AppColors.mobileNavy).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Icon(icon, color: color ?? AppColors.mobileNavy, size: 20),
-    ),
-    title: Text(label,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color ?? AppColors.textPrimary)),
-    trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 13, color: AppColors.textMuted),
-    onTap: onTap,
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  );
-}
-
-class _SelectTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final List<String> options;
-  final ValueChanged<String> onChanged;
-  const _SelectTile({required this.icon, required this.label, required this.value, required this.options, required this.onChanged});
-
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Container(
-      width: 36, height: 36,
-      decoration: BoxDecoration(color: AppColors.mobileLightBg, borderRadius: BorderRadius.circular(8)),
-      child: Icon(icon, color: AppColors.mobileNavy, size: 20),
-    ),
-    title: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary)),
-    trailing: DropdownButton<String>(
-      value: value,
-      underline: const SizedBox(),
-      style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-      items: options.map((o) => DropdownMenuItem(value: o, child: Text(o))).toList(),
-      onChanged: (v) { if (v != null) onChanged(v); },
-    ),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-  );
-}
-
-class _DialogField extends StatelessWidget {
-  final String hint;
-  final TextEditingController controller;
-  final bool obscure;
-  const _DialogField({required this.hint, required this.controller, this.obscure = false});
-
-  @override
-  Widget build(BuildContext context) => TextField(
-    controller: controller,
-    obscureText: obscure,
-    style: const TextStyle(fontSize: 14),
-    decoration: InputDecoration(
-      hintText: hint,
-      hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-      filled: true,
-      fillColor: AppColors.cardBg,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.border)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.mobileNavy)),
-    ),
-  );
 }

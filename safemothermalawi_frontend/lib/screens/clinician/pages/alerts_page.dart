@@ -1,71 +1,31 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/animated_pulse_dot.dart';
-import '../../../state/events_store.dart';
-import 'calendar_page.dart';
-
-// ── Model ─────────────────────────────────────────────────────────────────────
-
-enum AlertSeverity { critical, high }
-
-class PatientAlert {
-  final String id;
-  final String patientName;
-  final String status;
-  final String contact;
-  final String reason;
-  final List<String> symptoms;
-  final AlertSeverity severity;
-  final DateTime timestamp;
-  bool attended;
-
-  PatientAlert({
-    required this.id,
-    required this.patientName,
-    required this.status,
-    required this.contact,
-    required this.reason,
-    required this.symptoms,
-    required this.severity,
-    required this.timestamp,
-    this.attended = false,
-  });
-}
-
-// ── Seed data ─────────────────────────────────────────────────────────────────
-
-final _now = DateTime.now();
-
-final List<PatientAlert> _alertData = [
-  PatientAlert(id: '1', patientName: 'Grace Banda',    status: 'Prenatal', contact: '+265 991 234 567', reason: 'BP 148/96 — Severe hypertension',        symptoms: ['Severe headache', 'Reduced fetal movement', 'Blurred vision'], severity: AlertSeverity.critical, timestamp: _now.subtract(const Duration(minutes: 12))),
-  PatientAlert(id: '2', patientName: 'Faith Mwale',    status: 'Prenatal', contact: '+265 888 345 678', reason: 'BP 152/98 — Pre-eclampsia risk',          symptoms: ['Oedema', 'Proteinuria', 'Dizziness'],                         severity: AlertSeverity.critical, timestamp: _now.subtract(const Duration(minutes: 35))),
-  PatientAlert(id: '3', patientName: 'Mercy Tembo',    status: 'Neonatal', contact: '+265 993 111 222', reason: 'Fever 37.9°C — Neonatal infection risk',  symptoms: ['Mild fever 37.9°C', 'Breast tenderness'],                     severity: AlertSeverity.high,     timestamp: _now.subtract(const Duration(hours: 1))),
-  PatientAlert(id: '4', patientName: 'Liness Kachali', status: 'Prenatal', contact: '+265 999 456 789', reason: 'Gestational diabetes — overdue review',   symptoms: ['Fatigue', 'Increased thirst', 'Frequent urination'],          severity: AlertSeverity.high,     timestamp: _now.subtract(const Duration(days: 1, hours: 2))),
-  PatientAlert(id: '5', patientName: 'Joyce Mwale',    status: 'Prenatal', contact: '+265 992 678 901', reason: 'Reduced fetal movement — Week 30',        symptoms: ['No fetal movement', 'Mild cramping'],                         severity: AlertSeverity.critical, timestamp: _now.subtract(const Duration(days: 1, hours: 5))),
-];
-
-// ── Page ──────────────────────────────────────────────────────────────────────
+import '../../../services/api_service.dart';
 
 class ClinicianAlertsPage extends StatefulWidget {
   final void Function(int)? onNavigate;
   const ClinicianAlertsPage({super.key, this.onNavigate});
+
   @override
   State<ClinicianAlertsPage> createState() => _ClinicianAlertsPageState();
 }
 
 class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     with SingleTickerProviderStateMixin {
-  late List<PatientAlert> _alerts;
   late TabController _tabCtrl;
-  String? _expandedId;
-  String _filter = 'All';
   final _search = TextEditingController();
+  String _filter = 'All';
+
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _alerts = [];
 
   @override
   void initState() {
     super.initState();
-    _alerts = List.from(_alertData);
     _tabCtrl = TabController(length: 2, vsync: this);
+    _load();
   }
 
   @override
@@ -75,32 +35,69 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     super.dispose();
   }
 
-  List<PatientAlert> get _activeFiltered => _alerts.where((a) {
-        if (a.attended) return false;
-        if (_filter == 'Prenatal') return a.status == 'Prenatal';
-        if (_filter == 'Neonatal') return a.status == 'Neonatal';
-        if (_search.text.isNotEmpty &&
-            !a.patientName.toLowerCase().contains(_search.text.toLowerCase())) {
-          return false;
-        }
+  Future<void> _load() async {
+    try {
+      final raw = await ApiService.instance.get('/alerts');
+      final list = raw is List ? raw : (raw is Map ? (raw['data'] as List? ?? []) : []);
+      setState(() {
+        _alerts  = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _markAttended(Map<String, dynamic> alert) async {
+    final id = alert['id'] as String;
+    try {
+      await ApiService.instance.patch('/alerts/$id/attended', {});
+      setState(() => alert['attended'] = true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("${alert['patientName']}'s alert has been attended to."),
+        backgroundColor: const Color(0xFF1A3A5C),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+      ));
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> get _active => _alerts.where((a) {
+        if (a['attended'] == true) return false;
+        final status = (a['patientStatus'] ?? '').toString();
+        if (_filter == 'Prenatal' && status != 'Prenatal') return false;
+        if (_filter == 'Neonatal' && status != 'Neonatal') return false;
+        final q = _search.text.toLowerCase();
+        if (q.isNotEmpty && !(a['patientName'] ?? '').toString().toLowerCase().contains(q)) return false;
         return true;
       }).toList();
 
-  // History = ALL alerts regardless of attended status
-  List<PatientAlert> get _allAlerts => List.from(_alerts)
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  List<Map<String, dynamic>> get _history => List.from(_alerts)
+    ..sort((a, b) {
+      final ta = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime(2000);
+      final tb = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime(2000);
+      return tb.compareTo(ta);
+    });
 
-  Map<String, List<PatientAlert>> _groupByDate(List<PatientAlert> list) {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
+  Map<String, List<Map<String, dynamic>>> _groupByDate(List<Map<String, dynamic>> list) {
+    final now       = DateTime.now();
+    final today     = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
-    final map = <String, List<PatientAlert>>{};
+    final map       = <String, List<Map<String, dynamic>>>{};
     for (final a in list) {
-      final d = DateTime(a.timestamp.year, a.timestamp.month, a.timestamp.day);
+      final dt = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime(2000);
+      final d  = DateTime(dt.year, dt.month, dt.day);
       String key;
-      if (d == today) {
-        key = 'Today';
-      } else if (d == yesterday) key = 'Yesterday';
+      if (d == today) key = 'Today';
+      else if (d == yesterday) key = 'Yesterday';
       else key = '${d.day}/${d.month}/${d.year}';
       map.putIfAbsent(key, () => []).add(a);
     }
@@ -109,17 +106,27 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.error_outline, color: Colors.red, size: 40),
+        const SizedBox(height: 12),
+        const Text('Failed to load alerts'),
+        TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
+            child: const Text('Retry')),
+      ]));
+    }
+
+    final activeCount = _alerts.where((a) => a['attended'] != true).length;
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Header + tabs
       Container(
         color: Colors.white,
         padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Alerts',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
+          const Text('Alerts', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.g800)),
           const SizedBox(height: 4),
-          const Text('Monitor and track patient alerts.',
-              style: TextStyle(fontSize: 13, color: AppColors.g400)),
+          const Text('Monitor and track patient alerts.', style: TextStyle(fontSize: 13, color: AppColors.g400)),
           const SizedBox(height: 16),
           TabBar(
             controller: _tabCtrl,
@@ -129,83 +136,58 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
             indicatorWeight: 2,
             labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
             tabs: [
-              Tab(text: 'Active (${_alerts.where((a) => !a.attended).length})'),
+              Tab(text: 'Active ($activeCount)'),
               Tab(text: 'History (${_alerts.length})'),
             ],
           ),
         ]),
       ),
       const Divider(height: 1, color: AppColors.g200),
-      Expanded(
-        child: TabBarView(
-          controller: _tabCtrl,
-          children: [
-            _buildActiveTab(),
-            _buildHistoryTab(),
-          ],
-        ),
-      ),
+      Expanded(child: TabBarView(
+        controller: _tabCtrl,
+        children: [_buildActiveTab(), _buildHistoryTab()],
+      )),
     ]);
   }
 
-  // ── Active Tab ────────────────────────────────────────────────────────────────
-
   Widget _buildActiveTab() {
-    final groups = _groupByDate(_activeFiltered);
+    final groups = _groupByDate(_active);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Reminder
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.navyL,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.navy.withOpacity(0.2)),
-          ),
+          decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.navy.withOpacity(0.2))),
           child: const Row(children: [
             Icon(Icons.info_outline, color: AppColors.navy, size: 16),
             SizedBox(width: 10),
-            Expanded(child: Text(
-              'Please remember to contact the patient, check their symptoms, and give the right care if needed.',
-              style: TextStyle(fontSize: 12, color: AppColors.navy),
-            )),
+            Expanded(child: Text('Please contact the patient, check their symptoms, and give the right care if needed.', style: TextStyle(fontSize: 12, color: AppColors.navy))),
           ]),
         ),
         const SizedBox(height: 16),
-        // Search + dropdown filter
         Row(children: [
-          Expanded(
-            child: TextField(
-              controller: _search,
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                hintText: 'Search alerts...',
-                hintStyle: const TextStyle(fontSize: 12, color: AppColors.g400),
-                prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
-                filled: true, fillColor: AppColors.bg,
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-              ),
+          Expanded(child: TextField(
+            controller: _search,
+            onChanged: (_) => setState(() {}),
+            decoration: InputDecoration(
+              hintText: 'Search alerts...',
+              hintStyle: const TextStyle(fontSize: 12, color: AppColors.g400),
+              prefixIcon: const Icon(Icons.search, size: 18, color: AppColors.g400),
+              filled: true, fillColor: AppColors.bg,
+              contentPadding: const EdgeInsets.symmetric(vertical: 8),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
             ),
-          ),
+          )),
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            decoration: BoxDecoration(
-              color: AppColors.bg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.g200),
-            ),
+            decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.g200)),
             child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
                 value: _filter,
                 style: const TextStyle(fontSize: 12, color: AppColors.g800),
                 icon: const Icon(Icons.filter_list, size: 16, color: AppColors.navy),
-                items: ['All', 'Prenatal', 'Neonatal']
-                    .map((f) => DropdownMenuItem(value: f, child: Text(f)))
-                    .toList(),
+                items: ['All','Prenatal','Neonatal'].map((f) => DropdownMenuItem(value: f, child: Text(f))).toList(),
                 onChanged: (v) => setState(() => _filter = v!),
               ),
             ),
@@ -213,58 +195,42 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
         ]),
         const SizedBox(height: 16),
         if (groups.isEmpty)
-          _emptyState('No active alerts.', 'All patients are currently stable.',
-              Icons.notifications_off_outlined)
+          _emptyState('No active alerts.', 'All patients are currently stable.', Icons.notifications_off_outlined)
         else
           ...groups.entries.map((e) => _buildGroup(e.key, e.value, isHistory: false)),
       ]),
     );
   }
 
-  // ── History Tab ───────────────────────────────────────────────────────────────
-
   Widget _buildHistoryTab() {
-    final groups = _groupByDate(_allAlerts);
+    final groups = _groupByDate(_history);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: AppColors.g100,
-            borderRadius: BorderRadius.circular(8),
-          ),
+          decoration: BoxDecoration(color: AppColors.g100, borderRadius: BorderRadius.circular(8)),
           child: const Row(children: [
             Icon(Icons.history, color: AppColors.g600, size: 16),
             SizedBox(width: 10),
-            Expanded(child: Text(
-              'Complete record of all alerts. This data is preserved for clinical accountability.',
-              style: TextStyle(fontSize: 12, color: AppColors.g600),
-            )),
+            Expanded(child: Text('Complete record of all alerts. Preserved for clinical accountability.', style: TextStyle(fontSize: 12, color: AppColors.g600))),
           ]),
         ),
         const SizedBox(height: 16),
         if (groups.isEmpty)
-          _emptyState('No alert history yet.', 'Alerts will appear here once raised.',
-              Icons.history)
+          _emptyState('No alert history yet.', 'Alerts will appear here once raised.', Icons.history)
         else
           ...groups.entries.map((e) => _buildGroup(e.key, e.value, isHistory: true)),
       ]),
     );
   }
 
-  // ── Shared widgets ────────────────────────────────────────────────────────────
-
-
-
-  Widget _buildGroup(String label, List<PatientAlert> alerts, {required bool isHistory}) {
+  Widget _buildGroup(String label, List<Map<String, dynamic>> alerts, {required bool isHistory}) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Padding(
         padding: const EdgeInsets.only(bottom: 10),
         child: Row(children: [
-          Text(label,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold,
-                  color: AppColors.g600, letterSpacing: 0.5)),
+          Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.g600, letterSpacing: 0.5)),
           const SizedBox(width: 8),
           const Expanded(child: Divider(color: AppColors.g200, height: 1)),
         ]),
@@ -274,15 +240,19 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     ]);
   }
 
-  // ── Active alert card ─────────────────────────────────────────────────────────
-
-  Widget _alertCard(PatientAlert a) {
-    final isCritical = a.severity == AlertSeverity.critical;
+  Widget _alertCard(Map<String, dynamic> a) {
+    final severity   = (a['severity'] ?? 'high').toString();
+    final isCritical = severity == 'critical';
     final riskColor  = isCritical ? AppColors.red : AppColors.orange;
-    final expanded   = _expandedId == a.id;
+    final name       = a['patientName'] as String? ?? 'Unknown';
+    final status     = a['patientStatus'] as String? ?? '';
+    final reason     = a['reason'] as String? ?? '';
+    final contact    = a['contact'] as String? ?? '';
+    final symptoms   = (a['symptoms'] as List<dynamic>? ?? []).cast<String>();
+    final ts         = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
 
     return GestureDetector(
-      onTap: () => setState(() => _expandedId = expanded ? null : a.id),
+      onTap: () => setState(() => a['_expanded'] = !(a['_expanded'] == true)),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         margin: const EdgeInsets.only(bottom: 10),
@@ -295,174 +265,101 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
           Padding(
             padding: const EdgeInsets.all(14),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 4, right: 10),
-                child: AnimatedPulseDot(color: riskColor, size: 9),
-              ),
-              CircleAvatar(
-                radius: 17,
-                backgroundColor: AppColors.navyL,
-                child: Text(a.patientName[0],
-                    style: const TextStyle(color: AppColors.navy, fontSize: 12,
-                        fontWeight: FontWeight.bold)),
-              ),
+              Padding(padding: const EdgeInsets.only(top: 4, right: 10), child: AnimatedPulseDot(color: riskColor, size: 9)),
+              CircleAvatar(radius: 17, backgroundColor: AppColors.navyL,
+                  child: Text(name[0], style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
-                  Text(a.patientName,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
-                          color: AppColors.g800)),
+                  Text(name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
                   const SizedBox(width: 8),
-                  _badge(a.status, AppColors.navy, AppColors.navyL),
+                  _badge(status, AppColors.navy, AppColors.navyL),
                 ]),
                 const SizedBox(height: 3),
-                Text(a.reason,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                        color: riskColor)),
+                Text(reason, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: riskColor)),
                 const SizedBox(height: 3),
-                Text(_timeAgo(a.timestamp),
-                    style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+                Text(_timeAgo(ts), style: const TextStyle(fontSize: 10, color: AppColors.g400)),
               ])),
               const SizedBox(width: 8),
               GestureDetector(
-                onTap: () {
-                  setState(() { a.attended = true; _expandedId = null; });
-                  final patientName = a.patientName;
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      duration: const Duration(seconds: 3),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: const Color(0xFF1A3A5C),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      margin: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      content: Row(children: [
-                        Container(
-                          width: 28, height: 28,
-                          decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.15),
-                              shape: BoxShape.circle),
-                          child: const Icon(Icons.check, color: Colors.white, size: 16),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            "$patientName's alert has been attended to.",
-                            style: const TextStyle(fontSize: 13, color: Colors.white,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() => a.attended = false);
-                            ScaffoldMessenger.of(context).clearSnackBars();
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                          ),
-                          child: const Text('Undo',
-                              style: TextStyle(color: Color(0xFF90CAF9),
-                                  fontSize: 13, fontWeight: FontWeight.bold)),
-                        ),
-                      ]),
-                    ),
-                  );
-                },
+                onTap: () => _markAttended(a),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                      color: AppColors.navy, borderRadius: BorderRadius.circular(8)),
-                  child: const Text('Mark as Done',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
-                          color: Colors.white)),
+                  decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(8)),
+                  child: const Text('Mark as Done', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white)),
                 ),
               ),
             ]),
           ),
-          if (expanded)
+          if (a['_expanded'] == true)
             Container(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: AppColors.g200))),
+              decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.g200))),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                const Text('Reported Symptoms',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
-                        color: AppColors.g800)),
+                const Text('Reported Symptoms', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
                 const SizedBox(height: 12),
-                if (a.symptoms.isEmpty)
-                  const Text('No symptoms recorded.',
-                      style: TextStyle(fontSize: 13, color: AppColors.g400))
+                if (symptoms.isEmpty)
+                  const Text('No symptoms recorded.', style: TextStyle(fontSize: 13, color: AppColors.g400))
                 else
-                  ...a.symptoms.map((s) => Container(
+                  ...symptoms.map((s) => Container(
                         margin: const EdgeInsets.only(bottom: 8),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        decoration: BoxDecoration(color: AppColors.bg,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.g200)),
+                        decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.g200)),
                         child: Row(children: [
                           const Icon(Icons.report_outlined, size: 16, color: AppColors.navy),
                           const SizedBox(width: 12),
-                          Expanded(child: Text(s,
-                              style: const TextStyle(fontSize: 13, color: AppColors.g800))),
+                          Expanded(child: Text(s, style: const TextStyle(fontSize: 13, color: AppColors.g800))),
                         ]),
                       )),
                 const SizedBox(height: 16),
-                const Text('Patient Contact',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
-                        color: AppColors.g800)),
-                const SizedBox(height: 10),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(color: AppColors.navyL,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.navy.withOpacity(0.2))),
-                  child: Row(children: [
-                    const Icon(Icons.phone_outlined, size: 18, color: AppColors.navy),
-                    const SizedBox(width: 12),
-                    Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('Phone Number',
-                          style: TextStyle(fontSize: 11, color: AppColors.g600)),
-                      const SizedBox(height: 2),
-                      Text(a.contact,
-                          style: const TextStyle(fontSize: 14,
-                              fontWeight: FontWeight.bold, color: AppColors.navy)),
+                if (contact.isNotEmpty) ...[
+                  const Text('Patient Contact', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
+                  const SizedBox(height: 10),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.navy.withOpacity(0.2))),
+                    child: Row(children: [
+                      const Icon(Icons.phone_outlined, size: 18, color: AppColors.navy),
+                      const SizedBox(width: 12),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Phone Number', style: TextStyle(fontSize: 11, color: AppColors.g600)),
+                        const SizedBox(height: 2),
+                        Text(contact, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.navy)),
+                      ]),
                     ]),
-                  ]),
-                ),
-                const SizedBox(height: 16),
+                  ),
+                  const SizedBox(height: 16),
+                ],
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Add event to shared store
-                      EventsStore.instance.add(CalEvent(
-                        id: DateTime.now().millisecondsSinceEpoch.toString(),
-                        title: 'Checkup — ${a.patientName}',
-                        patientName: a.patientName,
-                        patientContact: a.contact,
-                        patientStatus: a.status,
-                        time: '09:00 AM',
-                        notes: 'Scheduled from alert: ${a.reason}',
-                        type: a.status == 'Prenatal' ? EventType.prenatal : EventType.neonatal,
-                        date: DateTime.now().add(const Duration(days: 1)),
-                      ));
-                      // Navigate to Calendar (index 6)
-                      widget.onNavigate?.call(6);
-                      ScaffoldMessenger.of(context).clearSnackBars();
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                        content: const Row(children: [
-                          Icon(Icons.calendar_today, color: Colors.white, size: 16),
-                          SizedBox(width: 8),
-                          Text('Checkup scheduled and added to Calendar.'),
-                        ]),
-                        backgroundColor: const Color(0xFF1A3A5C),
-                        duration: const Duration(seconds: 3),
-                        behavior: SnackBarBehavior.floating,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                      ));
+                    onPressed: () async {
+                      try {
+                        await ApiService.createAppointment({
+                          'title': 'Checkup — $name',
+                          'patientName': name,
+                          'patientContact': contact,
+                          'patientType': status == 'Prenatal' ? 'prenatal' : 'neonatal',
+                          'time': '09:00 AM',
+                          'notes': 'Scheduled from alert: $reason',
+                          'scheduledDate': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
+                          'status': 'Pending',
+                        });
+                      } catch (_) {}
+                      widget.onNavigate?.call(5);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                          content: Row(children: [
+                            Icon(Icons.calendar_today, color: Colors.white, size: 16),
+                            SizedBox(width: 8),
+                            Text('Checkup scheduled and added to Calendar.'),
+                          ]),
+                          backgroundColor: Color(0xFF1A3A5C),
+                          duration: Duration(seconds: 3),
+                          behavior: SnackBarBehavior.floating,
+                        ));
+                      }
                     },
                     icon: const Icon(Icons.schedule, size: 16),
                     label: const Text('Schedule Checkup', style: TextStyle(fontSize: 13)),
@@ -481,74 +378,50 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     );
   }
 
-  // ── History card (read-only, shows attended status) ───────────────────────────
-
-  Widget _historyCard(PatientAlert a) {
-    final isCritical = a.severity == AlertSeverity.critical;
+  Widget _historyCard(Map<String, dynamic> a) {
+    final severity   = (a['severity'] ?? 'high').toString();
+    final isCritical = severity == 'critical';
     final riskColor  = isCritical ? AppColors.red : AppColors.orange;
+    final attended   = a['attended'] == true;
+    final name       = a['patientName'] as String? ?? 'Unknown';
+    final status     = a['patientStatus'] as String? ?? '';
+    final reason     = a['reason'] as String? ?? '';
+    final ts         = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: a.attended ? AppColors.g100 : Colors.white,
+        color: attended ? AppColors.g100 : Colors.white,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: AppColors.g200),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // Status dot
-        Padding(
-          padding: const EdgeInsets.only(top: 4, right: 10),
-          child: Container(
-            width: 9, height: 9,
-            decoration: BoxDecoration(
-              color: a.attended ? AppColors.green : riskColor,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ),
-        CircleAvatar(
-          radius: 16,
-          backgroundColor: AppColors.navyL,
-          child: Text(a.patientName[0],
-              style: const TextStyle(color: AppColors.navy, fontSize: 11,
-                  fontWeight: FontWeight.bold)),
-        ),
+        Padding(padding: const EdgeInsets.only(top: 4, right: 10),
+            child: Container(width: 9, height: 9, decoration: BoxDecoration(color: attended ? AppColors.green : riskColor, shape: BoxShape.circle))),
+        CircleAvatar(radius: 16, backgroundColor: AppColors.navyL,
+            child: Text(name[0], style: const TextStyle(color: AppColors.navy, fontSize: 11, fontWeight: FontWeight.bold))),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Text(a.patientName,
-                style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.bold,
-                    color: a.attended ? AppColors.g400 : AppColors.g800)),
+            Text(name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: attended ? AppColors.g400 : AppColors.g800)),
             const SizedBox(width: 8),
-            _badge(a.status, AppColors.navy, AppColors.navyL),
+            _badge(status, AppColors.navy, AppColors.navyL),
           ]),
           const SizedBox(height: 3),
-          Text(a.reason,
-              style: TextStyle(fontSize: 11, color: a.attended ? AppColors.g400 : riskColor,
-                  fontWeight: FontWeight.w500)),
+          Text(reason, style: TextStyle(fontSize: 11, color: attended ? AppColors.g400 : riskColor, fontWeight: FontWeight.w500)),
           const SizedBox(height: 3),
           Row(children: [
             const Icon(Icons.access_time, size: 11, color: AppColors.g400),
             const SizedBox(width: 4),
-            Text(_timeAgo(a.timestamp),
-                style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+            Text(_timeAgo(ts), style: const TextStyle(fontSize: 10, color: AppColors.g400)),
           ]),
         ])),
-        // Attended status badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            color: a.attended ? AppColors.greenL : AppColors.redL,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            a.attended ? 'Attended To' : 'Pending',
-            style: TextStyle(
-                fontSize: 10, fontWeight: FontWeight.bold,
-                color: a.attended ? AppColors.green : AppColors.red),
-          ),
+          decoration: BoxDecoration(color: attended ? AppColors.greenL : AppColors.redL, borderRadius: BorderRadius.circular(8)),
+          child: Text(attended ? 'Attended To' : 'Pending',
+              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: attended ? AppColors.green : AppColors.red)),
         ),
       ]),
     );
@@ -558,22 +431,18 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-      child: Text(label,
-          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
+      child: Text(label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: color)),
     );
   }
 
   Widget _emptyState(String title, String sub, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(40),
-      decoration: BoxDecoration(color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.g200)),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.g200)),
       child: Center(child: Column(children: [
         Icon(icon, color: AppColors.green, size: 48),
         const SizedBox(height: 12),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold,
-            color: AppColors.g800)),
+        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.g800)),
         const SizedBox(height: 4),
         Text(sub, style: const TextStyle(fontSize: 13, color: AppColors.g400)),
       ])),

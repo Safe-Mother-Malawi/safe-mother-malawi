@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../services/api_service.dart';
+import '../../../theme/app_colors.dart';
 
 class HelpScreen extends StatefulWidget {
   const HelpScreen({super.key});
@@ -17,13 +20,169 @@ class _HelpScreenState extends State<HelpScreen> {
   ];
 
   int? _expanded;
+  bool _isSubmitting = false;
+
+  Future<void> _callHelpline() async {
+    const phoneNumber = 'tel:+265800000111';
+    try {
+      if (await canLaunchUrl(Uri.parse(phoneNumber))) {
+        await launchUrl(Uri.parse(phoneNumber));
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to make call. Please dial +265 800 000 111 manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _sendEmail() async {
+    const email = 'support@safemothermalawi.org';
+    final emailUri = Uri(
+      scheme: 'mailto',
+      path: email,
+      queryParameters: {
+        'subject': 'SafeMother Support Request',
+        'body': 'Hello,\n\nI need help with...\n\nThank you',
+      },
+    );
+    try {
+      if (await canLaunchUrl(emailUri)) {
+        await launchUrl(emailUri);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Unable to open email. Please email $email manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _findNearestHealthCentre() async {
+    const mapsUrl = 'https://maps.google.com/?q=health+centre+malawi';
+    try {
+      if (await canLaunchUrl(Uri.parse(mapsUrl))) {
+        await launchUrl(Uri.parse(mapsUrl), mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Unable to open maps. Please search manually.')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _showContactForm() async {
+    final subjectController = TextEditingController();
+    final messageController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Contact Support'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: subjectController,
+                decoration: InputDecoration(
+                  labelText: 'Subject',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: messageController,
+                decoration: InputDecoration(
+                  labelText: 'Message',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  hintText: 'Describe your issue...',
+                ),
+                maxLines: 5,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isSubmitting
+                ? null
+                : () async {
+                    if (subjectController.text.isEmpty || messageController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill in all fields')),
+                      );
+                      return;
+                    }
+
+                    setState(() => _isSubmitting = true);
+                    try {
+                      await ApiService.instance.submitContactForm(
+                        subject: subjectController.text,
+                        message: messageController.text,
+                      );
+                      if (mounted) {
+                        Navigator.pop(ctx);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Thank you! Your message has been sent to our support team.'),
+                            backgroundColor: Color(0xFF4CAF50),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: $e')),
+                        );
+                      }
+                    } finally {
+                      if (mounted) {
+                        setState(() => _isSubmitting = false);
+                      }
+                    }
+                  },
+            child: _isSubmitting
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Send'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FF),
+      backgroundColor: AppColors.mobilePageBg,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1A237E),
+        backgroundColor: AppColors.navbarBg,
         elevation: 0,
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
         title: const Text('Help & Support', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
@@ -35,7 +194,7 @@ class _HelpScreenState extends State<HelpScreen> {
           Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+              gradient: const LinearGradient(colors: [AppColors.navbarBg, AppColors.sidebarBgMob], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(18),
             ),
             child: Row(
@@ -46,13 +205,13 @@ class _HelpScreenState extends State<HelpScreen> {
                     children: const [
                       Text('Need Help?', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
                       SizedBox(height: 4),
-                      Text('Contact our support team anytime', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('Our support team is here for you', style: TextStyle(color: Colors.white70, fontSize: 12)),
                     ],
                   ),
                 ),
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF1A237E), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
-                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: AppColors.mobileNavy, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))),
+                  onPressed: _showContactForm,
                   child: const Text('Contact Us', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                 ),
               ],
@@ -60,24 +219,57 @@ class _HelpScreenState extends State<HelpScreen> {
           ),
           const SizedBox(height: 20),
           // Quick links
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 10),
-            child: Text('QUICK LINKS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF9E9E9E), letterSpacing: 1.0)),
-          ),
+          _SectionLabel('QUICK LINKS'),
           Container(
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
             child: Column(children: [
-              _LinkTile(icon: Icons.phone_outlined, label: 'Call Support', subtitle: '+265 800 000 111', color: const Color(0xFF1A237E), onTap: () {}),
+              _LinkTile(icon: Icons.phone_outlined, label: 'SafeMother Helpline', subtitle: '+265 800 000 111', color: AppColors.statusRed, onTap: _callHelpline),
               const Divider(height: 1, indent: 56),
-              _LinkTile(icon: Icons.email_outlined, label: 'Email Us', subtitle: 'support@safemothermalawi.org', color: const Color(0xFF1A237E), onTap: () {}),
+              _LinkTile(icon: Icons.email_outlined, label: 'Email Support', subtitle: 'support@safemothermalawi.org', color: AppColors.mobileNavy, onTap: _sendEmail),
+              const Divider(height: 1, indent: 56),
+              _LinkTile(icon: Icons.local_hospital_outlined, label: 'Nearest Health Centre', subtitle: 'Find a clinic near you', color: AppColors.statusGreen, onTap: _findNearestHealthCentre),
             ]),
           ),
           const SizedBox(height: 20),
-          const Padding(
-            padding: EdgeInsets.only(left: 4, bottom: 10),
-            child: Text('FREQUENTLY ASKED QUESTIONS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF9E9E9E), letterSpacing: 1.0)),
+          // Pregnancy danger signs reminder
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.statusRedBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.statusRed.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.warning_rounded, color: AppColors.statusRed, size: 20),
+                    SizedBox(width: 8),
+                    Text('Pregnancy Danger Signs — Seek Help Immediately',
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.statusRed)),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...['Severe vaginal bleeding', 'Severe abdominal pain', 'Severe headache with vision changes',
+                    'Swelling of face, hands, or feet', 'Difficulty breathing', 'Loss of consciousness or seizures',
+                    'Severe chest pain', 'Signs of infection (fever, chills)']
+                    .map((s) => Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('• ', style: TextStyle(color: AppColors.statusRed, fontWeight: FontWeight.bold)),
+                      Expanded(child: Text(s, style: const TextStyle(fontSize: 12, color: Color(0xFF7F0000), height: 1.4))),
+                    ],
+                  ),
+                )),
+              ],
+            ),
           ),
+          const SizedBox(height: 20),
+          _SectionLabel('FREQUENTLY ASKED QUESTIONS'),
           ..._faqs.asMap().entries.map((e) => _FaqTile(
             question: e.value['q']!,
             answer: e.value['a']!,
@@ -89,6 +281,18 @@ class _HelpScreenState extends State<HelpScreen> {
       ),
     );
   }
+}
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(left: 4, bottom: 10),
+    child: Text(text,
+        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800,
+            color: AppColors.textMuted, letterSpacing: 1.0)),
+  );
 }
 
 class _LinkTile extends StatelessWidget {
@@ -109,10 +313,10 @@ class _LinkTile extends StatelessWidget {
           child: Icon(icon, color: color, size: 20)),
         const SizedBox(width: 14),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
-          Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+          Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+          Text(subtitle, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
         ])),
-        const Icon(Icons.arrow_forward_ios, size: 14, color: Color(0xFF9E9E9E)),
+        const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
       ]),
     ),
   );
@@ -129,7 +333,7 @@ class _FaqTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 8),
     decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: expanded ? const Color(0xFFBBBEF0) : const Color(0xFFF0F0F0))),
+      border: Border.all(color: expanded ? AppColors.mobileLightBg : AppColors.border)),
     child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -137,12 +341,12 @@ class _FaqTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
-            Expanded(child: Text(question, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF212121)))),
-            Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: const Color(0xFF1A237E)),
+            Expanded(child: Text(question, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
+            Icon(expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: AppColors.mobileNavy),
           ]),
           if (expanded) ...[
             const SizedBox(height: 10),
-            Text(answer, style: const TextStyle(fontSize: 12, color: Color(0xFF757575), height: 1.5)),
+            Text(answer, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5)),
           ],
         ]),
       ),

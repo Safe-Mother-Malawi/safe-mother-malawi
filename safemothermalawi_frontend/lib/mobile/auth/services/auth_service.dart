@@ -1,193 +1,192 @@
-import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user_model.dart';
+import '../../../services/api_service.dart';
 
+/// Mobile auth service — delegates to the real backend API.
 class AuthService {
-  static const _prefix = 'user_';
-  static const _loggedInKey = 'logged_in_email';
-
+  /// Register a new user via the backend.
   Future<bool> register(UserModel user) async {
-    final prefs = await SharedPreferences.getInstance();
-    // Use phone as account key when email is not provided
-    final accountId = user.email.isNotEmpty ? user.email : 'phone_${user.phone}';
-    final key = '$_prefix$accountId';
-    if (prefs.containsKey('${key}_phone')) return false;
-    await prefs.setString('${key}_email', user.email);
-    await prefs.setString('${key}_accountId', accountId);
-    await prefs.setString('${key}_password', user.password);
-    await prefs.setString('${key}_role', user.role);
-    await prefs.setString('${key}_fullName', user.fullName);
-    await prefs.setString('${key}_phone', user.phone);
-    await prefs.setString('${key}_lmpDate', user.lmpDate);
-    await prefs.setString('${key}_babyName', user.babyName);
-    await prefs.setString('${key}_babyDob', user.babyDob);
-    await prefs.setString('${key}_age', user.age);
-    await prefs.setString('${key}_nationality', user.nationality);
-    await prefs.setString('${key}_district', user.district);
-    await prefs.setString('${key}_healthCentre', user.healthCentre);
-    await prefs.setString('${key}_pregnancyMonths', user.pregnancyMonths);
-    await prefs.setString('${key}_pregnancyWeeks', user.pregnancyWeeks);
-    await prefs.setString('${key}_expectedDeliveryDate', user.expectedDeliveryDate);
-    await prefs.setString('${key}_babyGender', user.babyGender);
-    await prefs.setString('${key}_babyBirthWeight', user.babyBirthWeight);
-    await prefs.setString('${key}_securityQuestion', user.securityQuestion);
-    await prefs.setString('${key}_securityAnswer', user.securityAnswer.toLowerCase().trim());
-    return true;
+    try {
+      final payload = <String, dynamic>{
+        'email': user.email.isNotEmpty ? user.email : null,
+        'phone': user.phone,
+        'password': user.password,
+        'role': user.role,
+        'fullName': user.fullName,
+        'age': user.age,
+        'nationality': user.nationality,
+        'district': user.district,
+        'facilityName': user.facilityName,
+        'lmpDate': user.lmpDate.isNotEmpty ? user.lmpDate : null,
+        'pregnancyMonths': user.pregnancyMonths.isNotEmpty ? user.pregnancyMonths : null,
+        'pregnancyWeeks': user.pregnancyWeeks.isNotEmpty ? user.pregnancyWeeks : null,
+        'expectedDeliveryDate': user.expectedDeliveryDate.isNotEmpty ? user.expectedDeliveryDate : null,
+        'babyName': user.babyName.isNotEmpty ? user.babyName : null,
+        'babyDob': user.babyDob.isNotEmpty ? user.babyDob : null,
+        'babyGender': user.babyGender.isNotEmpty ? user.babyGender : null,
+        'babyBirthWeight': user.babyBirthWeight.isNotEmpty ? user.babyBirthWeight : null,
+        'securityQuestion': user.securityQuestion.isNotEmpty ? user.securityQuestion : null,
+        'securityAnswer': user.securityAnswer.isNotEmpty ? user.securityAnswer : null,
+      }..removeWhere((_, v) => v == null);
+
+      final data = await ApiService.instance.register(payload);
+      // Save tokens so the user is immediately authenticated after registration
+      final tokens = data?['tokens'] as Map<String, dynamic>?;
+      if (tokens != null) {
+        await ApiService.instance.saveToken(
+          tokens['accessToken'] as String,
+          tokens['refreshToken'] as String,
+        );
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
+  /// Login via the backend. Returns a [UserModel] on success, null on failure.
   Future<UserModel?> login(String emailOrPhone, String password) async {
-    final prefs = await SharedPreferences.getInstance();
-    // Determine account key: email or phone fallback
-    final accountId = emailOrPhone.contains('@')
-        ? emailOrPhone
-        : 'phone_$emailOrPhone';
-    final key = '$_prefix$accountId';
-    final stored = prefs.getString('${key}_password');
-    if (stored == null || stored != password) return null;
-    await prefs.setString(_loggedInKey, accountId);
-    return _buildUser(prefs, accountId);
+    try {
+      final data = await ApiService.instance.login(emailOrPhone, password);
+      // Save tokens so subsequent API calls are authenticated
+      final tokens = data['tokens'] as Map<String, dynamic>?;
+      if (tokens != null) {
+        await ApiService.instance.saveToken(
+          tokens['accessToken'] as String,
+          tokens['refreshToken'] as String,
+        );
+      }
+      final user = data['user'] as Map<String, dynamic>?;
+      if (user == null) return null;
+      return _userFromMap(user);
+    } catch (_) {
+      return null;
+    }
   }
 
+  /// Returns the currently logged-in user from the backend (uses saved token).
   Future<UserModel?> getCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final accountId = prefs.getString(_loggedInKey);
-    if (accountId == null) return null;
-    return _buildUser(prefs, accountId);
+    // Ensure token is loaded from storage before making the request
+    await ApiService.instance.loadToken();
+    if (!ApiService.instance.isLoggedIn) return null;
+    final data = await ApiService.instance.currentUser();
+    if (data == null) return null;
+    return _userFromMap(data);
   }
 
-  UserModel _buildUser(SharedPreferences prefs, String accountId) {
-    final key = '$_prefix$accountId';
-    return UserModel(
-      email: prefs.getString('${key}_email') ?? accountId,
-      password: prefs.getString('${key}_password') ?? '',
-      role: prefs.getString('${key}_role') ?? '',
-      fullName: prefs.getString('${key}_fullName') ?? '',
-      phone: prefs.getString('${key}_phone') ?? '',
-      lmpDate: prefs.getString('${key}_lmpDate') ?? '',
-      babyName: prefs.getString('${key}_babyName') ?? '',
-      babyDob: prefs.getString('${key}_babyDob') ?? '',
-      age: prefs.getString('${key}_age') ?? '',
-      nationality: prefs.getString('${key}_nationality') ?? '',
-      district: prefs.getString('${key}_district') ?? '',
-      healthCentre: prefs.getString('${key}_healthCentre') ?? '',
-      pregnancyMonths: prefs.getString('${key}_pregnancyMonths') ?? '',
-      pregnancyWeeks: prefs.getString('${key}_pregnancyWeeks') ?? '',
-      expectedDeliveryDate: prefs.getString('${key}_expectedDeliveryDate') ?? '',
-      babyGender: prefs.getString('${key}_babyGender') ?? '',
-      babyBirthWeight: prefs.getString('${key}_babyBirthWeight') ?? '',
-      securityQuestion: prefs.getString('${key}_securityQuestion') ?? '',
-      securityAnswer: prefs.getString('${key}_securityAnswer') ?? '',
-    );
-  }
-
+  /// Logout — clears tokens and cached user data.
   Future<void> logout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_loggedInKey);
+    await ApiService.instance.clearTokens();
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  UserModel _userFromMap(Map<String, dynamic> m) {
+    return UserModel(
+      email: (m['email'] as String?) ?? '',
+      password: '',
+      role: (m['role'] as String?) ?? '',
+      fullName: (m['fullName'] as String?) ?? (m['name'] as String?) ?? '',
+      phone: (m['phone'] as String?) ?? '',
+      lmpDate: (m['lmpDate'] as String?) ?? '',
+      babyName: (m['babyName'] as String?) ?? '',
+      babyDob: (m['babyDob'] as String?) ?? '',
+      age: (m['age']?.toString()) ?? '',
+      nationality: (m['nationality'] as String?) ?? '',
+      district: (m['district'] as String?) ?? '',
+      facilityName: (m['facilityName'] as String?) ?? '',
+      pregnancyMonths: (m['pregnancyMonths']?.toString()) ?? '',
+      pregnancyWeeks: (m['pregnancyWeeks']?.toString()) ?? '',
+      expectedDeliveryDate: (m['expectedDeliveryDate'] as String?) ?? '',
+      babyGender: (m['babyGender'] as String?) ?? '',
+      babyBirthWeight: (m['babyBirthWeight']?.toString()) ?? '',
+      securityQuestion: (m['securityQuestion'] as String?) ?? '',
+      securityAnswer: (m['securityAnswer'] as String?) ?? '',
+    );
   }
 
   /// Returns the security question for a given phone/email, or null if not found.
   Future<String?> getSecurityQuestion(String phoneOrEmail) async {
-    final prefs = await SharedPreferences.getInstance();
-    final accountId = phoneOrEmail.contains('@')
-        ? phoneOrEmail
-        : 'phone_$phoneOrEmail';
-    final key = '$_prefix$accountId';
-    if (!prefs.containsKey('${key}_password')) return null;
-    return prefs.getString('${key}_securityQuestion');
+    try {
+      final data = await ApiService.instance.post(
+        '/auth/forgot-password/question',
+        {'identifier': phoneOrEmail},
+      );
+      return data['question'] as String?;
+    } catch (_) {
+      return null;
+    }
   }
 
-  /// Verifies the security answer and resets the password.
-  /// Returns true on success, false if answer is wrong or account not found.
+  /// Resets password via backend security question verification.
   Future<bool> resetPassword({
     required String phoneOrEmail,
     required String securityAnswer,
     required String newPassword,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final accountId = phoneOrEmail.contains('@')
-        ? phoneOrEmail
-        : 'phone_$phoneOrEmail';
-    final key = '$_prefix$accountId';
-    final stored = prefs.getString('${key}_securityAnswer');
-    if (stored == null) return false;
-    if (stored != securityAnswer.toLowerCase().trim()) return false;
-    await prefs.setString('${key}_password', newPassword);
-    return true;
-  }
-
-  Future<void> seedDemoAccounts() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // ── Demo prenatal account ──────────────────────────────────────────────
-    const p1 = 'phone_0881234567';
-    final k1 = '$_prefix$p1';
-    // Always re-seed to pick up any data changes
-    await prefs.setString('${k1}_email', '');
-    await prefs.setString('${k1}_accountId', p1);
-    await prefs.setString('${k1}_password', 'demo1234');
-    await prefs.setString('${k1}_role', 'prenatal');
-    await prefs.setString('${k1}_fullName', 'Grace Banda');
-    await prefs.setString('${k1}_phone', '0881234567');
-    await prefs.setString('${k1}_age', '26');
-    await prefs.setString('${k1}_nationality', 'Malawian');
-    await prefs.setString('${k1}_district', 'Lilongwe');
-    await prefs.setString('${k1}_healthCentre', 'Area 25 Health Centre');
-    await prefs.setString('${k1}_pregnancyMonths', '2');
-    await prefs.setString('${k1}_pregnancyWeeks', '2');
-    await prefs.setString('${k1}_expectedDeliveryDate', '2026-08-10');
-    await prefs.setString('${k1}_lmpDate', '');
-    await prefs.setString('${k1}_babyName', '');
-    await prefs.setString('${k1}_babyDob', '');
-    await prefs.setString('${k1}_babyGender', '');
-    await prefs.setString('${k1}_babyBirthWeight', '');
-
-    // ── Demo neonatal account ──────────────────────────────────────────────
-    const p2 = 'phone_0991234567';
-    final k2 = '$_prefix$p2';
-    if (prefs.getString('${k2}_password') != 'demo1234') {
-      await prefs.setString('${k2}_email', '');
-      await prefs.setString('${k2}_accountId', p2);
-      await prefs.setString('${k2}_password', 'demo1234');
-      await prefs.setString('${k2}_role', 'neonatal');
-      await prefs.setString('${k2}_fullName', 'Mercy Phiri');
-      await prefs.setString('${k2}_phone', '0991234567');
-      await prefs.setString('${k2}_age', '24');
-      await prefs.setString('${k2}_nationality', 'Malawian');
-      await prefs.setString('${k2}_district', 'Blantyre');
-      await prefs.setString('${k2}_healthCentre', 'Ndirande Health Centre');
-      await prefs.setString('${k2}_babyName', 'Baby Phiri');
-      await prefs.setString('${k2}_babyDob', '2026-03-15T00:00:00.000');
-      await prefs.setString('${k2}_babyGender', 'Female');
-      await prefs.setString('${k2}_babyBirthWeight', '3.1');
-      await prefs.setString('${k2}_lmpDate', '');
-      await prefs.setString('${k2}_pregnancyMonths', '');
-      await prefs.setString('${k2}_pregnancyWeeks', '');
-      await prefs.setString('${k2}_expectedDeliveryDate', '');
-    }
-
-    // ── Demo clinician account ─────────────────────────────────────────────
-    const p3 = 'clinician@safemothermalawi.app';
-    final k3 = '$_prefix$p3';
-    if (prefs.getString('${k3}_password') != 'clinic1234') {
-      await prefs.setString('${k3}_email', p3);
-      await prefs.setString('${k3}_accountId', p3);
-      await prefs.setString('${k3}_password', 'clinic1234');
-      await prefs.setString('${k3}_role', 'clinician');
-      await prefs.setString('${k3}_fullName', 'Dr. Mwale Chirwa');
-      await prefs.setString('${k3}_phone', '0771234567');
-      await prefs.setString('${k3}_lmpDate', '');
-      await prefs.setString('${k3}_babyName', '');
-      await prefs.setString('${k3}_babyDob', '');
-      await prefs.setString('${k3}_babyGender', '');
-      await prefs.setString('${k3}_babyBirthWeight', '');
-      await prefs.setString('${k3}_age', '');
-      await prefs.setString('${k3}_nationality', '');
-      await prefs.setString('${k3}_district', '');
-      await prefs.setString('${k3}_healthCentre', '');
-      await prefs.setString('${k3}_pregnancyMonths', '');
-      await prefs.setString('${k3}_pregnancyWeeks', '');
-      await prefs.setString('${k3}_expectedDeliveryDate', '');
-      await prefs.setString('${k3}_securityQuestion', '');
-      await prefs.setString('${k3}_securityAnswer', '');
+    try {
+      await ApiService.instance.post(
+        '/auth/forgot-password/reset',
+        {
+          'identifier': phoneOrEmail,
+          'securityAnswer': securityAnswer,
+          'newPassword': newPassword,
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
     }
   }
+
+  /// Request password reset via email (email-based flow).
+  /// Returns true if request was successful (neutral response).
+  Future<bool> requestPasswordReset(String email) async {
+    try {
+      await ApiService.instance.post(
+        '/auth/forgot-password/request-reset',
+        {'email': email},
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Verify a password reset token.
+  /// Returns true if token is valid, false otherwise.
+  Future<bool> verifyResetToken(String token) async {
+    try {
+      final data = await ApiService.instance.get(
+        '/auth/forgot-password/verify-token/$token',
+      );
+      return (data['valid'] as bool?) ?? false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Reset password using a token (email-based flow).
+  /// Returns true on success, false on failure.
+  Future<bool> resetPasswordWithToken({
+    required String token,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      await ApiService.instance.post(
+        '/auth/forgot-password/reset-with-token',
+        {
+          'token': token,
+          'newPassword': newPassword,
+          'confirmPassword': confirmPassword,
+        },
+      );
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// No-op: demo accounts are no longer needed with real backend.
+  Future<void> seedDemoAccounts() async {}
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kAccent = Color(0xFF1A237E);
@@ -6,22 +7,61 @@ const _kTeal1  = Color(0xFF1A237E);
 const _kBg     = Color(0xFFF5F7FF);
 
 class FeedingScreen extends StatefulWidget {
-  const FeedingScreen({super.key});
+  final String? patientId;
+  const FeedingScreen({super.key, this.patientId});
 
   @override
   State<FeedingScreen> createState() => _FeedingScreenState();
 }
 
 class _FeedingScreenState extends State<FeedingScreen> {
-  final List<FeedEntry> _logs = [
-    FeedEntry(type: FeedType.breast,  durationMin: 12, time: DateTime.now().subtract(const Duration(hours: 2, minutes: 10))),
-    FeedEntry(type: FeedType.formula, volumeMl: 80,    time: DateTime.now().subtract(const Duration(hours: 4, minutes: 30))),
-    FeedEntry(type: FeedType.breast,  durationMin: 10, time: DateTime.now().subtract(const Duration(hours: 6, minutes: 45))),
-  ];
+  List<FeedEntry> _logs = [];
+  bool _loading = true;
 
   FeedType _selectedType = FeedType.breast;
   final _volumeCtrl   = TextEditingController();
   final _durationCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
+
+  Future<void> _loadLogs() async {
+    if (widget.patientId == null) {
+      setState(() => _loading = false);
+      return;
+    }
+    setState(() => _loading = true);
+    try {
+      final data = await ApiService.instance.get('/tracking/feeding/${widget.patientId}');
+      if (data is List) {
+        setState(() {
+          _logs = data.map((e) {
+            final m = e as Map<String, dynamic>;
+            return FeedEntry(
+              type: _parseFeedType(m['type']?.toString() ?? 'breast'),
+              volumeMl: m['volumeMl'] as int?,
+              durationMin: m['durationMin'] as int?,
+              time: DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now(),
+            );
+          }).toList();
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (_) {
+      setState(() => _loading = false);
+    }
+  }
+
+  FeedType _parseFeedType(String t) {
+    if (t == 'formula') return FeedType.formula;
+    if (t == 'mixed') return FeedType.mixed;
+    return FeedType.breast;
+  }
 
   @override
   void dispose() {
@@ -46,19 +86,37 @@ class _FeedingScreenState extends State<FeedingScreen> {
         .fold(0, (sum, e) => sum + (e.volumeMl ?? 0));
   }
 
-  void _logFeed() {
+  void _logFeed() async {
     final entry = FeedEntry(
       type: _selectedType,
       volumeMl: int.tryParse(_volumeCtrl.text),
       durationMin: int.tryParse(_durationCtrl.text),
       time: DateTime.now(),
     );
+
+    // Optimistically add to UI
     setState(() => _logs.insert(0, entry));
     _volumeCtrl.clear();
     _durationCtrl.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Feed logged ✓'), backgroundColor: _kAccent, duration: Duration(seconds: 2)),
-    );
+
+    // Persist to backend
+    if (widget.patientId != null) {
+      try {
+        await ApiService.instance.post('/tracking/feeding', {
+          'patientId': widget.patientId,
+          'type': _selectedType == FeedType.breast ? 'breast'
+              : _selectedType == FeedType.formula ? 'formula' : 'mixed',
+          if (entry.volumeMl != null) 'volumeMl': entry.volumeMl,
+          if (entry.durationMin != null) 'durationMin': entry.durationMin,
+        });
+      } catch (_) {}
+    }
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Feed logged ✓'), backgroundColor: _kAccent, duration: Duration(seconds: 2)),
+      );
+    }
   }
 
   @override
@@ -112,29 +170,31 @@ class _FeedingScreenState extends State<FeedingScreen> {
           ),
 
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Log form
-                  _LogCard(
-                    selectedType: _selectedType,
-                    onTypeChanged: (t) => setState(() => _selectedType = t),
-                    volumeCtrl: _volumeCtrl,
-                    durationCtrl: _durationCtrl,
-                    onLog: _logFeed,
+            child: _loading
+                ? const Center(child: CircularProgressIndicator(color: _kAccent))
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Log form
+                        _LogCard(
+                          selectedType: _selectedType,
+                          onTypeChanged: (t) => setState(() => _selectedType = t),
+                          volumeCtrl: _volumeCtrl,
+                          durationCtrl: _durationCtrl,
+                          onLog: _logFeed,
+                        ),
+                        const SizedBox(height: 20),
+                        const Text('FEED LOG',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                color: Color(0xFF9E9E9E), letterSpacing: 0.8)),
+                        const SizedBox(height: 10),
+                        ..._logs.map((e) => _FeedTile(entry: e)),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 20),
-                  const Text('FEED LOG',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                          color: Color(0xFF9E9E9E), letterSpacing: 0.8)),
-                  const SizedBox(height: 10),
-                  ..._logs.map((e) => _FeedTile(entry: e)),
-                  const SizedBox(height: 30),
-                ],
-              ),
-            ),
           ),
         ],
       ),

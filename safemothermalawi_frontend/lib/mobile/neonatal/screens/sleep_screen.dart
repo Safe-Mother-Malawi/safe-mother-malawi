@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../services/api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kAccent = Color(0xFF1A237E);
@@ -12,22 +13,47 @@ class SleepScreen extends StatefulWidget {
 }
 
 class _SleepScreenState extends State<SleepScreen> {
-  final List<SleepEntry> _logs = [
-    SleepEntry(
-      start: DateTime.now().subtract(const Duration(hours: 2, minutes: 30)),
-      end: DateTime.now().subtract(const Duration(hours: 1, minutes: 15)),
-      type: SleepType.dayNap,
-    ),
-    SleepEntry(
-      start: DateTime.now().subtract(const Duration(hours: 6)),
-      end: DateTime.now().subtract(const Duration(hours: 3, minutes: 30)),
-      type: SleepType.nightSleep,
-    ),
-  ];
+  List<SleepEntry> _logs = [];
+  bool _loadingLogs = true;
 
   SleepType _selectedType = SleepType.dayNap;
   TimeOfDay _start = TimeOfDay.now();
   TimeOfDay _end = TimeOfDay.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogs();
+  }
+
+  Future<void> _loadLogs() async {
+    setState(() => _loadingLogs = true);
+    try {
+      await ApiService.instance.loadToken();
+      // Try to load sleep logs from backend
+      final data = await ApiService.instance.get('/tracking/sleep') as List<dynamic>?;
+      if (data != null) {
+        setState(() {
+          _logs = data.map((e) {
+            final m = e as Map<String, dynamic>;
+            return SleepEntry(
+              start: DateTime.tryParse(m['startTime']?.toString() ?? '') ?? DateTime.now(),
+              end: DateTime.tryParse(m['endTime']?.toString() ?? '') ?? DateTime.now(),
+              type: (m['type']?.toString() ?? 'dayNap') == 'nightSleep'
+                  ? SleepType.nightSleep
+                  : SleepType.dayNap,
+            );
+          }).toList();
+          _loadingLogs = false;
+        });
+      } else {
+        setState(() { _logs = []; _loadingLogs = false; });
+      }
+    } catch (_) {
+      // Endpoint may not exist yet — start with empty list
+      setState(() { _logs = []; _loadingLogs = false; });
+    }
+  }
 
   int get _totalMinutesToday {
     return _logs.fold(0, (sum, e) => sum + e.duration.inMinutes.abs());
@@ -58,16 +84,30 @@ class _SleepScreenState extends State<SleepScreen> {
     }
   }
 
-  void _logSleep() {
+  void _logSleep() async {
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, now.day, _start.hour, _start.minute);
-    var end   = DateTime(now.year, now.month, now.day, _end.hour, _end.minute);
+    var end = DateTime(now.year, now.month, now.day, _end.hour, _end.minute);
     if (end.isBefore(start)) end = end.add(const Duration(days: 1));
 
-    setState(() => _logs.insert(0, SleepEntry(start: start, end: end, type: _selectedType)));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Sleep session logged ✓'), backgroundColor: _kAccent, duration: Duration(seconds: 2)),
-    );
+    final entry = SleepEntry(start: start, end: end, type: _selectedType);
+    setState(() => _logs.insert(0, entry));
+
+    // Persist to backend
+    try {
+      await ApiService.instance.post('/tracking/sleep', {
+        'startTime': start.toIso8601String(),
+        'endTime': end.toIso8601String(),
+        'type': _selectedType == SleepType.nightSleep ? 'nightSleep' : 'dayNap',
+      });
+    } catch (_) {}
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sleep session logged ✓'),
+            backgroundColor: _kAccent, duration: Duration(seconds: 2)),
+      );
+    }
   }
 
   @override
@@ -170,7 +210,19 @@ class _SleepScreenState extends State<SleepScreen> {
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
                           color: Color(0xFF9E9E9E), letterSpacing: 0.8)),
                   const SizedBox(height: 10),
-                  ..._logs.map((e) => _SleepTile(entry: e)),
+                  if (_loadingLogs)
+                    const Center(child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: CircularProgressIndicator(color: _kAccent),
+                    ))
+                  else if (_logs.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: Text('No sleep sessions logged yet.',
+                          style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)))),
+                    )
+                  else
+                    ..._logs.map((e) => _SleepTile(entry: e)),
                   const SizedBox(height: 30),
                 ],
               ),

@@ -4,7 +4,7 @@ import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
 import '../widgets/app_logo.dart';
 import 'role_selection_screen.dart';
-import 'forgot_password_screen.dart';
+import 'email_forgot_password_screen.dart';
 import '../../prenatal/prenatal_dashboard.dart';
 import '../../neonatal/neonatal_dashboard.dart';
 import '../../clinician/clinician_dashboard.dart';
@@ -39,19 +39,32 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
     if (!mounted) return;
     if (user != null) {
-      Widget dest;
+      // Mobile app only allows PRENATAL and NEONATAL users
       if (user.role == 'prenatal') {
-        dest = const PrenatalDashboard();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const PrenatalDashboard()),
+          (_) => false,
+        );
       } else if (user.role == 'neonatal') {
-        dest = const NeonatalDashboard();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const NeonatalDashboard()),
+          (_) => false,
+        );
       } else {
-        dest = const ClinicianDashboard();
+        // Block CLINICIAN, DHO, ADMIN roles
+        await AuthService().logout(); // Clear the token
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This mobile app is for patients only. ${user.role.toUpperCase()} users should use the web portal.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 5),
+          ),
+        );
       }
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => dest),
-        (_) => false,
-      );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -65,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _forgotPassword() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+      MaterialPageRoute(builder: (_) => const EmailForgotPasswordScreen()),
     );
   }
 

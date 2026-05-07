@@ -2,16 +2,10 @@ import 'package:flutter/material.dart';
 import '../web/admin/admin_overview.dart';
 import '../web/dho/dho_overview.dart';
 import 'clinician/clinician_layout.dart';
-
-/// Web portal credentials.
-/// Admin     → admin@safemothermalawi.app      / admin1234
-/// DHO       → dho@safemothermalawi.app        / dho12345
-/// Clinician → clinician@safemothermalawi.app  / clinic1234
-const _credentials = {
-  'admin@safemothermalawi.app':     ('admin1234',  'admin'),
-  'dho@safemothermalawi.app':       ('dho12345',   'dho'),
-  'clinician@safemothermalawi.app': ('clinic1234', 'clinician'),
-};
+import '../services/auth_service_web.dart';
+import '../services/api_service.dart';
+import 'email_forgot_password_dialog.dart';
+import '../utils/validators.dart';
 
 class LoginDialog extends StatefulWidget {
   const LoginDialog({super.key});
@@ -23,12 +17,10 @@ class LoginDialog extends StatefulWidget {
 class _LoginDialogState extends State<LoginDialog> {
   final _emailCtrl    = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  final _resetEmailCtrl = TextEditingController();
 
   bool _obscure      = true;
-  bool _showReset    = false;   // toggles between login and forgot-password view
+  bool _loading      = false;
   String? _error;
-  String? _resetMessage;
 
   static const _navy = Color(0xFF0D47A1);
   static const _bg   = Color(0xFFF0F6FF);
@@ -37,52 +29,85 @@ class _LoginDialogState extends State<LoginDialog> {
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
-    _resetEmailCtrl.dispose();
     super.dispose();
   }
 
   // ── Login ──────────────────────────────────────────────────────────────────
-  void _submit() {
-    final email    = _emailCtrl.text.trim().toLowerCase();
+  Future<void> _submit() async {
+    final email    = _emailCtrl.text.trim();
     final password = _passwordCtrl.text;
-    final entry    = _credentials[email];
 
-    if (entry == null || entry.$1 != password) {
-      setState(() => _error = 'Invalid email or password.');
+    if (email.isEmpty || password.isEmpty) {
+      setState(() => _error = 'Please enter your email and password.');
       return;
     }
 
-    Widget dest;
-    if (entry.$2 == 'admin') {
-      dest = const AdminOverview();
-    } else if (entry.$2 == 'dho') {
-      dest = const DhoOverview();
-    } else {
-      dest = const ClinicianDashboard();
-    }
+    setState(() { _loading = true; _error = null; });
 
-    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => dest),
-      (_) => false,
-    );
+    try {
+      final role = await AuthServiceWeb.instance.login(email, password);
+
+      if (!mounted) return;
+
+      // Web portal only allows CLINICIAN, DHO, and ADMIN
+      // Block PRENATAL and NEONATAL users
+      if (role == 'prenatal' || role == 'neonatal') {
+        // Logout the user immediately
+        await AuthServiceWeb.instance.logout();
+        
+        setState(() {
+          _loading = false;
+          _error = 'This web portal is for healthcare workers only. '
+                   '${role.toUpperCase()} users should use the mobile app.';
+        });
+        return;
+      }
+
+      Widget dest;
+      if (role == 'admin') {
+        dest = const AdminOverview();
+      } else if (role == 'dho') {
+        dest = const DhoOverview();
+      } else if (role == 'clinician') {
+        dest = const ClinicianDashboard();
+      } else {
+        // Unknown role
+        await AuthServiceWeb.instance.logout();
+        setState(() {
+          _loading = false;
+          _error = 'Invalid user role. This portal is for Admin, DHO, and Clinician accounts only.';
+        });
+        return;
+      }
+
+      Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => dest),
+        (_) => false,
+      );
+    } on ApiException catch (e) {
+      setState(() {
+        _loading = false;
+        _error = e.statusCode == 401
+            ? 'Invalid email or password.'
+            : 'Login failed: ${e.message}';
+      });
+    } catch (e) {
+      setState(() {
+        _loading = false;
+        _error = 'Could not connect to server. Please check your connection.';
+      });
+    }
   }
 
   // ── Forgot password ────────────────────────────────────────────────────────
-  void _submitReset() {
-    final email = _resetEmailCtrl.text.trim().toLowerCase();
-    final entry = _credentials[email];
-    setState(() {
-      if (entry == null) {
-        _resetMessage = null;
-        _error = 'No account found for that email.';
-      } else {
-        _error = null;
-        _resetMessage = 'Your password is: ${entry.$1}';
-      }
-    });
+  void _openForgotPassword() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const EmailForgotPasswordDialog(),
+    );
   }
 
-  // ── Close button ───────────────────────────────────────────────────────────
   void _close() => Navigator.of(context, rootNavigator: true).pop();
 
   @override
@@ -93,16 +118,12 @@ class _LoginDialogState extends State<LoginDialog> {
         constraints: const BoxConstraints(maxWidth: 460),
         child: Padding(
           padding: const EdgeInsets.all(36),
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: _showReset ? _buildResetView() : _buildLoginView(),
-          ),
+          child: _buildLoginView(),
         ),
       ),
     );
   }
 
-  // ── Login view ─────────────────────────────────────────────────────────────
   Widget _buildLoginView() {
     return Column(
       key: const ValueKey('login'),
@@ -115,15 +136,14 @@ class _LoginDialogState extends State<LoginDialog> {
             style: TextStyle(fontSize: 13, color: Colors.black45)),
         const SizedBox(height: 24),
 
-        // Email
         TextFormField(
           controller: _emailCtrl,
           onChanged: (_) => setState(() => _error = null),
           decoration: _inputDecoration('Email address', Icons.email_outlined),
+          validator: Validators.validateEmailOrPhone,
         ),
         const SizedBox(height: 14),
 
-        // Password
         TextFormField(
           controller: _passwordCtrl,
           obscureText: _obscure,
@@ -138,12 +158,11 @@ class _LoginDialogState extends State<LoginDialog> {
           ),
         ),
 
-        // Forgot password link
         const SizedBox(height: 6),
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => setState(() { _showReset = true; _error = null; }),
+            onPressed: _openForgotPassword,
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
               minimumSize: Size.zero,
@@ -158,120 +177,38 @@ class _LoginDialogState extends State<LoginDialog> {
 
         const SizedBox(height: 20),
 
-        // Sign in button
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
-            onPressed: _submit,
+            onPressed: _loading ? null : _submit,
             style: ElevatedButton.styleFrom(
               backgroundColor: _navy, foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Sign In', style: TextStyle(fontSize: 15)),
-          ),
-        ),
-
-        const SizedBox(height: 16),
-        Center(
-          child: Text(
-            'Admin: admin@safemothermalawi.app\nDHO: dho@safemothermalawi.app\nClinician: clinician@safemothermalawi.app',
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 11, color: Colors.black38, height: 1.6),
+            child: _loading
+                ? const SizedBox(width: 20, height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Text('Sign In', style: TextStyle(fontSize: 15)),
           ),
         ),
       ],
     );
   }
 
-  // ── Forgot password view ───────────────────────────────────────────────────
-  Widget _buildResetView() {
-    return Column(
-      key: const ValueKey('reset'),
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildHeader('Forgot password'),
-        const SizedBox(height: 6),
-        const Text('Enter your email and we\'ll retrieve your password.',
-            style: TextStyle(fontSize: 13, color: Colors.black45)),
-        const SizedBox(height: 24),
-
-        TextFormField(
-          controller: _resetEmailCtrl,
-          onChanged: (_) => setState(() { _error = null; _resetMessage = null; }),
-          decoration: _inputDecoration('Email address', Icons.email_outlined),
-        ),
-
-        if (_error != null) ...[const SizedBox(height: 10), _buildError(_error!)],
-
-        if (_resetMessage != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F5E9),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF81C784)),
-            ),
-            child: Row(children: [
-              const Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32), size: 18),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(_resetMessage!,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF2E7D32),
-                        fontWeight: FontWeight.w600)),
-              ),
-            ]),
-          ),
-        ],
-
-        const SizedBox(height: 20),
-
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: _submitReset,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _navy, foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Retrieve Password', style: TextStyle(fontSize: 15)),
-          ),
-        ),
-
-        const SizedBox(height: 12),
-
-        // Back to login
-        Center(
-          child: TextButton.icon(
-            onPressed: () => setState(() { _showReset = false; _error = null; _resetMessage = null; }),
-            icon: const Icon(Icons.arrow_back, size: 14, color: _navy),
-            label: const Text('Back to Sign In',
-                style: TextStyle(fontSize: 13, color: _navy)),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ── Shared helpers ─────────────────────────────────────────────────────────
   Widget _buildHeader(String title) {
     return Row(children: [
       Image.asset('assets/logo/LOGO6.png', width: 110, height: 110, fit: BoxFit.contain),
       const SizedBox(width: 10),
-      Expanded(
-        child: Text(title,
-            style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold,
-                color: Color(0xFF0A1628))),
-      ),
+      Expanded(child: Text(title,
+          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold,
+              color: Color(0xFF0A1628)))),
       GestureDetector(
         onTap: _close,
         child: Container(
           width: 30, height: 30,
           decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.06), shape: BoxShape.circle),
+              color: Colors.black.withValues(alpha: 0.06), shape: BoxShape.circle),
           child: const Icon(Icons.close, size: 16, color: Colors.black54),
         ),
       ),
@@ -284,7 +221,7 @@ class _LoginDialogState extends State<LoginDialog> {
       child: Row(children: [
         const Icon(Icons.error_outline, color: Colors.red, size: 15),
         const SizedBox(width: 6),
-        Text(msg, style: const TextStyle(color: Colors.red, fontSize: 13)),
+        Expanded(child: Text(msg, style: const TextStyle(color: Colors.red, fontSize: 13))),
       ]),
     );
   }

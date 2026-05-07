@@ -2,6 +2,7 @@
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
@@ -77,11 +78,82 @@ class _InsightsScreenState extends State<InsightsScreen>
   }
 }
 
-class _IvrTab extends StatelessWidget {
+// ── IVR Tab ───────────────────────────────────────────────────────────────────
+
+class _IvrTab extends StatefulWidget {
   const _IvrTab();
+  @override
+  State<_IvrTab> createState() => _IvrTabState();
+}
+
+class _IvrTabState extends State<_IvrTab> {
+  Map<String, dynamic> _data = {};
+  List<dynamic> _calls = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        ApiService.getIvrAnalytics(),
+        ApiService.getIvrCalls(limit: 50),
+      ]);
+      setState(() {
+        _data  = results[0] as Map<String, dynamic>;
+        _calls = results[1] as List<dynamic>;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
+        const SizedBox(height: 8),
+        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
+    final total      = (_data['totalCalls'] ?? _data['total'] ?? _calls.length).toString();
+    final avgWait    = (_data['avgWaitTime'] ?? _data['avgDuration'] ?? '—').toString();
+    final dropOff    = (_data['dropOffRate'] ?? _data['dropRate'] ?? '—').toString();
+    final completion = (_data['completionRate'] ?? '—').toString();
+
+    // Build topic frequency from calls
+    final topicMap = <String, int>{};
+    for (final c in _calls) {
+      final topic = (c['topic'] ?? c['category'] ?? 'Other').toString();
+      topicMap[topic] = (topicMap[topic] ?? 0) + 1;
+    }
+    final topics = topicMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final topTotal = topics.fold(0, (s, e) => s + e.value);
+
+    // Build daily trend from calls
+    final trendMap = <int, int>{};
+    for (final c in _calls) {
+      final date = DateTime.tryParse(c['createdAt']?.toString() ?? '');
+      if (date != null) {
+        final dayAgo = DateTime.now().difference(date).inDays;
+        if (dayAgo < 14) trendMap[13 - dayAgo] = (trendMap[13 - dayAgo] ?? 0) + 1;
+      }
+    }
+    final trendSpots = List.generate(14, (i) => FlSpot(i.toDouble(), (trendMap[i] ?? 0).toDouble()));
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,11 +162,11 @@ class _IvrTab extends StatelessWidget {
             crossAxisCount: 4, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.3,
-            children: const [
-              KpiCard(title: 'Total Calls', value: '9,102', icon: Icons.phone_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
-              KpiCard(title: 'Avg Wait Time', value: '2m 14s', icon: Icons.timer_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
-              KpiCard(title: 'Drop-off Rate', value: '34%', icon: Icons.phone_missed_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
-              KpiCard(title: 'Completion Rate', value: '66%', icon: Icons.check_circle_outline_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
+            children: [
+              KpiCard(title: 'Total Calls', value: total, icon: Icons.phone_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
+              KpiCard(title: 'Avg Duration', value: '$avgWait s', icon: Icons.timer_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
+              KpiCard(title: 'Drop-off Rate', value: '$dropOff%', icon: Icons.phone_missed_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
+              KpiCard(title: 'Completion Rate', value: '$completion%', icon: Icons.check_circle_outline_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
             ],
           ),
           const SizedBox(height: 24),
@@ -115,11 +187,14 @@ class _IvrTab extends StatelessWidget {
                         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
-                          getTitlesWidget: (v, _) => Text('D${v.toInt() + 1}', style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)))),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (v, _) => Text('D${v.toInt() + 1}',
+                              style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)),
+                        )),
                       ),
                       lineBarsData: [LineChartBarData(
-                        spots: const [FlSpot(0,280),FlSpot(1,320),FlSpot(2,290),FlSpot(3,410),FlSpot(4,380),FlSpot(5,450),FlSpot(6,420),FlSpot(7,510),FlSpot(8,480),FlSpot(9,560),FlSpot(10,530),FlSpot(11,610),FlSpot(12,580),FlSpot(13,640)],
+                        spots: trendSpots,
                         isCurved: true, color: AppColors.primary, barWidth: 2.5,
                         dotData: const FlDotData(show: false),
                         belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
@@ -132,51 +207,26 @@ class _IvrTab extends StatelessWidget {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Popular Topics', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                      Text('Popular Topics',
+                          style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       const SizedBox(height: 16),
-                      ...[{'label':'Baby Issues','pct':0.38},{'label':'Mother Issues','pct':0.30},{'label':'Immunization','pct':0.20},{'label':'Feeding Guidance','pct':0.12}]
-                          .map((t) => _TopicBar(label: t['label'] as String, percent: t['pct'] as double)),
+                      if (topics.isEmpty)
+                        Text('No topic data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                      else
+                        ...topics.take(5).map((t) => _TopicBar(
+                              label: t.key,
+                              percent: topTotal > 0 ? t.value / topTotal : 0,
+                            )),
                     ],
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ChartCard(
-                  title: 'Wait Time Distribution',
-                  subtitle: 'Minutes callers waited before connecting',
-                  chart: SizedBox(height: 180, child: BarChart(BarChartData(
-                    gridData: const FlGridData(show: false), borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
-                        getTitlesWidget: (v, _) { const l = ['<1m','1-2m','2-3m','3-5m','>5m']; final i = v.toInt(); if (i < 0 || i >= l.length) return const SizedBox(); return Text(l[i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)); })),
-                    ),
-                    barGroups: [_ivrBar(0,1200,AppColors.successText),_ivrBar(1,3400,AppColors.primary),_ivrBar(2,2800,AppColors.warningText),_ivrBar(3,1100,AppColors.criticalText),_ivrBar(4,600,AppColors.criticalText)],
-                  ))),
-                ),
-              ),
-              const SizedBox(width: 20),
-              Expanded(
-                child: ChartCard(
-                  title: 'Drop-off by Topic', subtitle: 'Where callers hang up',
-                  chart: SizedBox(height: 180, child: PieChart(PieChartData(sectionsSpace: 3, centerSpaceRadius: 40, sections: [
-                    PieChartSectionData(value: 40, color: AppColors.criticalText, title: '40%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 48),
-                    PieChartSectionData(value: 28, color: AppColors.warningText, title: '28%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 48),
-                    PieChartSectionData(value: 20, color: AppColors.primary, title: '20%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 48),
-                    PieChartSectionData(value: 12, color: AppColors.secondary, title: '12%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 48),
-                  ]))),
                 ),
               ),
             ],
@@ -185,15 +235,76 @@ class _IvrTab extends StatelessWidget {
       ),
     );
   }
-
-  BarChartGroupData _ivrBar(int x, double y, Color color) => BarChartGroupData(x: x, barRods: [BarChartRodData(toY: y, color: color, width: 28, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]);
 }
 
-class _QuestionTab extends StatelessWidget {
+// ── Question Tab ──────────────────────────────────────────────────────────────
+
+class _QuestionTab extends StatefulWidget {
   const _QuestionTab();
+  @override
+  State<_QuestionTab> createState() => _QuestionTabState();
+}
+
+class _QuestionTabState extends State<_QuestionTab> {
+  Map<String, dynamic> _dist = {};
+  List<dynamic> _assessments = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final results = await Future.wait([
+        ApiService.getRiskDistribution(),
+        ApiService.getRiskAssessments(limit: 200),
+      ]);
+      setState(() {
+        _dist        = results[0] as Map<String, dynamic>;
+        _assessments = results[1] as List<dynamic>;
+        _loading     = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
+        const SizedBox(height: 8),
+        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
+    final total      = (_dist['total'] ?? _assessments.length).toString();
+    final completion = (_dist['completionRate'] ?? '—').toString();
+    final highRisk   = (_dist['high'] ?? _dist['highRisk'] ?? 0).toString();
+    final avgScore   = (_dist['avgScore'] ?? '—').toString();
+
+    final low    = (_dist['low'] ?? 0) as num;
+    final medium = (_dist['medium'] ?? 0) as num;
+    final high   = (_dist['high'] ?? 0) as num;
+
+    // Build symptom frequency
+    final symptomMap = <String, int>{};
+    for (final a in _assessments) {
+      final s = (a['topSymptom'] ?? a['primarySymptom'] ?? '').toString();
+      if (s.isNotEmpty) symptomMap[s] = (symptomMap[s] ?? 0) + 1;
+    }
+    final symptoms = symptomMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -202,11 +313,11 @@ class _QuestionTab extends StatelessWidget {
             crossAxisCount: 4, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.3,
-            children: const [
-              KpiCard(title: 'Total Assessments', value: '24,810', icon: Icons.quiz_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
-              KpiCard(title: 'Completion Rate', value: '91.2%', icon: Icons.check_circle_outline_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
-              KpiCard(title: 'High-Risk Flagged', value: '2,841', icon: Icons.warning_amber_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
-              KpiCard(title: 'Avg Score', value: '28%', icon: Icons.analytics_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
+            children: [
+              KpiCard(title: 'Total Assessments', value: total, icon: Icons.quiz_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
+              KpiCard(title: 'Completion Rate', value: '$completion%', icon: Icons.check_circle_outline_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
+              KpiCard(title: 'High-Risk Flagged', value: highRisk, icon: Icons.warning_amber_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
+              KpiCard(title: 'Avg Score', value: '$avgScore%', icon: Icons.analytics_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
             ],
           ),
           const SizedBox(height: 24),
@@ -216,20 +327,25 @@ class _QuestionTab extends StatelessWidget {
               Expanded(
                 child: Container(
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(color: AppColors.surfaceContainerLowest, borderRadius: BorderRadius.circular(16),
-                    boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))]),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerLowest,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Common Symptoms', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                      Text('Common Symptoms',
+                          style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       const SizedBox(height: 16),
-                      ...[
-                        {'symptom':'Severe headache','count':'3,241','risk':'High'},
-                        {'symptom':'Difficulty breathing','count':'2,180','risk':'High'},
-                        {'symptom':'Swollen feet','count':'4,820','risk':'Medium'},
-                        {'symptom':'Reduced fetal movement','count':'1,940','risk':'High'},
-                        {'symptom':'Mild fatigue','count':'8,100','risk':'Low'},
-                      ].map((s) => _SymptomRow(symptom: s['symptom']!, count: s['count']!, risk: s['risk']!)),
+                      if (symptoms.isEmpty)
+                        Text('No symptom data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                      else
+                        ...symptoms.take(6).map((s) => _SymptomRow(
+                              symptom: s.key,
+                              count: '${s.value}',
+                              risk: s.value > 500 ? 'High' : s.value > 200 ? 'Medium' : 'Low',
+                            )),
                     ],
                   ),
                 ),
@@ -237,51 +353,45 @@ class _QuestionTab extends StatelessWidget {
               const SizedBox(width: 20),
               Expanded(
                 child: ChartCard(
-                  title: 'Risk Distribution', subtitle: 'Assessment outcomes by risk level',
-                  chart: SizedBox(height: 240, child: BarChart(BarChartData(
-                    gridData: const FlGridData(show: false), borderData: FlBorderData(show: false),
-                    titlesData: FlTitlesData(
-                      leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                      bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
-                        getTitlesWidget: (v, _) { const l = ['Low','Medium','High']; final i = v.toInt(); if (i < 0 || i >= l.length) return const SizedBox(); return Text(l[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)); })),
-                    ),
-                    barGroups: [
-                      BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: 14800, color: AppColors.successText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
-                      BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: 7200, color: AppColors.warningText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
-                      BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: 2841, color: AppColors.criticalText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
-                    ],
-                  ))),
+                  title: 'Risk Distribution',
+                  subtitle: 'Assessment outcomes by risk level',
+                  chart: SizedBox(
+                    height: 240,
+                    child: BarChart(BarChartData(
+                      gridData: const FlGridData(show: false),
+                      borderData: FlBorderData(show: false),
+                      titlesData: FlTitlesData(
+                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (v, _) {
+                            const l = ['Low', 'Medium', 'High'];
+                            final i = v.toInt();
+                            if (i < 0 || i >= l.length) return const SizedBox();
+                            return Text(l[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                          },
+                        )),
+                      ),
+                      barGroups: [
+                        BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: low.toDouble(), color: AppColors.successText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
+                        BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: medium.toDouble(), color: AppColors.warningText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
+                        BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: high.toDouble(), color: AppColors.criticalText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
+                      ],
+                    )),
+                  ),
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-          ChartCard(
-            title: 'Completion Rate Trend', subtitle: 'Monthly assessment completion over 6 months',
-            chart: SizedBox(height: 180, child: LineChart(LineChartData(
-              gridData: const FlGridData(show: false), borderData: FlBorderData(show: false),
-              titlesData: FlTitlesData(
-                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
-                  getTitlesWidget: (v, _) { const m = ['Oct','Nov','Dec','Jan','Feb','Mar']; final i = v.toInt(); if (i < 0 || i >= m.length) return const SizedBox(); return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)); })),
-              ),
-              lineBarsData: [LineChartBarData(
-                spots: const [FlSpot(0,82),FlSpot(1,85),FlSpot(2,84),FlSpot(3,88),FlSpot(4,90),FlSpot(5,91)],
-                isCurved: true, color: AppColors.successText, barWidth: 2.5,
-                dotData: const FlDotData(show: false),
-                belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
-              )],
-            ))),
           ),
         ],
       ),
     );
   }
 }
+
+// ── Shared helpers ────────────────────────────────────────────────────────────
 
 class _TopicBar extends StatelessWidget {
   final String label;
@@ -297,11 +407,19 @@ class _TopicBar extends StatelessWidget {
         children: [
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurface)),
-            Text('${(percent * 100).toStringAsFixed(0)}%', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+            Text('${(percent * 100).toStringAsFixed(0)}%',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
           ]),
           const SizedBox(height: 5),
-          ClipRRect(borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(value: percent, backgroundColor: AppColors.surfaceContainerHighest, color: AppColors.primary, minHeight: 6)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: percent,
+              backgroundColor: AppColors.surfaceContainerHighest,
+              color: AppColors.primary,
+              minHeight: 6,
+            ),
+          ),
         ],
       ),
     );
@@ -314,7 +432,9 @@ class _SymptomRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = risk == 'High' ? BadgeType.critical : risk == 'Medium' ? BadgeType.warning : BadgeType.success;
+    final type = risk == 'High' ? BadgeType.critical
+        : risk == 'Medium' ? BadgeType.warning
+        : BadgeType.success;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(children: [

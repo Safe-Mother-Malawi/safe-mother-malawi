@@ -3,11 +3,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
+import '../../state/user_store.dart';
 
-class DhoHeatmap extends StatelessWidget {
+class DhoHeatmap extends StatefulWidget {
   const DhoHeatmap({super.key});
+  @override
+  State<DhoHeatmap> createState() => _DhoHeatmapState();
+}
 
-  final List<Map<String, dynamic>> _facilities = const [
+class _DhoHeatmapState extends State<DhoHeatmap> {
+  // Fallback static facilities for Blantyre area
+  List<Map<String, dynamic>> _facilities = const [
     {'name': 'Queen Elizabeth Central Hospital', 'lat': -15.786, 'lon': 35.005, 'risk': 0.85, 'type': 'Central'},
     {'name': 'Mwaiwathu Private Hospital', 'lat': -15.795, 'lon': 35.010, 'risk': 0.60, 'type': 'Private'},
     {'name': 'Chiradzulu District Hospital', 'lat': -15.683, 'lon': 35.150, 'risk': 0.72, 'type': 'District'},
@@ -21,6 +28,39 @@ class DhoHeatmap extends StatelessWidget {
     {'name': 'Zingwangwa Health Centre', 'lat': -15.800, 'lon': 35.020, 'risk': 0.58, 'type': 'Health Centre'},
     {'name': "St. Joseph's Hospital Limbe", 'lat': -15.835, 'lon': 35.055, 'risk': 0.42, 'type': 'Private'},
   ];
+
+  bool _loading = true;
+
+  String get _district => UserStore.instance.district;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFacilities();
+  }
+
+  Future<void> _loadFacilities() async {
+    try {
+      final data = await ApiService.getHealthFacilities();
+      if (data.isNotEmpty) {
+        final mapped = data
+            .where((f) => f['latitude'] != null && f['longitude'] != null)
+            .map<Map<String, dynamic>>((f) => {
+                  'name': (f['name'] ?? '—').toString(),
+                  'lat': (f['latitude'] as num).toDouble(),
+                  'lon': (f['longitude'] as num).toDouble(),
+                  'risk': ((f['riskScore'] ?? 0.5) as num).toDouble(),
+                  'type': (f['type'] ?? 'District').toString(),
+                })
+            .toList();
+        if (mapped.isNotEmpty) {
+          if (mounted) setState(() { _facilities = mapped; _loading = false; });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
+  }
 
   Color _heatColor(double v) {
     if (v >= 0.7) return AppColors.criticalText;
@@ -46,20 +86,24 @@ class DhoHeatmap extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(20)),
-                child: Text('Blantyre District',
+                child: Text(_district.isNotEmpty ? _district : 'District',
                     style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
               ),
+              const Spacer(),
+              if (_loading)
+                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              else
+                IconButton(onPressed: _loadFacilities, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: 6),
-          Text('Risk hotspots at actual health facility locations — Blantyre District',
+          Text('Risk hotspots at actual health facility locations${_district.isNotEmpty ? ' — $_district District' : ''}',
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Real map zoomed into Blantyre
               Expanded(
                 flex: 3,
                 child: Container(
@@ -131,7 +175,6 @@ class DhoHeatmap extends StatelessWidget {
               ),
               const SizedBox(width: 20),
 
-              // Rankings
               SizedBox(
                 width: 240,
                 child: Container(

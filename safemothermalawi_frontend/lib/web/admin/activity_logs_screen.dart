@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
@@ -45,7 +46,6 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen>
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 20),
 
-          // Tab bar
           Container(
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
@@ -68,7 +68,6 @@ class _ActivityLogsScreenState extends State<ActivityLogsScreen>
           ),
           const SizedBox(height: 20),
 
-          // Tab content fills remaining space
           Expanded(
             child: TabBarView(
               controller: _tab,
@@ -100,20 +99,15 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
   int _page = 0;
   static const int _perPage = 10;
 
-  final List<Map<String, String>> _logs = [
-    {'time': '2026-03-26 08:12:04', 'event': 'LOGIN', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 08:45:22', 'event': 'CREATE_CLINICIAN', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 09:10:11', 'event': 'DEACTIVATE_USER', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 09:30:55', 'event': 'EXPORT_REPORT', 'user': 'dho.blantyre@moh.gov.mw', 'role': 'DHO', 'ip': '10.0.0.5', 'status': 'Success'},
-    {'time': '2026-03-26 10:02:33', 'event': 'VIEW_ANALYTICS', 'user': 'dho.lilongwe@moh.gov.mw', 'role': 'DHO', 'ip': '10.0.0.8', 'status': 'Success'},
-    {'time': '2026-03-26 10:45:18', 'event': 'LOGIN_FAILED', 'user': 'unknown@test.com', 'role': 'Unknown', 'ip': '203.0.113.5', 'status': 'Failed'},
-    {'time': '2026-03-26 11:00:02', 'event': 'GENERATE_ANALYTICS', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 11:30:44', 'event': 'UPDATE_RULE', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 12:05:09', 'event': 'DELETE_CLINICIAN', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-    {'time': '2026-03-26 12:40:31', 'event': 'LOGIN', 'user': 'dho.mzuzu@moh.gov.mw', 'role': 'DHO', 'ip': '10.0.0.12', 'status': 'Success'},
-    {'time': '2026-03-26 13:10:22', 'event': 'VIEW_HEATMAP', 'user': 'dho.mzuzu@moh.gov.mw', 'role': 'DHO', 'ip': '10.0.0.12', 'status': 'Success'},
-    {'time': '2026-03-26 14:00:00', 'event': 'EXPORT_REPORT', 'user': 'admin@moh.gov.mw', 'role': 'Admin', 'ip': '192.168.1.10', 'status': 'Success'},
-  ];
+  List<Map<String, dynamic>> _logs = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
   @override
   void dispose() {
@@ -121,16 +115,47 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
     super.dispose();
   }
 
-  List<Map<String, String>> get _filtered => _logs.where((l) {
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getActivityLogs(limit: 200);
+      setState(() {
+        _logs = data.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  List<Map<String, dynamic>> get _filtered => _logs.where((l) {
         final matchSearch = _searchCtrl.text.isEmpty ||
-            l.values.any((v) => v.toLowerCase().contains(_searchCtrl.text.toLowerCase()));
-        final matchEvent = _eventFilter == 'All' || l['event'] == _eventFilter;
-        final matchRole = _roleFilter == 'All' || l['role'] == _roleFilter;
+            l.values.any((v) => v.toString().toLowerCase().contains(_searchCtrl.text.toLowerCase()));
+        final event = (l['action'] ?? l['event'] ?? '').toString();
+        final role = (l['user']?['role'] ?? l['role'] ?? '').toString();
+        final matchEvent = _eventFilter == 'All' || event == _eventFilter;
+        final matchRole = _roleFilter == 'All' || role == _roleFilter;
         return matchSearch && matchEvent && matchRole;
       }).toList();
 
+  Set<String> get _eventOptions {
+    final events = _logs.map((l) => (l['action'] ?? l['event'] ?? '').toString()).toSet();
+    return {'All', ...events};
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
+        const SizedBox(height: 8),
+        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
     final filtered = _filtered;
     final totalPages = (filtered.length / _perPage).ceil().clamp(1, 999);
     final pageData = filtered.skip(_page * _perPage).take(_perPage).toList();
@@ -165,29 +190,30 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
                 ),
               ),
               const SizedBox(width: 12),
-              _Drop(label: 'Event', value: _eventFilter,
-                  items: const ['All', 'LOGIN', 'LOGIN_FAILED', 'CREATE_CLINICIAN', 'DEACTIVATE_USER', 'EXPORT_REPORT', 'GENERATE_ANALYTICS', 'UPDATE_RULE', 'DELETE_CLINICIAN', 'VIEW_ANALYTICS', 'VIEW_HEATMAP'],
-                  onChanged: (v) => setState(() { _eventFilter = v!; _page = 0; })),
+              _Drop(
+                label: 'Event',
+                value: _eventFilter,
+                items: _eventOptions.toList(),
+                onChanged: (v) => setState(() { _eventFilter = v!; _page = 0; }),
+              ),
               const SizedBox(width: 12),
-              _Drop(label: 'Role', value: _roleFilter,
-                  items: const ['All', 'Admin', 'DHO', 'Unknown'],
-                  onChanged: (v) => setState(() { _roleFilter = v!; _page = 0; })),
+              _Drop(
+                label: 'Role',
+                value: _roleFilter,
+                items: const ['All', 'admin', 'dho', 'clinician'],
+                onChanged: (v) => setState(() { _roleFilter = v!; _page = 0; }),
+              ),
               const Spacer(),
-              OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
-                label: Text('Export', style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
+              IconButton(
+                onPressed: _load,
+                icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
+                tooltip: 'Refresh',
               ),
             ],
           ),
         ),
         const SizedBox(height: 16),
 
-        // Table fills remaining space
         Expanded(
           child: Container(
             decoration: BoxDecoration(
@@ -199,46 +225,49 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
               borderRadius: BorderRadius.circular(16),
               child: Column(
                 children: [
-                  // Header
                   Container(
                     color: AppColors.pageBg,
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Row(
                       children: [
                         _headerCell('#', 1), _headerCell('Timestamp', 3), _headerCell('Event', 3),
-                        _headerCell('User', 4), _headerCell('Role', 2), _headerCell('IP Address', 3), _headerCell('Status', 2),
+                        _headerCell('User', 4), _headerCell('Role', 2), _headerCell('Status', 2),
                       ],
                     ),
                   ),
-                  // Rows
                   Expanded(
-                    child: ListView.builder(
-                      itemCount: pageData.length,
-                      itemBuilder: (context, i) {
-                        final log = pageData[i];
-                        final idx = _page * _perPage + i + 1;
-                        return Container(
-                          color: i.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                          child: Row(
-                            children: [
-                              Expanded(flex: 1, child: _c('$idx', muted: true)),
-                              Expanded(flex: 3, child: _c(log['time']!)),
-                              Expanded(flex: 3, child: _c(log['event']!, bold: true)),
-                              Expanded(flex: 4, child: _c(log['user']!)),
-                              Expanded(flex: 2, child: _c(log['role']!)),
-                              Expanded(flex: 3, child: _c(log['ip']!, muted: true)),
-                              Expanded(flex: 2, child: StatusBadge(
-                                label: log['status']!,
-                                type: log['status'] == 'Success' ? BadgeType.success : BadgeType.critical,
-                              )),
-                            ],
+                    child: pageData.isEmpty
+                        ? Center(child: Text('No logs found', style: GoogleFonts.inter(color: AppColors.mutedText)))
+                        : ListView.builder(
+                            itemCount: pageData.length,
+                            itemBuilder: (context, i) {
+                              final log = pageData[i];
+                              final idx = _page * _perPage + i + 1;
+                              final event = (log['action'] ?? log['event'] ?? '—').toString();
+                              final user = (log['user']?['email'] ?? log['user'] ?? '—').toString();
+                              final role = (log['user']?['role'] ?? log['role'] ?? '—').toString();
+                              final status = (log['status'] ?? 'Success').toString();
+                              final time = (log['createdAt'] ?? log['timestamp'] ?? '—').toString();
+                              return Container(
+                                color: i.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                child: Row(
+                                  children: [
+                                    Expanded(flex: 1, child: _c('$idx', muted: true)),
+                                    Expanded(flex: 3, child: _c(time)),
+                                    Expanded(flex: 3, child: _c(event, bold: true)),
+                                    Expanded(flex: 4, child: _c(user)),
+                                    Expanded(flex: 2, child: _c(role)),
+                                    Expanded(flex: 2, child: StatusBadge(
+                                      label: status,
+                                      type: status == 'Success' ? BadgeType.success : BadgeType.critical,
+                                    )),
+                                  ],
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
-                  // Pagination
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     color: AppColors.pageBg,
@@ -271,16 +300,61 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
 
 // ── Task Analytics Tab ────────────────────────────────────────────────────────
 
-class _TaskAnalyticsTab extends StatelessWidget {
+class _TaskAnalyticsTab extends StatefulWidget {
   const _TaskAnalyticsTab();
+  @override
+  State<_TaskAnalyticsTab> createState() => _TaskAnalyticsTabState();
+}
+
+class _TaskAnalyticsTabState extends State<_TaskAnalyticsTab> {
+  Map<String, dynamic> _data = {};
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getTaskAnalytics();
+      setState(() { _data = data; _loading = false; });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_loading) return const Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
+        const SizedBox(height: 8),
+        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        const SizedBox(height: 12),
+        ElevatedButton(onPressed: _load, child: const Text('Retry')),
+      ]));
+    }
+
+    final total     = (_data['total'] ?? _data['totalTasks'] ?? 0).toString();
+    final completed = (_data['completed'] ?? _data['completedTasks'] ?? 0).toString();
+    final missed    = (_data['missed'] ?? _data['missedTasks'] ?? 0).toString();
+    final pending   = (_data['pending'] ?? _data['pendingTasks'] ?? 0).toString();
+
+    final completionRate = _data['completionRate'] ?? _data['completionRatePercent'] ?? '—';
+    final missedRate     = _data['missedRate'] ?? _data['missedRatePercent'] ?? '—';
+    final pendingRate    = _data['pendingRate'] ?? _data['pendingRatePercent'] ?? '—';
+
+    final missedList = (_data['missedTasksList'] ?? _data['recentMissed'] ?? []) as List;
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // KPIs
           GridView.count(
             crossAxisCount: 4,
             shrinkWrap: true,
@@ -288,23 +362,22 @@ class _TaskAnalyticsTab extends StatelessWidget {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
             childAspectRatio: 1.3,
-            children: const [
-              KpiCard(title: 'Total Tasks', value: '18,420', icon: Icons.task_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
-              KpiCard(title: 'Completed', value: '14,441', icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg, subtitle: '78.4% rate'),
-              KpiCard(title: 'Missed Tasks', value: '2,210', icon: Icons.cancel_outlined, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg, subtitle: '12.0% rate'),
-              KpiCard(title: 'Pending', value: '1,769', icon: Icons.pending_actions_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg, subtitle: '9.6% rate'),
+            children: [
+              KpiCard(title: 'Total Tasks', value: total, icon: Icons.task_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
+              KpiCard(title: 'Completed', value: completed, icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg, subtitle: '$completionRate%'),
+              KpiCard(title: 'Missed Tasks', value: missed, icon: Icons.cancel_outlined, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg, subtitle: '$missedRate%'),
+              KpiCard(title: 'Pending', value: pending, icon: Icons.pending_actions_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg, subtitle: '$pendingRate%'),
             ],
           ),
           const SizedBox(height: 24),
 
           Row(
             children: [
-              // Completion trend
               Expanded(
                 flex: 2,
                 child: ChartCard(
                   title: 'Task Completion Trend',
-                  subtitle: 'Monthly completion vs missed rate over 6 months',
+                  subtitle: 'Monthly completion vs missed rate',
                   chart: SizedBox(
                     height: 200,
                     child: LineChart(LineChartData(
@@ -328,13 +401,13 @@ class _TaskAnalyticsTab extends StatelessWidget {
                       ),
                       lineBarsData: [
                         LineChartBarData(
-                          spots: const [FlSpot(0, 72), FlSpot(1, 74), FlSpot(2, 71), FlSpot(3, 76), FlSpot(4, 78), FlSpot(5, 78)],
+                          spots: _buildTrendSpots(_data['completionTrend']),
                           isCurved: true, color: AppColors.successText, barWidth: 2.5,
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
                         ),
                         LineChartBarData(
-                          spots: const [FlSpot(0, 14), FlSpot(1, 13), FlSpot(2, 15), FlSpot(3, 12), FlSpot(4, 12), FlSpot(5, 12)],
+                          spots: _buildTrendSpots(_data['missedTrend']),
                           isCurved: true, color: AppColors.criticalText, barWidth: 2,
                           dotData: const FlDotData(show: false),
                           belowBarData: BarAreaData(show: true, color: AppColors.criticalText.withValues(alpha: 0.06)),
@@ -345,8 +418,6 @@ class _TaskAnalyticsTab extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 20),
-
-              // Task type pie
               Expanded(
                 child: ChartCard(
                   title: 'Task Types',
@@ -356,12 +427,7 @@ class _TaskAnalyticsTab extends StatelessWidget {
                     child: PieChart(PieChartData(
                       sectionsSpace: 3,
                       centerSpaceRadius: 40,
-                      sections: [
-                        PieChartSectionData(value: 35, color: AppColors.primary, title: 'ANC\n35%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 28, color: AppColors.accent, title: 'PNC\n28%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 22, color: AppColors.warningText, title: 'Vacc\n22%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 15, color: AppColors.secondary, title: 'Risk\n15%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                      ],
+                      sections: _buildPieSections(_data['taskTypes']),
                     )),
                   ),
                 ),
@@ -370,58 +436,88 @@ class _TaskAnalyticsTab extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // Missed tasks table
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceContainerLowest,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Missed Tasks — Risk Correlation',
-                    style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
-                const SizedBox(height: 16),
-                // Table header
-                Row(
-                  children: [
-                    _headerCell('Task', 3), _headerCell('Clinician', 2), _headerCell('District', 2), _headerCell('Risk', 2), _headerCell('Overdue', 2),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                ...[
-                  {'task': 'ANC Visit Reminder', 'clinician': 'Dr. Phiri', 'district': 'Lilongwe', 'risk': 'High', 'days': '3 days'},
-                  {'task': 'Postnatal Check', 'clinician': 'Dr. Mwale', 'district': 'Mzuzu', 'risk': 'Medium', 'days': '5 days'},
-                  {'task': 'Vaccination Follow-up', 'clinician': 'Dr. Tembo', 'district': 'Mangochi', 'risk': 'Low', 'days': '1 day'},
-                  {'task': 'Risk Assessment', 'clinician': 'Dr. Chirwa', 'district': 'Zomba', 'risk': 'High', 'days': '7 days'},
-                  {'task': 'ANC Visit Reminder', 'clinician': 'Dr. Banda', 'district': 'Blantyre', 'risk': 'High', 'days': '2 days'},
-                ].map((t) => Padding(
+          if (missedList.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceContainerLowest,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Missed Tasks — Risk Correlation',
+                      style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                  const SizedBox(height: 16),
+                  Row(children: [
+                    _headerCell('Task', 3), _headerCell('Clinician', 2),
+                    _headerCell('District', 2), _headerCell('Risk', 2), _headerCell('Overdue', 2),
+                  ]),
+                  const SizedBox(height: 8),
+                  ...missedList.map((t) {
+                    final task = t as Map<String, dynamic>;
+                    final risk = (task['riskLevel'] ?? task['risk'] ?? 'Low').toString();
+                    return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
                         children: [
                           Expanded(flex: 3, child: Row(children: [
                             const Icon(Icons.cancel_outlined, size: 14, color: AppColors.criticalText),
                             const SizedBox(width: 8),
-                            Expanded(child: _c(t['task']!, bold: true)),
+                            Expanded(child: _c((task['title'] ?? task['task'] ?? '—').toString(), bold: true)),
                           ])),
-                          Expanded(flex: 2, child: _c(t['clinician']!)),
-                          Expanded(flex: 2, child: _c(t['district']!)),
+                          Expanded(flex: 2, child: _c((task['clinician']?['fullName'] ?? task['clinician'] ?? '—').toString())),
+                          Expanded(flex: 2, child: _c((task['district'] ?? '—').toString())),
                           Expanded(flex: 2, child: StatusBadge(
-                            label: t['risk']!,
-                            type: t['risk'] == 'High' ? BadgeType.critical : t['risk'] == 'Medium' ? BadgeType.warning : BadgeType.success,
+                            label: risk,
+                            type: risk == 'High' ? BadgeType.critical : risk == 'Medium' ? BadgeType.warning : BadgeType.success,
                           )),
-                          Expanded(flex: 2, child: _c(t['days']!, muted: true)),
+                          Expanded(flex: 2, child: _c((task['overdueDays'] != null ? '${task['overdueDays']} days' : '—'), muted: true)),
                         ],
                       ),
-                    )),
-              ],
+                    );
+                  }),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
+  }
+
+  List<FlSpot> _buildTrendSpots(dynamic trend) {
+    if (trend is List && trend.isNotEmpty) {
+      return trend.asMap().entries.map((e) {
+        final val = (e.value is num) ? (e.value as num).toDouble() : 0.0;
+        return FlSpot(e.key.toDouble(), val);
+      }).toList();
+    }
+    return const [FlSpot(0, 70), FlSpot(1, 72), FlSpot(2, 74), FlSpot(3, 76), FlSpot(4, 77), FlSpot(5, 78)];
+  }
+
+  List<PieChartSectionData> _buildPieSections(dynamic types) {
+    final colors = [AppColors.primary, AppColors.accent, AppColors.warningText, AppColors.secondary];
+    if (types is Map) {
+      final entries = types.entries.toList();
+      return entries.asMap().entries.map((e) {
+        final color = colors[e.key % colors.length];
+        final label = e.value.key.toString();
+        final val = (e.value.value as num).toDouble();
+        return PieChartSectionData(
+          value: val, color: color,
+          title: '$label\n${val.toStringAsFixed(0)}%',
+          titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+          radius: 50,
+        );
+      }).toList();
+    }
+    return [
+      PieChartSectionData(value: 35, color: AppColors.primary, title: 'ANC\n35%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+      PieChartSectionData(value: 28, color: AppColors.accent, title: 'PNC\n28%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+      PieChartSectionData(value: 22, color: AppColors.warningText, title: 'Vacc\n22%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+      PieChartSectionData(value: 15, color: AppColors.secondary, title: 'Risk\n15%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+    ];
   }
 }
 
@@ -460,7 +556,7 @@ class _Drop extends StatelessWidget {
           decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(8)),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
-              value: value,
+              value: items.contains(value) ? value : items.first,
               onChanged: onChanged,
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
               items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),

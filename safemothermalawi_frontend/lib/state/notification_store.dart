@@ -1,3 +1,5 @@
+import '../services/api_service.dart';
+
 enum NotifType { alert, appointment, info }
 
 class AppNotification {
@@ -16,34 +18,67 @@ class AppNotification {
     required this.timestamp,
     this.read = false,
   });
+
+  factory AppNotification.fromJson(Map<String, dynamic> j) {
+    final typeStr = (j['type'] ?? 'info').toString();
+    final type = typeStr == 'alert' ? NotifType.alert
+        : typeStr == 'appointment' ? NotifType.appointment
+        : NotifType.info;
+    return AppNotification(
+      id:        j['id']?.toString() ?? '',
+      title:     j['title']?.toString() ?? '',
+      body:      j['body']?.toString() ?? '',
+      type:      type,
+      timestamp: DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      read:      j['read'] == true,
+    );
+  }
 }
 
 class NotificationStore {
   NotificationStore._();
   static final NotificationStore instance = NotificationStore._();
 
-  final List<AppNotification> _items = [
-    AppNotification(id: '1', title: 'High Alert — Grace Banda',    body: 'BP 148/96. Severe hypertension. Immediate review required.',  type: NotifType.alert,       timestamp: DateTime.now().subtract(const Duration(minutes: 12))),
-    AppNotification(id: '2', title: 'High Alert — Faith Mwale',    body: 'BP 152/98. Pre-eclampsia risk detected at week 34.',           type: NotifType.alert,       timestamp: DateTime.now().subtract(const Duration(minutes: 35))),
-    AppNotification(id: '3', title: 'Appointment — Grace Banda',   body: 'ANC check scheduled for today at 09:00 AM.',                  type: NotifType.appointment, timestamp: DateTime.now().subtract(const Duration(hours: 1))),
-    AppNotification(id: '4', title: 'Appointment — Mercy Tembo',   body: 'PNC day 8 visit scheduled for today at 11:30 AM.',            type: NotifType.appointment, timestamp: DateTime.now().subtract(const Duration(hours: 2))),
-    AppNotification(id: '5', title: 'Overdue Checkup',             body: 'Liness Kachali has a gestational diabetes review overdue.',   type: NotifType.info,        timestamp: DateTime.now().subtract(const Duration(hours: 3))),
-  ];
+  final List<AppNotification> _items = [];
+  bool _loaded = false;
 
   List<AppNotification> get all => List.from(_items)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   int get unreadCount => _items.where((n) => !n.read).length;
 
-  void markRead(String id) {
-    final n = _items.firstWhere((n) => n.id == id, orElse: () => _items.first);
-    n.read = true;
-    _notify();
+  Future<void> load() async {
+    if (_loaded) return;
+    try {
+      final data = await ApiService.instance.get('/notifications') as List<dynamic>;
+      _items.clear();
+      _items.addAll(data.cast<Map<String, dynamic>>().map(AppNotification.fromJson));
+      _loaded = true;
+      _notify();
+    } catch (_) {}
   }
 
-  void markAllRead() {
-    for (final n in _items) {
+  Future<void> markRead(String id) async {
+    try {
+      await ApiService.instance.patch('/notifications/$id/read', {});
+      final n = _items.firstWhere((n) => n.id == id, orElse: () => _items.first);
       n.read = true;
-    }
-    _notify();
+      _notify();
+    } catch (_) {}
+  }
+
+  Future<void> markAllRead() async {
+    try {
+      await ApiService.instance.patch('/notifications/mark-all-read', {});
+      for (final n in _items) { n.read = true; }
+      _notify();
+    } catch (_) {}
+  }
+
+  Future<void> delete(String id) async {
+    try {
+      await ApiService.instance.delete('/notifications/$id');
+      _items.removeWhere((n) => n.id == id);
+      _notify();
+    } catch (_) {}
   }
 
   void add(AppNotification n) {
@@ -51,10 +86,13 @@ class NotificationStore {
     _notify();
   }
 
+  void reload() {
+    _loaded = false;
+    load();
+  }
+
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);
-  void _notify() { for (final l in _listeners) {
-    l();
-  } }
+  void _notify() { for (final l in _listeners) { l(); } }
 }

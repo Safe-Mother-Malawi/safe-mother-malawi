@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/models/user_model.dart';
+import '../../../utils/validators.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -14,7 +16,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    AuthService().getCurrentUser().then((u) => setState(() => _user = u));
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await AuthService().getCurrentUser();
+    if (mounted) {
+      setState(() => _user = user);
+    }
+  }
+
+  Future<void> _editProfile() async {
+    if (_user == null) return;
+    final result = await Navigator.push<UserModel>(
+      context,
+      MaterialPageRoute(builder: (_) => EditProfileScreen(user: _user!)),
+    );
+    if (result != null) {
+      setState(() => _user = result);
+    }
   }
 
   @override
@@ -28,7 +48,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
         title: const Text('My Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
         actions: [
-          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white), onPressed: () {}),
+          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white), onPressed: _editProfile),
         ],
       ),
       body: SingleChildScrollView(

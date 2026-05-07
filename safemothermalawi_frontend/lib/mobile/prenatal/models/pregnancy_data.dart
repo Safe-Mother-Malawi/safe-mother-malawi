@@ -151,38 +151,91 @@ class PregnancyData {
     return 'Watch for signs of labour. Stay calm and breathe.';
   }
 
-  /// Dynamic nutrition tip based on current week
+  /// Dynamic nutrition tip based on current week and trimester
   String get nutritionTip {
-    if (currentWeek <= 4) return 'Start folic acid supplements now';
-    if (currentWeek <= 8) return 'Eat small meals to ease nausea';
-    if (currentWeek <= 12) return 'Iron & folate are essential this trimester';
-    if (currentWeek <= 16) return 'Increase calcium-rich foods this week';
-    if (currentWeek <= 20) return 'Iron & calcium are key this week';
-    if (currentWeek <= 24) return 'Boost protein intake for baby\'s growth';
-    if (currentWeek <= 28) return 'Omega-3 supports baby\'s brain development';
-    if (currentWeek <= 32) return 'Eat fibre-rich foods to ease digestion';
-    if (currentWeek <= 36) return 'Stay hydrated — drink 8+ glasses daily';
-    return 'Light, frequent meals help with comfort now';
+    // First Trimester (Weeks 1-12)
+    if (currentWeek <= 4) return 'Start folic acid (400mcg daily) to prevent neural tube defects';
+    if (currentWeek <= 6) return 'Eat small, frequent meals to manage morning sickness';
+    if (currentWeek <= 8) return 'Focus on vitamin B6-rich foods like bananas and chicken';
+    if (currentWeek <= 10) return 'Stay hydrated — ginger tea helps with nausea';
+    if (currentWeek <= 12) return 'Iron-rich foods like spinach and beans are essential now';
+    
+    // Second Trimester (Weeks 13-26)
+    if (currentWeek <= 14) return 'Increase calcium intake — aim for 1000mg daily';
+    if (currentWeek <= 16) return 'Add omega-3 fatty acids from fish or flaxseeds';
+    if (currentWeek <= 18) return 'Protein is crucial — eat lean meat, eggs, and legumes';
+    if (currentWeek <= 20) return 'Vitamin D supports bone development — get some sunlight';
+    if (currentWeek <= 22) return 'Eat colorful vegetables for vitamins A, C, and K';
+    if (currentWeek <= 24) return 'Complex carbs like whole grains provide steady energy';
+    if (currentWeek <= 26) return 'Magnesium-rich foods help prevent leg cramps';
+    
+    // Third Trimester (Weeks 27-40)
+    if (currentWeek <= 28) return 'Boost iron intake to prevent anemia — eat red meat and lentils';
+    if (currentWeek <= 30) return 'Fiber-rich foods ease constipation — try oats and fruits';
+    if (currentWeek <= 32) return 'Small, frequent meals help with heartburn and fullness';
+    if (currentWeek <= 34) return 'Stay hydrated — drink 8-10 glasses of water daily';
+    if (currentWeek <= 36) return 'Eat dates daily — they may help with labor preparation';
+    if (currentWeek <= 38) return 'Light, nutritious meals keep energy up for labor';
+    return 'Focus on easy-to-digest foods and stay well-hydrated';
   }
 
-  /// Dynamic exercise tip based on trimester
+  /// Detailed nutrition subtitle for the card
+  String get nutritionSubtitle {
+    if (currentWeek <= 12) return 'Essential nutrients for early development';
+    if (currentWeek <= 26) return 'Supporting rapid growth and energy needs';
+    return 'Preparing your body for delivery';
+  }
+
+  /// Dynamic exercise tip based on trimester and week
   String get exerciseTip {
-    if (currentWeek <= 12) return 'Safe movements for trimester 1';
-    if (currentWeek <= 26) return 'Safe movements for trimester 2';
-    return 'Gentle stretches for trimester 3';
+    // First Trimester (Weeks 1-12)
+    if (currentWeek <= 4) return 'Light walking (15-20 mins) helps with circulation';
+    if (currentWeek <= 6) return 'Gentle stretching eases muscle tension and fatigue';
+    if (currentWeek <= 8) return 'Prenatal yoga builds strength and reduces stress';
+    if (currentWeek <= 10) return 'Swimming is gentle on joints and very safe';
+    if (currentWeek <= 12) return 'Pelvic floor exercises prepare for delivery';
+    
+    // Second Trimester (Weeks 13-26)
+    if (currentWeek <= 14) return 'Walking 30 minutes daily boosts mood and energy';
+    if (currentWeek <= 16) return 'Prenatal yoga improves flexibility and balance';
+    if (currentWeek <= 18) return 'Swimming provides full-body workout without strain';
+    if (currentWeek <= 20) return 'Squats strengthen legs for labor and delivery';
+    if (currentWeek <= 22) return 'Pelvic tilts ease back pain and strengthen core';
+    if (currentWeek <= 24) return 'Side-lying leg lifts strengthen hips and thighs';
+    if (currentWeek <= 26) return 'Cat-cow stretches relieve back and hip tension';
+    
+    // Third Trimester (Weeks 27-40)
+    if (currentWeek <= 28) return 'Gentle walking maintains fitness without strain';
+    if (currentWeek <= 30) return 'Prenatal yoga with modifications for comfort';
+    if (currentWeek <= 32) return 'Pelvic floor exercises prepare for pushing';
+    if (currentWeek <= 34) return 'Gentle stretching eases aches and improves sleep';
+    if (currentWeek <= 36) return 'Birthing ball exercises help baby engage';
+    if (currentWeek <= 38) return 'Light walking may help encourage labor';
+    return 'Rest more, gentle stretches only when comfortable';
   }
 
-  /// Emoji icon for nutrition tip
+  /// Detailed exercise subtitle for the card
+  String get exerciseSubtitle {
+    if (currentWeek <= 12) return 'Gentle movements for early pregnancy';
+    if (currentWeek <= 26) return 'Building strength for the months ahead';
+    return 'Preparing your body for labor';
+  }
+
+  /// Emoji icon for nutrition tip - varies by trimester
   String get nutritionEmoji {
-    if (currentWeek <= 12) return '🥦';
-    if (currentWeek <= 20) return '🍎';
-    if (currentWeek <= 28) return '🐟';
-    if (currentWeek <= 36) return '🥛';
-    return '🍌';
+    if (currentWeek <= 12) return '🥦'; // Folate-rich greens
+    if (currentWeek <= 20) return '🥛'; // Calcium
+    if (currentWeek <= 28) return '🐟'; // Omega-3
+    if (currentWeek <= 36) return '🍎'; // Fiber and vitamins
+    return '💧'; // Hydration
   }
 
   /// Emoji icon for exercise tip
-  String get exerciseEmoji => '🧘';
+  String get exerciseEmoji {
+    if (currentWeek <= 12) return '🚶‍♀️'; // Walking
+    if (currentWeek <= 26) return '🧘‍♀️'; // Yoga
+    return '🤰'; // Gentle pregnancy exercises
+  }
 
   /// Asset path for baby image — falls back to painted widget if not found.
   /// weeks 1–3 use week_01.jpg (fertilization/early cell stage)

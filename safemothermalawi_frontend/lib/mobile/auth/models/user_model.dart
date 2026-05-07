@@ -11,7 +11,7 @@ class UserModel {
   final String age;
   final String nationality;
   final String district;
-  final String healthCentre;
+  final String facilityName;
   final String pregnancyMonths;
   final String pregnancyWeeks;       // extra weeks (0–4) on top of months
   final String expectedDeliveryDate;
@@ -34,7 +34,7 @@ class UserModel {
     this.age = '',
     this.nationality = '',
     this.district = '',
-    this.healthCentre = '',
+    this.facilityName = '',
     this.pregnancyMonths = '',
     this.pregnancyWeeks = '',
     this.expectedDeliveryDate = '',

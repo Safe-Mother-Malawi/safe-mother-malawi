@@ -1,6 +1,9 @@
+// ignore: avoid_web_libraries_in_flutter
+import 'dart:html' as html;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
 import '../shared/widgets/status_badge.dart';
 
 class AuditExport extends StatefulWidget {
@@ -11,35 +14,109 @@ class AuditExport extends StatefulWidget {
 }
 
 class _AuditExportState extends State<AuditExport> {
-  String _district = 'All Districts';
-  String _dataType = 'All Data';
+  String _district  = 'All Districts';
+  String _dataType  = 'All Data';
   String _dateRange = 'Last 30 days';
-  String _format = 'CSV';
-  bool _exporting = false;
+  String _format    = 'CSV';
+  bool _exporting   = false;
 
-  final List<Map<String, String>> _exports = [
-    {'name': 'Full System Audit — March 2026', 'type': 'Full Audit', 'district': 'National', 'date': '2026-03-25', 'format': 'CSV', 'size': '4.2 MB', 'status': 'Ready'},
-    {'name': 'User Activity — Q1 2026', 'type': 'User Activity', 'district': 'National', 'date': '2026-03-20', 'format': 'CSV', 'size': '1.8 MB', 'status': 'Ready'},
-    {'name': 'Clinician Data — Blantyre', 'type': 'Clinician Data', 'district': 'Blantyre', 'date': '2026-03-15', 'format': 'Excel', 'size': '890 KB', 'status': 'Ready'},
-    {'name': 'IVR Interactions — Feb 2026', 'type': 'IVR Data', 'district': 'National', 'date': '2026-02-28', 'format': 'CSV', 'size': '2.1 MB', 'status': 'Ready'},
-    {'name': 'Health Assessments — Q4 2025', 'type': 'Assessment Data', 'district': 'National', 'date': '2025-12-31', 'format': 'CSV', 'size': '5.6 MB', 'status': 'Archived'},
-  ];
+  List<Map<String, dynamic>> _exports = [];
+  bool _loading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getReports();
+      setState(() {
+        _exports = data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
 
   Future<void> _export() async {
     setState(() => _exporting = true);
-    await Future.delayed(const Duration(seconds: 2));
-    setState(() {
-      _exporting = false;
-      _exports.insert(0, {
-        'name': '$_dataType — ${DateTime.now().toString().substring(0, 10)}',
-        'type': _dataType,
-        'district': _district,
-        'date': DateTime.now().toString().substring(0, 10),
-        'format': _format,
-        'size': 'Calculating...',
-        'status': 'Ready',
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final district = _district == 'All Districts' ? '' : _district;
+      final params = {
+        'format':    _format,
+        'dataType':  _dataType,
+        'dateRange': _dateRange,
+        if (district.isNotEmpty) 'district': district,
+      };
+      final query = params.entries
+          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
+          .join('&');
+      final url   = '${ApiService.baseUrl}/reports/export?$query';
+      final token = await ApiService.instance.getToken();
+
+      final request = html.HttpRequest();
+      request.open('GET', url);
+      if (token != null) request.setRequestHeader('Authorization', 'Bearer $token');
+      request.responseType = 'blob';
+
+      request.onLoad.listen((_) {
+        if (!mounted) return;
+        if (request.status == 200) {
+          final blob    = request.response as html.Blob;
+          final blobUrl = html.Url.createObjectUrlFromBlob(blob);
+          final ext     = _format.toLowerCase() == 'excel' ? 'csv'
+                        : _format.toLowerCase() == 'json'  ? 'json'
+                        : _format.toLowerCase() == 'pdf'   ? 'pdf'
+                        : 'csv';
+          final name = '${_dataType.replaceAll(' ', '_')}_export.$ext';
+          html.AnchorElement(href: blobUrl)
+            ..setAttribute('download', name)
+            ..click();
+          html.Url.revokeObjectUrl(blobUrl);
+
+          setState(() => _exporting = false);
+          messenger.showSnackBar(SnackBar(
+            content: const Row(children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 16),
+              SizedBox(width: 8),
+              Text('Export downloaded successfully'),
+            ]),
+            backgroundColor: AppColors.successText,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ));
+        } else {
+          setState(() => _exporting = false);
+          messenger.showSnackBar(SnackBar(
+            content: Text('Export failed: HTTP ${request.status}'),
+            backgroundColor: AppColors.criticalText,
+          ));
+        }
       });
-    });
+
+      request.onError.listen((_) {
+        if (!mounted) return;
+        setState(() => _exporting = false);
+        messenger.showSnackBar(const SnackBar(
+          content: Text('Export failed: network error'),
+          backgroundColor: AppColors.criticalText,
+        ));
+      });
+
+      request.send();
+    } catch (e) {
+      setState(() => _exporting = false);
+      messenger.showSnackBar(SnackBar(
+        content: Text('Export failed: $e'),
+        backgroundColor: AppColors.criticalText,
+      ));
+    }
   }
 
   @override
@@ -50,7 +127,8 @@ class _AuditExportState extends State<AuditExport> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Audit Export',
-              style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+              style: GoogleFonts.publicSans(
+                  fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 4),
           Text('Export system data for auditing and compliance purposes',
               style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
@@ -72,31 +150,40 @@ class _AuditExportState extends State<AuditExport> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Configure Export',
-                          style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                          style: GoogleFonts.publicSans(
+                              fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       const SizedBox(height: 20),
                       Wrap(
                         spacing: 16, runSpacing: 16,
                         children: [
-                          _DropField(label: 'Data Type', value: _dataType,
-                              items: const ['All Data', 'User Activity', 'Clinician Data', 'IVR Interactions', 'Health Assessments', 'System Events', 'Login History'],
-                              onChanged: (v) => setState(() => _dataType = v!)),
-                          _DropField(label: 'District', value: _district,
-                              items: const ['All Districts', 'Blantyre', 'Lilongwe', 'Mzuzu', 'Zomba', 'Mangochi', 'Kasungu', 'Salima', 'Karonga'],
-                              onChanged: (v) => setState(() => _district = v!)),
-                          _DropField(label: 'Date Range', value: _dateRange,
-                              items: const ['Last 7 days', 'Last 30 days', 'Last 3 months', 'Last 6 months', 'Last year', 'All time'],
-                              onChanged: (v) => setState(() => _dateRange = v!)),
-                          _DropField(label: 'Format', value: _format,
-                              items: const ['CSV', 'Excel', 'JSON', 'PDF'],
-                              onChanged: (v) => setState(() => _format = v!)),
+                          _DropField(
+                            label: 'Data Type', value: _dataType,
+                            items: const ['All Data', 'User Activity', 'Clinician Data', 'IVR Interactions', 'Health Assessments', 'System Events', 'Login History'],
+                            onChanged: (v) => setState(() => _dataType = v!),
+                          ),
+                          _DropField(
+                            label: 'District', value: _district,
+                            items: const ['All Districts', 'Blantyre', 'Lilongwe', 'Mzuzu', 'Zomba', 'Mangochi', 'Kasungu', 'Salima', 'Karonga'],
+                            onChanged: (v) => setState(() => _district = v!),
+                          ),
+                          _DropField(
+                            label: 'Date Range', value: _dateRange,
+                            items: const ['Last 7 days', 'Last 30 days', 'Last 3 months', 'Last 6 months', 'Last year', 'All time'],
+                            onChanged: (v) => setState(() => _dateRange = v!),
+                          ),
+                          _DropField(
+                            label: 'Format', value: _format,
+                            items: const ['CSV', 'Excel', 'JSON', 'PDF'],
+                            onChanged: (v) => setState(() => _format = v!),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 24),
 
-                      // Info banner
                       Container(
                         padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(10)),
+                        decoration: BoxDecoration(
+                            color: AppColors.infoBg, borderRadius: BorderRadius.circular(10)),
                         child: Row(
                           children: [
                             const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.infoText),
@@ -125,13 +212,16 @@ class _AuditExportState extends State<AuditExport> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               if (_exporting)
-                                const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
+                                const SizedBox(width: 18, height: 18,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
                               else
                                 const Icon(Icons.download_rounded, color: Colors.white, size: 18),
                               const SizedBox(width: 10),
                               Text(
                                 _exporting ? 'Exporting...' : 'Export Data',
-                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: _exporting ? AppColors.mutedText : Colors.white),
+                                style: GoogleFonts.inter(
+                                    fontSize: 14, fontWeight: FontWeight.w600,
+                                    color: _exporting ? AppColors.mutedText : Colors.white),
                               ),
                             ],
                           ),
@@ -150,9 +240,10 @@ class _AuditExportState extends State<AuditExport> {
                   children: [
                     _StatCard(icon: Icons.folder_zip_rounded, label: 'Total Exports', value: '${_exports.length}'),
                     const SizedBox(height: 12),
-                    _StatCard(icon: Icons.storage_rounded, label: 'Total Data Size', value: '14.6 MB'),
-                    const SizedBox(height: 12),
-                    _StatCard(icon: Icons.schedule_rounded, label: 'Last Export', value: 'Today'),
+                    _StatCard(icon: Icons.schedule_rounded, label: 'Last Export',
+                        value: _exports.isNotEmpty
+                            ? (_exports.first['createdAt']?.toString().substring(0, 10) ?? '—')
+                            : '—'),
                     const SizedBox(height: 12),
                     _StatCard(icon: Icons.verified_user_rounded, label: 'Compliance', value: '100%'),
                   ],
@@ -176,66 +267,134 @@ class _AuditExportState extends State<AuditExport> {
                 Row(
                   children: [
                     Text('Export History',
-                        style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                        style: GoogleFonts.publicSans(
+                            fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                     const Spacer(),
+                    IconButton(
+                      onPressed: _load,
+                      icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.primary),
+                      tooltip: 'Refresh',
+                    ),
                     Text('${_exports.length} records',
                         style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
                   ],
                 ),
                 const SizedBox(height: 16),
-                // Header
-                Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(
-                    color: AppColors.pageBg,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 12),
+
+                if (_loading)
+                  const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                else if (_error != null)
+                  Center(child: Column(children: [
+                    const Icon(Icons.error_outline, color: AppColors.criticalText, size: 36),
+                    const SizedBox(height: 8),
+                    Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _load, child: const Text('Retry')),
+                  ]))
+                else if (_exports.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: Column(children: [
+                      const Icon(Icons.folder_open_rounded, size: 40, color: AppColors.mutedText),
+                      const SizedBox(height: 8),
+                      Text('No exports yet. Generate your first export above.',
+                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+                    ])),
+                  )
+                else ...[
+                  // Header row
+                  Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: AppColors.pageBg,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(children: [
                       _headerCell('Export Name', 4),
                       _headerCell('Type', 2),
                       _headerCell('District', 2),
                       _headerCell('Date', 2),
                       _headerCell('Format', 1),
-                      _headerCell('Size', 2),
                       _headerCell('Status', 2),
                       _headerCell('', 1),
-                    ],
+                    ]),
                   ),
-                ),
-                const SizedBox(height: 4),
-                ..._exports.asMap().entries.map((e) {
-                  final ex = e.value;
-                  return Container(
-                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: e.key.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      children: [
+                  const SizedBox(height: 4),
+                  ..._exports.asMap().entries.map((e) {
+                    final ex = e.value;
+                    final name    = (ex['name'] ?? ex['type'] ?? 'Export').toString();
+                    final type    = (ex['type'] ?? '—').toString();
+                    final district = (ex['district'] ?? '—').toString();
+                    final date    = (ex['createdAt'] ?? '—').toString();
+                    final format  = (ex['format'] ?? 'CSV').toString();
+                    final status  = (ex['status'] ?? 'Ready').toString();
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: e.key.isEven
+                            ? AppColors.surfaceContainerLowest
+                            : AppColors.pageBg.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Row(children: [
                         Expanded(flex: 4, child: Row(children: [
-                          Icon(ex['format'] == 'CSV' ? Icons.table_chart_rounded : ex['format'] == 'PDF' ? Icons.picture_as_pdf_rounded : Icons.grid_on_rounded,
-                              size: 16, color: AppColors.primary),
+                          Icon(
+                            format == 'CSV' ? Icons.table_chart_rounded
+                                : format == 'PDF' ? Icons.picture_as_pdf_rounded
+                                : Icons.grid_on_rounded,
+                            size: 16, color: AppColors.primary,
+                          ),
                           const SizedBox(width: 8),
-                          Expanded(child: Text(ex['name']!, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface), overflow: TextOverflow.ellipsis)),
+                          Expanded(child: Text(name,
+                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface),
+                              overflow: TextOverflow.ellipsis)),
                         ])),
-                        Expanded(flex: 2, child: Text(ex['type']!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
-                        Expanded(flex: 2, child: Text(ex['district']!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
-                        Expanded(flex: 2, child: Text(ex['date']!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
-                        Expanded(flex: 1, child: StatusBadge(label: ex['format']!, type: BadgeType.info)),
-                        Expanded(flex: 2, child: Text(ex['size']!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
-                        Expanded(flex: 2, child: StatusBadge(label: ex['status']!, type: ex['status'] == 'Ready' ? BadgeType.success : BadgeType.neutral)),
-                        Expanded(flex: 1, child: IconButton(
-                          onPressed: () {},
-                          icon: const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
-                          tooltip: 'Download',
+                        Expanded(flex: 2, child: Text(type, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
+                        Expanded(flex: 2, child: Text(district, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
+                        Expanded(flex: 2, child: Text(date.length > 10 ? date.substring(0, 10) : date,
+                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
+                        Expanded(flex: 1, child: StatusBadge(label: format, type: BadgeType.info)),
+                        Expanded(flex: 2, child: StatusBadge(
+                          label: status,
+                          type: status == 'Ready' ? BadgeType.success : BadgeType.neutral,
                         )),
-                      ],
-                    ),
-                  );
-                }),
+                        Expanded(flex: 1, child: IconButton(
+                          onPressed: () async {
+                            final m = ScaffoldMessenger.of(context);
+                            final confirmed = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text('Delete Export'),
+                                content: Text('Delete "$name"?'),
+                                actions: [
+                                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context, true),
+                                    style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                    child: const Text('Delete'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed == true && ex['id'] != null) {
+                              try {
+                                await ApiService.deleteReport(ex['id'].toString());
+                                if (mounted) setState(() => _exports.remove(ex));
+                              } catch (err) {
+                                m.showSnackBar(
+                                  SnackBar(content: Text('Delete failed: $err'), backgroundColor: AppColors.criticalText),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.delete_outline_rounded, size: 16, color: AppColors.criticalText),
+                          tooltip: 'Delete',
+                        )),
+                      ]),
+                    );
+                  }),
+                ],
               ],
             ),
           ),
@@ -249,7 +408,10 @@ Widget _headerCell(String label, int flex) => Expanded(
       flex: flex,
       child: Padding(
         padding: const EdgeInsets.only(left: 4),
-        child: Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.5)),
+        child: Text(label,
+            style: GoogleFonts.inter(
+                fontSize: 11, fontWeight: FontWeight.w600,
+                color: AppColors.mutedText, letterSpacing: 0.5)),
       ),
     );
 
@@ -290,16 +452,23 @@ class _DropField extends StatelessWidget {
     return SizedBox(
       width: 200,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
+        Text(label.toUpperCase(),
+            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          initialValue: value, onChanged: onChanged,
+          initialValue: value,
+          onChanged: onChanged,
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
-            filled: true, fillColor: AppColors.surfaceContainerHighest,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList()),
+            filled: true,
+            fillColor: AppColors.surfaceContainerHighest,
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
+        ),
       ]),
     );
   }

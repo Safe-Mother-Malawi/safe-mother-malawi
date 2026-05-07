@@ -1,7 +1,53 @@
 import 'package:flutter/material.dart';
 import '../auth/services/logout_helper.dart';
-import 'models/risk_record.dart';
-import 'services/risk_service.dart';
+import '../../services/api_service.dart';
+
+// ── Risk Record model (mapped from API) ───────────────────────────────────────
+
+class _RiskRecord {
+  final String id;
+  final String patientName;
+  final String patientPhone;
+  final String riskLevel;
+  final int score;
+  final String message;
+  final String role;
+  final DateTime submittedAt;
+
+  _RiskRecord({
+    required this.id,
+    required this.patientName,
+    required this.patientPhone,
+    required this.riskLevel,
+    required this.score,
+    required this.message,
+    required this.role,
+    required this.submittedAt,
+  });
+
+  factory _RiskRecord.fromMap(Map<String, dynamic> m) {
+    return _RiskRecord(
+      id: (m['id'] ?? '').toString(),
+      patientName: (m['patient']?['fullName'] ?? m['patientName'] ?? 'Unknown').toString(),
+      patientPhone: (m['patient']?['phone'] ?? m['patientPhone'] ?? '—').toString(),
+      riskLevel: (m['riskLevel'] ?? m['risk'] ?? 'Low').toString(),
+      score: (m['score'] ?? m['riskScore'] ?? 0) as int,
+      message: (m['message'] ?? m['recommendation'] ?? '').toString(),
+      role: (m['patientType'] ?? m['role'] ?? 'prenatal').toString().toLowerCase(),
+      submittedAt: DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now(),
+    );
+  }
+
+  Color get color {
+    if (riskLevel.contains('High')) return const Color(0xFFC62828);
+    if (riskLevel.contains('Moderate') || riskLevel.contains('Medium')) return const Color(0xFFE65100);
+    return const Color(0xFF2E7D32);
+  }
+
+  String get formattedDate {
+    return '${submittedAt.day}/${submittedAt.month}/${submittedAt.year}';
+  }
+}
 
 class ClinicianDashboard extends StatefulWidget {
   const ClinicianDashboard({super.key});
@@ -10,21 +56,28 @@ class ClinicianDashboard extends StatefulWidget {
 }
 
 class _ClinicianDashboardState extends State<ClinicianDashboard> {
-  List<RiskRecord> _records = [];
+  List<_RiskRecord> _records = [];
   bool _loading = true;
-  String _filter = 'All'; // 'All' | 'High' | 'Moderate' | 'Low'
-  String _roleFilter = 'All'; // 'All' | 'prenatal' | 'neonatal'
+  String _filter = 'All';
+  String _roleFilter = 'All';
 
   @override
   void initState() { super.initState(); _load(); }
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    final records = await RiskService().loadAll();
-    setState(() { _records = records; _loading = false; });
+    try {
+      final data = await ApiService.getRiskAssessments(limit: 100);
+      setState(() {
+        _records = data.map((m) => _RiskRecord.fromMap(m as Map<String, dynamic>)).toList();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() => _loading = false);
+    }
   }
 
-  List<RiskRecord> get _filtered => _records.where((r) {
+  List<_RiskRecord> get _filtered => _records.where((r) {
     final riskOk = _filter == 'All' || r.riskLevel.contains(_filter);
     final roleOk = _roleFilter == 'All' || r.role == _roleFilter;
     return riskOk && roleOk;
@@ -84,9 +137,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
                           itemBuilder: (_, i) => _RecordCard(
                             record: _filtered[i],
                             onDelete: () async {
-                              final idx = _records.indexOf(_filtered[i]);
-                              await RiskService().deleteAt(idx);
-                              _load();
+                              setState(() => _records.remove(_filtered[i]));
                             },
                           ),
                         ),
@@ -204,7 +255,7 @@ class _FilterChip extends StatelessWidget {
 // ── Record Card ───────────────────────────────────────────────────────────────
 
 class _RecordCard extends StatelessWidget {
-  final RiskRecord record;
+  final _RiskRecord record;
   final VoidCallback onDelete;
   const _RecordCard({required this.record, required this.onDelete});
 
@@ -212,7 +263,7 @@ class _RecordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = record;
     return Dismissible(
-      key: ValueKey('${r.patientId}${r.submittedAt}'),
+      key: ValueKey('${r.id}${r.submittedAt}'),
       direction: DismissDirection.endToStart,
       background: Container(
         alignment: Alignment.centerRight,

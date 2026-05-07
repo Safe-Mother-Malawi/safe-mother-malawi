@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_colors.dart';
+import '../../services/api_service.dart';
 
 class HeatmapScreen extends StatefulWidget {
   const HeatmapScreen({super.key});
@@ -13,9 +14,10 @@ class HeatmapScreen extends StatefulWidget {
 
 class _HeatmapScreenState extends State<HeatmapScreen> {
   String _activeLayer = 'High-Risk Areas';
+  bool _loading = true;
 
-  // Real health facilities with actual lat/lon
-  final List<Map<String, dynamic>> _facilities = [
+  // Fallback static facilities if API has no lat/lon data
+  List<Map<String, dynamic>> _facilities = [
     {'name': 'Queen Elizabeth Central\nBlantyre', 'lat': -15.786, 'lon': 35.005, 'risk': 0.85, 'ivr': 0.72, 'clinician': 0.40, 'type': 'Central'},
     {'name': 'Kamuzu Central\nLilongwe', 'lat': -13.977, 'lon': 33.786, 'risk': 0.60, 'ivr': 0.88, 'clinician': 0.75, 'type': 'Central'},
     {'name': 'Mzuzu Central\nMzuzu', 'lat': -11.465, 'lon': 34.020, 'risk': 0.30, 'ivr': 0.45, 'clinician': 0.80, 'type': 'Central'},
@@ -52,6 +54,37 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
       case 'Low Clinician Activity': return 1.0 - (d['clinician'] as double);
       default: return d['risk'] as double;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFacilities();
+  }
+
+  Future<void> _loadFacilities() async {
+    try {
+      final data = await ApiService.getHealthFacilities();
+      if (data.isNotEmpty) {
+        final mapped = data
+            .where((f) => f['latitude'] != null && f['longitude'] != null)
+            .map<Map<String, dynamic>>((f) => {
+                  'name': (f['name'] ?? '—').toString(),
+                  'lat': (f['latitude'] as num).toDouble(),
+                  'lon': (f['longitude'] as num).toDouble(),
+                  'risk': ((f['riskScore'] ?? 0.5) as num).toDouble(),
+                  'ivr': ((f['ivrUsage'] ?? 0.5) as num).toDouble(),
+                  'clinician': ((f['clinicianActivity'] ?? 0.5) as num).toDouble(),
+                  'type': (f['type'] ?? 'District').toString(),
+                })
+            .toList();
+        if (mapped.isNotEmpty) {
+          if (mounted) setState(() { _facilities = mapped; _loading = false; });
+          return;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loading = false);
   }
 
   Color _heatColor(double v) {

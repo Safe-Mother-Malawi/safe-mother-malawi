@@ -1,19 +1,5 @@
 import 'package:flutter/material.dart';
-
-class _Notif {
-  final String title;
-  final String body;
-  final String time;
-  final String type; // 'appointment' | 'tip' | 'alert' | 'milestone'
-  bool read;
-  _Notif({
-    required this.title,
-    required this.body,
-    required this.time,
-    required this.type,
-    this.read = false,
-  });
-}
+import '../../../services/api_service.dart';
 
 class NeonatalNotificationsScreen extends StatefulWidget {
   const NeonatalNotificationsScreen({super.key});
@@ -24,70 +10,53 @@ class NeonatalNotificationsScreen extends StatefulWidget {
 
 class _NeonatalNotificationsScreenState
     extends State<NeonatalNotificationsScreen> {
-  final List<_Notif> _notifs = [
-    _Notif(
-      title: 'Well-Baby Visit Tomorrow',
-      body: 'Clinic visit at 09:00 AM · Area 25 Health Centre',
-      time: '2h ago',
-      type: 'appointment',
-    ),
-    _Notif(
-      title: 'Vaccine Due Soon 💉',
-      body: 'OPV-1 + PCV-1 + Pentavalent-1 is due at 6 weeks. Book your appointment.',
-      time: '5h ago',
-      type: 'milestone',
-    ),
-    _Notif(
-      title: 'Feeding Reminder',
-      body: 'Baby should feed 8–12 times/day. Log today\'s feeds in the tracker.',
-      time: 'Yesterday',
-      type: 'tip',
-      read: true,
-    ),
-    _Notif(
-      title: 'Health Alert ⚠️',
-      body: 'You reported fast breathing. Monitor closely and visit a nurse if it continues.',
-      time: 'Yesterday',
-      type: 'alert',
-    ),
-    _Notif(
-      title: 'Growth Milestone 🎉',
-      body: 'Baby is now 14 days old! Expected weight gain: 150–200g per week.',
-      time: '2 days ago',
-      type: 'milestone',
-      read: true,
-    ),
-    _Notif(
-      title: 'Daily Tip 💡',
-      body: 'Tummy time while awake builds neck muscles — start with 2–3 minutes.',
-      time: '2 days ago',
-      type: 'tip',
-      read: true,
-    ),
-    _Notif(
-      title: 'Sleep Reminder',
-      body: 'Always place baby on their back to sleep — never tummy or side.',
-      time: '3 days ago',
-      type: 'tip',
-      read: true,
-    ),
-    _Notif(
-      title: 'Umbilical Cord Check',
-      body: 'Keep the cord stump clean and dry. It should fall off in 1–3 weeks.',
-      time: '3 days ago',
-      type: 'alert',
-      read: true,
-    ),
-  ];
+  List<Map<String, dynamic>> _notifs = [];
+  bool _loading = true;
+  String? _error;
 
-  void _markAllRead() =>
-      setState(() { for (final n in _notifs) {
-        n.read = true;
-      } });
-  void _markRead(int i) => setState(() => _notifs[i].read = true);
-  void _delete(int i)   => setState(() => _notifs.removeAt(i));
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
 
-  int get _unread => _notifs.where((n) => !n.read).length;
+  Future<void> _load() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      final data = await ApiService.getNotifications();
+      setState(() {
+        _notifs = data.cast<Map<String, dynamic>>();
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _markRead(Map<String, dynamic> n) async {
+    if (n['isRead'] == true) return;
+    try {
+      await ApiService.markNotificationRead(n['id'].toString());
+      setState(() => n['isRead'] = true);
+    } catch (_) {}
+  }
+
+  Future<void> _markAllRead() async {
+    for (final n in _notifs) {
+      if (n['isRead'] != true) {
+        try {
+          await ApiService.markNotificationRead(n['id'].toString());
+        } catch (_) {}
+      }
+    }
+    setState(() {
+      for (final n in _notifs) {
+        n['isRead'] = true;
+      }
+    });
+  }
+
+  int get _unread => _notifs.where((n) => n['isRead'] != true).length;
 
   @override
   Widget build(BuildContext context) {
@@ -110,11 +79,14 @@ class _NeonatalNotificationsScreenState
                     fontWeight: FontWeight.w700)),
             if (_unread > 0)
               Text('$_unread unread',
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 11)),
+                  style: const TextStyle(color: Colors.white70, fontSize: 11)),
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _load,
+          ),
           if (_unread > 0)
             TextButton(
               onPressed: _markAllRead,
@@ -123,150 +95,156 @@ class _NeonatalNotificationsScreenState
             ),
         ],
       ),
-      body: _notifs.isEmpty
-          ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_none,
-                      size: 64, color: Color(0xFFE8EAF6)),
-                  SizedBox(height: 16),
-                  Text('No notifications',
-                      style: TextStyle(
-                          fontSize: 16, color: Color(0xFF9E9E9E))),
-                ],
-              ),
-            )
-          : ListView.separated(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              itemCount: _notifs.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 2),
-              itemBuilder: (_, i) {
-                final n = _notifs[i];
-                return Dismissible(
-                  key: ValueKey('$i${n.title}'),
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20),
-                    color: const Color(0xFFFFEBEE),
-                    child: const Icon(Icons.delete_outline,
-                        color: Color(0xFFC62828)),
-                  ),
-                  onDismissed: (_) => _delete(i),
-                  child: GestureDetector(
-                    onTap: () => _markRead(i),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 4),
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: n.read
-                            ? Colors.white
-                            : const Color(0xFFE8EAF6),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: n.read
-                              ? const Color(0xFFF0F0F0)
-                              : const Color(0xFFC5CAE9),
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.04),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                    const SizedBox(height: 8),
+                    Text(_error!, textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
+                    const SizedBox(height: 12),
+                    ElevatedButton(onPressed: _load, child: const Text('Retry')),
+                  ]),
+                )
+              : _notifs.isEmpty
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.notifications_none,
+                              size: 64, color: Color(0xFFE8EAF6)),
+                          SizedBox(height: 16),
+                          Text('No notifications',
+                              style: TextStyle(
+                                  fontSize: 16, color: Color(0xFF9E9E9E))),
                         ],
                       ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: _iconBg(n.type),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Icon(_iconData(n.type),
-                                color: _iconColor(n.type), size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(n.title,
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            fontWeight: n.read
-                                                ? FontWeight.w500
-                                                : FontWeight.w700,
-                                            color: const Color(0xFF212121),
-                                          )),
-                                    ),
-                                    if (!n.read)
-                                      Container(
-                                        width: 8,
-                                        height: 8,
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFF1A237E),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                  ],
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        itemCount: _notifs.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 2),
+                        itemBuilder: (_, i) {
+                          final n = _notifs[i];
+                          final isRead = n['isRead'] == true;
+                          final title = (n['title'] ?? 'Notification').toString();
+                          final body = (n['message'] ?? n['body'] ?? '').toString();
+                          final type = (n['type'] ?? 'tip').toString().toLowerCase();
+                          final time = (n['createdAt'] ?? '').toString();
+
+                          return GestureDetector(
+                            onTap: () => _markRead(n),
+                            child: Container(
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 4),
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: isRead
+                                    ? Colors.white
+                                    : const Color(0xFFE8EAF6),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isRead
+                                      ? const Color(0xFFF0F0F0)
+                                      : const Color(0xFFC5CAE9),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(n.body,
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF757575),
-                                        height: 1.4)),
-                                const SizedBox(height: 6),
-                                Text(n.time,
-                                    style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xFFBDBDBD))),
-                              ],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.04),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    width: 42,
+                                    height: 42,
+                                    decoration: BoxDecoration(
+                                      color: _iconBg(type),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(_iconData(type),
+                                        color: _iconColor(type), size: 22),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(title,
+                                                  style: TextStyle(
+                                                    fontSize: 14,
+                                                    fontWeight: isRead
+                                                        ? FontWeight.w500
+                                                        : FontWeight.w700,
+                                                    color:
+                                                        const Color(0xFF212121),
+                                                  )),
+                                            ),
+                                            if (!isRead)
+                                              Container(
+                                                width: 8,
+                                                height: 8,
+                                                decoration: const BoxDecoration(
+                                                  color: Color(0xFF1A237E),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(body,
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFF757575),
+                                                height: 1.4)),
+                                        const SizedBox(height: 6),
+                                        Text(time,
+                                            style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Color(0xFFBDBDBD))),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          );
+                        },
                       ),
                     ),
-                  ),
-                );
-              },
-            ),
     );
   }
 
   IconData _iconData(String type) {
-    switch (type) {
-      case 'appointment': return Icons.event;
-      case 'milestone':   return Icons.star;
-      case 'alert':       return Icons.warning_amber;
-      default:            return Icons.lightbulb_outline;
-    }
+    if (type.contains('appointment')) return Icons.event;
+    if (type.contains('alert')) return Icons.warning_amber;
+    if (type.contains('milestone')) return Icons.star;
+    return Icons.lightbulb_outline;
   }
 
   Color _iconBg(String type) {
-    switch (type) {
-      case 'appointment': return const Color(0xFFE3F2FD);
-      case 'milestone':   return const Color(0xFFFFF8E1);
-      case 'alert':       return const Color(0xFFFFEBEE);
-      default:            return const Color(0xFFE8F5E9);
-    }
+    if (type.contains('appointment')) return const Color(0xFFE3F2FD);
+    if (type.contains('alert')) return const Color(0xFFFFEBEE);
+    if (type.contains('milestone')) return const Color(0xFFFFF8E1);
+    return const Color(0xFFE8F5E9);
   }
 
   Color _iconColor(String type) {
-    switch (type) {
-      case 'appointment': return const Color(0xFF1A237E);
-      case 'milestone':   return const Color(0xFFF9A825);
-      case 'alert':       return const Color(0xFFC62828);
-      default:            return const Color(0xFF2E7D32);
-    }
+    if (type.contains('appointment')) return const Color(0xFF1A237E);
+    if (type.contains('alert')) return const Color(0xFFC62828);
+    if (type.contains('milestone')) return const Color(0xFFF9A825);
+    return const Color(0xFF2E7D32);
   }
 }
