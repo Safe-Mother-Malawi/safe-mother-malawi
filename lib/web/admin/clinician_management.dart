@@ -89,10 +89,11 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
         final name     = (u['fullName'] ?? '').toString().toLowerCase();
         final district = (u['district'] ?? '').toString().toLowerCase();
         final facility = (u['facilityName'] ?? u['facility'] ?? '').toString();
+        final facilityLower = facility.toLowerCase();
         final active   = u['isActive'] == true;
         final q        = _searchCtrl.text.toLowerCase();
         
-        final matchSearch = q.isEmpty || name.contains(q) || district.contains(q);
+        final matchSearch = q.isEmpty || name.contains(q) || district.contains(q) || facilityLower.contains(q);
         final matchStatus = _filterStatus == 'All'
             || (_filterStatus == 'Active' && active)
             || (_filterStatus == 'Inactive' && !active);
@@ -263,7 +264,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                 onChanged: (_) => setState(() {}),
                 style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'Search by name, district or email...',
+                  hintText: 'Search by name, district, facility or email...',
                   hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                   filled: true, fillColor: AppColors.surfaceContainerLowest,
