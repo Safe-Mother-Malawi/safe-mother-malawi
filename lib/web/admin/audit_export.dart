@@ -158,7 +158,7 @@ class _AuditExportState extends State<AuditExport> {
                         children: [
                           _DropField(
                             label: 'Data Type', value: _dataType,
-                            items: const ['All Data', 'User Activity', 'Clinician Data', 'IVR Interactions', 'Health Assessments', 'System Events', 'Login History'],
+                            items: const ['All Data', 'User Activity', 'Clinician Data', 'Health Assessments', 'System Events', 'Login History'],
                             onChanged: (v) => setState(() => _dataType = v!),
                           ),
                           _DropField(

@@ -97,7 +97,6 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
 
   int _totalMothers  = 0;
   int _highRiskCases = 0;
-  int _ivrCalls      = 0;
   String _district   = '';
 
   List<FlSpot> _trendSpots = [];
@@ -129,14 +128,12 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
         _safeGet('/analytics/registrations'),
         _safeGet('/analytics/risk-distribution'),
         _safeGet('/analytics/system-alerts'),
-        _safeGet('/analytics/ivr'),
       ]);
 
       final overview  = _asMap(results[0]);
       final regTrends = _asMap(results[1]);
       final riskDist  = _asList(results[2]);
       final sysAlerts = _asMap(results[3]);
-      final ivrStats  = _asMap(results[4]);
 
       final prenatalMonths = _asList(regTrends['prenatal']);
       final spots = <FlSpot>[];
@@ -159,7 +156,6 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
       setState(() {
         _totalMothers   = (overview['totalMothers']  as num?)?.toInt() ?? 0;
         _highRiskCases  = (overview['highRiskCases'] as num?)?.toInt() ?? 0;
-        _ivrCalls       = (ivrStats['totalCalls']    as num?)?.toInt() ?? 0;
         _trendSpots     = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
         _riskDist       = riskDistMaps;
         _districtAlerts = alertsList;
@@ -203,7 +199,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
           const SizedBox(height: 20),
 
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: 3, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
             children: [
@@ -215,9 +211,6 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
               KpiCard(title: 'Task Completion', value: '${completionRate.toStringAsFixed(1)}%',
                   icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg,
                   subtitle: 'This month'),
-              KpiCard(title: 'IVR Usage', value: _fmt(_ivrCalls),
-                  icon: Icons.phone_in_talk_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg,
-                  subtitle: 'Calls this month'),
             ],
           ),
           const SizedBox(height: 28),

@@ -18,39 +18,38 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
 
   // Fallback static facilities if API has no lat/lon data
   List<Map<String, dynamic>> _facilities = [
-    {'name': 'Queen Elizabeth Central\nBlantyre', 'lat': -15.786, 'lon': 35.005, 'risk': 0.85, 'ivr': 0.72, 'clinician': 0.40, 'type': 'Central'},
-    {'name': 'Kamuzu Central\nLilongwe', 'lat': -13.977, 'lon': 33.786, 'risk': 0.60, 'ivr': 0.88, 'clinician': 0.75, 'type': 'Central'},
-    {'name': 'Mzuzu Central\nMzuzu', 'lat': -11.465, 'lon': 34.020, 'risk': 0.30, 'ivr': 0.45, 'clinician': 0.80, 'type': 'Central'},
-    {'name': 'Zomba Central\nZomba', 'lat': -15.386, 'lon': 35.318, 'risk': 0.70, 'ivr': 0.55, 'clinician': 0.50, 'type': 'Central'},
-    {'name': 'Mangochi District', 'lat': -14.478, 'lon': 35.265, 'risk': 0.55, 'ivr': 0.40, 'clinician': 0.35, 'type': 'District'},
-    {'name': 'Kasungu District', 'lat': -13.014, 'lon': 33.468, 'risk': 0.40, 'ivr': 0.60, 'clinician': 0.65, 'type': 'District'},
-    {'name': 'Dedza District', 'lat': -14.368, 'lon': 34.334, 'risk': 0.50, 'ivr': 0.35, 'clinician': 0.55, 'type': 'District'},
-    {'name': 'Salima District', 'lat': -13.780, 'lon': 34.459, 'risk': 0.45, 'ivr': 0.50, 'clinician': 0.60, 'type': 'District'},
-    {'name': 'Mulanje District', 'lat': -16.032, 'lon': 35.502, 'risk': 0.75, 'ivr': 0.38, 'clinician': 0.42, 'type': 'District'},
-    {'name': 'Thyolo District', 'lat': -16.128, 'lon': 35.143, 'risk': 0.68, 'ivr': 0.42, 'clinician': 0.48, 'type': 'District'},
-    {'name': 'Chikwawa District', 'lat': -16.033, 'lon': 34.800, 'risk': 0.62, 'ivr': 0.30, 'clinician': 0.38, 'type': 'District'},
-    {'name': 'Nsanje District', 'lat': -16.923, 'lon': 35.263, 'risk': 0.78, 'ivr': 0.25, 'clinician': 0.28, 'type': 'District'},
-    {'name': 'Ntcheu District', 'lat': -14.820, 'lon': 34.636, 'risk': 0.48, 'ivr': 0.44, 'clinician': 0.58, 'type': 'District'},
-    {'name': 'Balaka District', 'lat': -14.987, 'lon': 34.957, 'risk': 0.52, 'ivr': 0.48, 'clinician': 0.52, 'type': 'District'},
-    {'name': 'Machinga District', 'lat': -15.200, 'lon': 35.350, 'risk': 0.58, 'ivr': 0.36, 'clinician': 0.44, 'type': 'District'},
-    {'name': 'Karonga District', 'lat': -9.933, 'lon': 33.933, 'risk': 0.25, 'ivr': 0.30, 'clinician': 0.72, 'type': 'District'},
-    {'name': 'Chitipa District', 'lat': -9.700, 'lon': 33.267, 'risk': 0.20, 'ivr': 0.22, 'clinician': 0.78, 'type': 'District'},
-    {'name': 'Rumphi District', 'lat': -11.017, 'lon': 33.867, 'risk': 0.28, 'ivr': 0.32, 'clinician': 0.70, 'type': 'District'},
-    {'name': 'Nkhata Bay District', 'lat': -11.600, 'lon': 34.300, 'risk': 0.33, 'ivr': 0.38, 'clinician': 0.65, 'type': 'District'},
-    {'name': 'Mzimba District', 'lat': -11.900, 'lon': 33.600, 'risk': 0.35, 'ivr': 0.42, 'clinician': 0.68, 'type': 'District'},
-    {'name': 'Dowa District', 'lat': -13.650, 'lon': 33.933, 'risk': 0.42, 'ivr': 0.55, 'clinician': 0.62, 'type': 'District'},
-    {'name': 'Nkhotakota District', 'lat': -12.925, 'lon': 34.298, 'risk': 0.38, 'ivr': 0.45, 'clinician': 0.60, 'type': 'District'},
-    {'name': 'Ntchisi District', 'lat': -13.383, 'lon': 33.883, 'risk': 0.36, 'ivr': 0.40, 'clinician': 0.63, 'type': 'District'},
-    {'name': 'Mchinji District', 'lat': -13.800, 'lon': 32.900, 'risk': 0.44, 'ivr': 0.52, 'clinician': 0.58, 'type': 'District'},
-    {'name': 'Chiradzulu District', 'lat': -15.683, 'lon': 35.150, 'risk': 0.72, 'ivr': 0.48, 'clinician': 0.45, 'type': 'District'},
-    {'name': 'Phalombe District', 'lat': -15.817, 'lon': 35.650, 'risk': 0.65, 'ivr': 0.35, 'clinician': 0.40, 'type': 'District'},
-    {'name': 'Mwanza District', 'lat': -15.617, 'lon': 34.517, 'risk': 0.55, 'ivr': 0.32, 'clinician': 0.48, 'type': 'District'},
-    {'name': 'Bwaila Hospital\nLilongwe', 'lat': -13.960, 'lon': 33.780, 'risk': 0.58, 'ivr': 0.82, 'clinician': 0.72, 'type': 'District'},
+    {'name': 'Queen Elizabeth Central\nBlantyre', 'lat': -15.786, 'lon': 35.005, 'risk': 0.85, 'clinician': 0.40, 'type': 'Central'},
+    {'name': 'Kamuzu Central\nLilongwe', 'lat': -13.977, 'lon': 33.786, 'risk': 0.60, 'clinician': 0.75, 'type': 'Central'},
+    {'name': 'Mzuzu Central\nMzuzu', 'lat': -11.465, 'lon': 34.020, 'risk': 0.30, 'clinician': 0.80, 'type': 'Central'},
+    {'name': 'Zomba Central\nZomba', 'lat': -15.386, 'lon': 35.318, 'risk': 0.70, 'clinician': 0.50, 'type': 'Central'},
+    {'name': 'Mangochi District', 'lat': -14.478, 'lon': 35.265, 'risk': 0.55, 'clinician': 0.35, 'type': 'District'},
+    {'name': 'Kasungu District', 'lat': -13.014, 'lon': 33.468, 'risk': 0.40, 'clinician': 0.65, 'type': 'District'},
+    {'name': 'Dedza District', 'lat': -14.368, 'lon': 34.334, 'risk': 0.50, 'clinician': 0.55, 'type': 'District'},
+    {'name': 'Salima District', 'lat': -13.780, 'lon': 34.459, 'risk': 0.45, 'clinician': 0.60, 'type': 'District'},
+    {'name': 'Mulanje District', 'lat': -16.032, 'lon': 35.502, 'risk': 0.75, 'clinician': 0.42, 'type': 'District'},
+    {'name': 'Thyolo District', 'lat': -16.128, 'lon': 35.143, 'risk': 0.68, 'clinician': 0.48, 'type': 'District'},
+    {'name': 'Chikwawa District', 'lat': -16.033, 'lon': 34.800, 'risk': 0.62, 'clinician': 0.38, 'type': 'District'},
+    {'name': 'Nsanje District', 'lat': -16.923, 'lon': 35.263, 'risk': 0.78, 'clinician': 0.28, 'type': 'District'},
+    {'name': 'Ntcheu District', 'lat': -14.820, 'lon': 34.636, 'risk': 0.48, 'clinician': 0.58, 'type': 'District'},
+    {'name': 'Balaka District', 'lat': -14.987, 'lon': 34.957, 'risk': 0.52, 'clinician': 0.52, 'type': 'District'},
+    {'name': 'Machinga District', 'lat': -15.200, 'lon': 35.350, 'risk': 0.58, 'clinician': 0.44, 'type': 'District'},
+    {'name': 'Karonga District', 'lat': -9.933, 'lon': 33.933, 'risk': 0.25, 'clinician': 0.72, 'type': 'District'},
+    {'name': 'Chitipa District', 'lat': -9.700, 'lon': 33.267, 'risk': 0.20, 'clinician': 0.78, 'type': 'District'},
+    {'name': 'Rumphi District', 'lat': -11.017, 'lon': 33.867, 'risk': 0.28, 'clinician': 0.70, 'type': 'District'},
+    {'name': 'Nkhata Bay District', 'lat': -11.600, 'lon': 34.300, 'risk': 0.33, 'clinician': 0.65, 'type': 'District'},
+    {'name': 'Mzimba District', 'lat': -11.900, 'lon': 33.600, 'risk': 0.35, 'clinician': 0.68, 'type': 'District'},
+    {'name': 'Dowa District', 'lat': -13.650, 'lon': 33.933, 'risk': 0.42, 'clinician': 0.62, 'type': 'District'},
+    {'name': 'Nkhotakota District', 'lat': -12.925, 'lon': 34.298, 'risk': 0.38, 'clinician': 0.60, 'type': 'District'},
+    {'name': 'Ntchisi District', 'lat': -13.383, 'lon': 33.883, 'risk': 0.36, 'clinician': 0.63, 'type': 'District'},
+    {'name': 'Mchinji District', 'lat': -13.800, 'lon': 32.900, 'risk': 0.44, 'clinician': 0.58, 'type': 'District'},
+    {'name': 'Chiradzulu District', 'lat': -15.683, 'lon': 35.150, 'risk': 0.72, 'clinician': 0.45, 'type': 'District'},
+    {'name': 'Phalombe District', 'lat': -15.817, 'lon': 35.650, 'risk': 0.65, 'clinician': 0.40, 'type': 'District'},
+    {'name': 'Mwanza District', 'lat': -15.617, 'lon': 34.517, 'risk': 0.55, 'clinician': 0.48, 'type': 'District'},
+    {'name': 'Bwaila Hospital\nLilongwe', 'lat': -13.960, 'lon': 33.780, 'risk': 0.58, 'clinician': 0.72, 'type': 'District'},
   ];
 
   double _layerValue(Map<String, dynamic> d) {
     switch (_activeLayer) {
-      case 'IVR Usage': return d['ivr'] as double;
       case 'Low Clinician Activity': return 1.0 - (d['clinician'] as double);
       default: return d['risk'] as double;
     }
@@ -73,7 +72,6 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                   'lat': (f['latitude'] as num).toDouble(),
                   'lon': (f['longitude'] as num).toDouble(),
                   'risk': ((f['riskScore'] ?? 0.5) as num).toDouble(),
-                  'ivr': ((f['ivrUsage'] ?? 0.5) as num).toDouble(),
                   'clinician': ((f['clinicianActivity'] ?? 0.5) as num).toDouble(),
                   'type': (f['type'] ?? 'District').toString(),
                 })
@@ -209,7 +207,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                               style: GoogleFonts.publicSans(
                                   fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.headings)),
                           const SizedBox(height: 12),
-                          ...['High-Risk Areas', 'IVR Usage', 'Low Clinician Activity']
+                          ...['High-Risk Areas', 'Low Clinician Activity']
                               .map((layer) => _LayerTile(
                                     label: layer,
                                     selected: _activeLayer == layer,

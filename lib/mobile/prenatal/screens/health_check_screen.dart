@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
-import '../../../utils/app_colors.dart';
+import '../../../theme/app_colors.dart';
 import 'health_check_result_screen.dart';
 
 class PrenatalHealthCheckScreen extends StatefulWidget {

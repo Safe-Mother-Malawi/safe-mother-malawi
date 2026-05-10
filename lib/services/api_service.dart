@@ -228,27 +228,12 @@ class ApiService {
     return {};
   }
 
-  static Future<Map<String, dynamic>> getIvrAnalytics() async {
-    final data = await instance.get('/analytics/ivr');
-    return (data as Map<String, dynamic>?) ?? {};
-  }
-
-  // ── IVR call logs ─────────────────────────────────────────────────────────
-
-  static Future<List<dynamic>> getIvrCalls({int page = 1, int limit = 50}) async {
-    final data = await instance.get('/ivr/analytics/calls?limit=$limit&offset=${(page - 1) * limit}');
-    if (data is Map<String, dynamic>) {
-      return (data['calls'] as List<dynamic>?) ?? [];
-    }
-    return _asList(data);
-  }
-
   // ── Risk assessments ──────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getRiskAssessments({int page = 1, int limit = 50}) async {
-    final data = await instance.get('/ivr/analytics/responses?limit=$limit&offset=${(page - 1) * limit}');
+    final data = await instance.get('/risk-assessments?limit=$limit&offset=${(page - 1) * limit}');
     if (data is Map<String, dynamic>) {
-      return (data['responses'] as List<dynamic>?) ?? [];
+      return (data['assessments'] as List<dynamic>?) ?? [];
     }
     return _asList(data);
   }

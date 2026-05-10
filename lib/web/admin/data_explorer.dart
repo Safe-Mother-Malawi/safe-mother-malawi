@@ -104,7 +104,6 @@ class _DataExplorerState extends State<DataExplorer>
                         tabs: [
                           if (AuthServiceWeb.instance.userRole.toLowerCase() == 'admin')
                             const Tab(text: 'System Logs'),
-                          const Tab(text: 'IVR Interactions'),
                           const Tab(text: 'Question Responses'),
                           const Tab(text: 'Task Data'),
                         ],
@@ -116,7 +115,6 @@ class _DataExplorerState extends State<DataExplorer>
                         children: [
                           if (AuthServiceWeb.instance.userRole.toLowerCase() == 'admin')
                             _SystemLogsTab(search: _searchCtrl.text),
-                          _IvrTab(search: _searchCtrl.text),
                           _QuestionTab(search: _searchCtrl.text),
                           _TaskTab(search: _searchCtrl.text),
                         ],
@@ -272,69 +270,6 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
           StatusBadge(
             label: status,
             type: status == 'Success' ? BadgeType.success : BadgeType.critical,
-          ),
-        ];
-      }).toList(),
-    );
-  }
-}
-
-// ── IVR Tab ──────────────────────────────────────────────────────────────────
-
-class _IvrTab extends StatefulWidget {
-  final String search;
-  const _IvrTab({required this.search});
-  @override
-  State<_IvrTab> createState() => _IvrTabState();
-}
-
-class _IvrTabState extends State<_IvrTab> {
-  List<dynamic> _data = [];
-  bool _loading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
-    try {
-      final data = await ApiService.getIvrCalls(limit: 100);
-      setState(() { _data = data; _loading = false; });
-    } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final filtered = _data.where((r) {
-      if (widget.search.isEmpty) return true;
-      return r.toString().toLowerCase().contains(widget.search.toLowerCase());
-    }).toList();
-
-    return _FullTable(
-      loading: _loading,
-      error: _error,
-      onRetry: _load,
-      columns: const ['#', 'Time', 'Caller', 'Topic', 'Duration', 'Status'],
-      flexes: const [1, 3, 3, 3, 2, 2],
-      rows: filtered.asMap().entries.map((e) {
-        final r = e.value as Map<String, dynamic>;
-        final status = (r['status'] ?? r['callStatus'] ?? 'Completed').toString();
-        final duration = r['duration'] != null ? '${r['duration']}s' : '—';
-        return [
-          _cell('${e.key + 1}', muted: true),
-          _cell((r['createdAt'] ?? r['startTime'] ?? '—').toString()),
-          _cell((r['callerPhone'] ?? r['caller'] ?? '—').toString()),
-          _cell((r['topic'] ?? r['category'] ?? '—').toString(), bold: true),
-          _cell(duration),
-          StatusBadge(
-            label: status,
-            type: status == 'Completed' ? BadgeType.success : BadgeType.warning,
           ),
         ];
       }).toList(),

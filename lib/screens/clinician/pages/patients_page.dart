@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
-import '../../../services/ivr_websocket_service.dart';
 
 class ClinicianPatientsPage extends StatefulWidget {
   const ClinicianPatientsPage({super.key});
@@ -23,7 +21,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   String? _selectedType; // 'prenatal' | 'neonatal'
 
   List<Map<String, dynamic>> _riskHistory = [];
-  List<Map<String, dynamic>> _ivrHistory  = [];
   bool _historyLoading = false;
   bool _editing = false;
 
@@ -31,11 +28,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   void initState() {
     super.initState();
     _load();
-    // Connect to IVR WebSocket for real-time alerts
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ivrService = Provider.of<IvrWebSocketService>(context, listen: false);
-      ivrService.connect(userId: 'clinician-user'); // TODO: Use actual clinician ID
-    });
   }
 
   @override
@@ -65,18 +57,12 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   }
 
   Future<void> _loadHistory(String patientId, String type) async {
-    setState(() { _historyLoading = true; _riskHistory = []; _ivrHistory = []; });
+    setState(() { _historyLoading = true; _riskHistory = []; });
     try {
-      final results = await Future.wait([
-        ApiService.instance.get('/risk-assessments/patient/$patientId'),
-        ApiService.instance.get('/ivr/analytics/patient/$patientId'),
-      ]);
-      final riskData = results[0] is List ? results[0] as List : [];
-      final ivrMap   = results[1] is Map ? results[1] as Map : {};
-      final ivrData  = ivrMap['calls'] is List ? ivrMap['calls'] as List : [];
+      final riskData = await ApiService.instance.get('/risk-assessments/patient/$patientId');
+      final riskList = riskData is List ? riskData as List : [];
       setState(() {
-        _riskHistory    = riskData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-        _ivrHistory     = ivrData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _riskHistory    = riskList.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
         _historyLoading = false;
       });
     } catch (_) {
@@ -152,120 +138,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // IVR Alerts Section
-        Consumer<IvrWebSocketService>(
-          builder: (context, ivrService, _) {
-            if (ivrService.alertCount == 0) return const SizedBox.shrink();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Icon(Icons.notifications_active, color: Colors.red, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('IVR Alerts (${ivrService.alertCount})',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
-                        Text(ivrService.isConnected ? '🟢 Connected' : '🔴 Disconnected',
-                            style: TextStyle(fontSize: 12, color: ivrService.isConnected ? Colors.green : Colors.red)),
-                      ],
-                    ),
-                  ),
-                  if (ivrService.alertCount > 0)
-                    TextButton(
-                      onPressed: ivrService.clearAlerts,
-                      child: const Text('Clear All', style: TextStyle(fontSize: 12)),
-                    ),
-                ]),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: ivrService.alerts.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
-                    itemBuilder: (context, index) {
-                      final alert = ivrService.alerts[index];
-                      return Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: alert.riskLevel == 'CRITICAL'
-                                    ? Colors.red.shade100
-                                    : Colors.orange.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(alert.getRiskEmoji(), style: const TextStyle(fontSize: 20)),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('${alert.riskLevel} Risk - ${alert.patientType}',
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                  Text(alert.message, maxLines: 2, overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12, color: AppColors.g600)),
-                                  Text('Score: ${alert.riskScore}', style: const TextStyle(fontSize: 11, color: AppColors.g600)),
-                                ],
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                try {
-                                  // Mark alert as done in backend
-                                  await ApiService.markAlertDone(alert.sessionId);
-                                  // Remove from local list
-                                  ivrService.removeAlert(alert.sessionId);
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Alert marked as done'),
-                                        backgroundColor: AppColors.green,
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to mark alert: $e'),
-                                        backgroundColor: AppColors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.check, size: 16),
-                              label: const Text('Done', style: TextStyle(fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-            );
-          },
-        ),
         const Row(children: [
           Icon(Icons.people_outline, color: AppColors.navy, size: 22),
           SizedBox(width: 10),
@@ -494,35 +366,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
             }),
 
           const SizedBox(height: 16),
-
-          // IVR history
-          _section('IVR Call History', []),
-          const SizedBox(height: 8),
-          if (_ivrHistory.isEmpty)
-            const Text('No IVR calls recorded.', style: TextStyle(fontSize: 12, color: AppColors.g400))
-          else
-            ..._ivrHistory.take(3).map((c) {
-              final date     = (c['startedAt'] as String? ?? '').substring(0, 10);
-              final outcome  = c['outcome'] as String? ?? 'unknown';
-              final duration = c['durationSeconds'] as int?;
-              final durStr   = duration != null ? '${duration ~/ 60}m ${duration % 60}s' : 'N/A';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.g200)),
-                child: Row(children: [
-                  Container(width: 34, height: 34,
-                      decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.phone_in_talk_outlined, color: AppColors.navy, size: 18)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(outcome, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
-                    Text('Duration: $durStr', style: const TextStyle(fontSize: 11, color: AppColors.g400)),
-                  ])),
-                  Text(date, style: const TextStyle(fontSize: 10, color: AppColors.g400)),
-                ]),
-              );
-            }),
         ]),
       ),
     );

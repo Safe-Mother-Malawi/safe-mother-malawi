@@ -14,7 +14,7 @@ class _HelpScreenState extends State<HelpScreen> {
     {'q': 'How is my pregnancy week calculated?', 'a': 'Your pregnancy week is automatically calculated from your Last Menstrual Period (LMP) date entered during registration.'},
     {'q': 'Can I use the app without internet?', 'a': 'Yes. Core features like the pregnancy tracker, nutrition tips, and health information are available offline. Data syncs when you reconnect.'},
     {'q': 'How do I update my LMP date?', 'a': 'On the home screen, tap the "Edit" button next to your due date to update your LMP date.'},
-    {'q': 'What is the IVR call feature?', 'a': 'The IVR (Interactive Voice Response) feature lets you quickly call hospitals, midwives, or emergency services directly from the app.'},
+    {'q': 'What is the call feature?', 'a': 'The call feature lets you quickly contact hospitals, midwives, or emergency services directly from the app.'},
     {'q': 'How does the health diagnostic work?', 'a': 'The diagnostic asks you a series of questions about your symptoms. Each answer has a weight, and the system calculates a risk score to suggest possible health concerns.'},
     {'q': 'How do I add an appointment?', 'a': 'Go to the Schedule tab and tap "+ New" to add a new appointment with date, time, location, and doctor details.'},
   ];

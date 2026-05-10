@@ -15,7 +15,6 @@ class DistrictAnalytics extends StatefulWidget {
 
 class _DistrictAnalyticsState extends State<DistrictAnalytics> {
   Map<String, dynamic> _overview = {};
-  Map<String, dynamic> _ivr = {};
   Map<String, dynamic> _risk = {};
   bool _loading = true;
   String? _error;
@@ -33,13 +32,11 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
     try {
       final results = await Future.wait([
         ApiService.getAnalyticsOverview(),
-        ApiService.getIvrAnalytics(),
         ApiService.getRiskDistribution(),
       ]);
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
-        _ivr      = results[1] as Map<String, dynamic>;
-        _risk     = results[2] as Map<String, dynamic>;
+        _risk     = results[1] as Map<String, dynamic>;
         _loading  = false;
       });
     } catch (e) {
@@ -62,7 +59,6 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
 
     final assessments    = (_risk['total'] ?? _overview['totalAssessments'] ?? 0).toString();
     final highRisk       = (_risk['high'] ?? _overview['highRisk'] ?? 0).toString();
-    final ivrCalls       = (_ivr['totalCalls'] ?? _ivr['total'] ?? 0).toString();
     final taskRate       = (_overview['taskCompletionRate'] ?? '—').toString();
 
     final riskTrend = (_overview['riskTrend'] ?? []) as List;
@@ -94,7 +90,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
           const SizedBox(height: 24),
 
           GridView.count(
-            crossAxisCount: 4,
+            crossAxisCount: 3,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16,
@@ -103,7 +99,6 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
             children: [
               KpiCard(title: 'Assessments', value: assessments, icon: Icons.assignment_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
               KpiCard(title: 'High-Risk', value: highRisk, icon: Icons.warning_amber_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
-              KpiCard(title: 'IVR Calls', value: ivrCalls, icon: Icons.phone_in_talk_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
               KpiCard(title: 'Task Rate', value: '$taskRate%', icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
             ],
           ),
@@ -169,7 +164,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                           sideTitles: SideTitles(
                             showTitles: true,
                             getTitlesWidget: (v, _) {
-                              const labels = ['ANC', 'PNC', 'IVR', 'Tasks'];
+                              const labels = ['ANC', 'PNC', 'Tasks'];
                               final i = v.toInt();
                               if (i < 0 || i >= labels.length) return const SizedBox();
                               return Text(labels[i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText));
@@ -180,8 +175,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                       barGroups: [
                         _bar(0, (_overview['ancRate'] ?? 78) as num),
                         _bar(1, (_overview['pncRate'] ?? 82) as num),
-                        _bar(2, (_ivr['completionRate'] ?? 65) as num),
-                        _bar(3, (_overview['taskCompletionRate'] ?? 77) as num),
+                        _bar(2, (_overview['taskCompletionRate'] ?? 77) as num),
                       ],
                     )),
                   ),

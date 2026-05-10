@@ -3,7 +3,6 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../widgets/notification_icon.dart';
 import 'notifications_screen.dart';
-import '../../ivr/screens/ivr_simulator_screen.dart';
 
 class CallScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -17,7 +16,7 @@ class _CallScreenState extends State<CallScreen> {
   String _selectedLanguage = 'en';
   List<Map<String, String>> _supportedLanguages = [];
   bool _languagesLoading = true;
-  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1/ivr';
+  final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1';
 
   @override
   void initState() {
@@ -50,10 +49,13 @@ class _CallScreenState extends State<CallScreen> {
     }
   }
 
-  void _startIVR() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => IvrSimulatorScreen(selectedLanguage: _selectedLanguage)),
+  void _startCall() {
+    // Call functionality removed - show message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Calling feature is currently unavailable'),
+        backgroundColor: Colors.orange,
+      ),
     );
   }
 
@@ -175,7 +177,7 @@ class _CallScreenState extends State<CallScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                onPressed: _startIVR,
+                onPressed: _startCall,
                 child: const Text(
                   'Start Call',
                   style: TextStyle(

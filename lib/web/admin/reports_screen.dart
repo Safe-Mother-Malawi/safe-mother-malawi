@@ -48,8 +48,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   List<String> _getAvailableReportTypes() {
     final isAdmin = AuthServiceWeb.instance.userRole.toLowerCase() == 'admin';
-    const allTypes = ['District Summary','IVR Report','Risk Report','Task Report','Clinician Report','Full System Report'];
-    const dhoTypes = ['District Summary','IVR Report','Risk Report','Task Report','Clinician Report'];
+    const allTypes = ['District Summary','Risk Report','Task Report','Clinician Report','Full System Report'];
+    const dhoTypes = ['District Summary','Risk Report','Task Report','Clinician Report'];
     return isAdmin ? allTypes : dhoTypes;
   }
 

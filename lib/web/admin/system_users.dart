@@ -39,16 +39,15 @@ class _SystemUsersState extends State<SystemUsers> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // Admin manages DHOs and Admins — not clinicians (those are managed by DHO)
-      final data = await ApiService.instance.get('/users') as List<dynamic>;
+      // Load all user types for admin dashboard
+      final staffData = await ApiService.instance.get('/users') as List<dynamic>;
+      final patientData = await ApiService.instance.get('/users/patients') as List<dynamic>;
+      
       setState(() {
-        _users = data
-            .cast<Map<String, dynamic>>()
-            .where((u) {
-              final role = (u['role'] ?? '').toString().toLowerCase();
-              return role == 'dho' || role == 'admin';
-            })
-            .toList();
+        _users = [
+          ...staffData.cast<Map<String, dynamic>>(),
+          ...patientData.cast<Map<String, dynamic>>(),
+        ];
         _loading = false;
       });
     } catch (e) {
@@ -107,6 +106,41 @@ class _SystemUsersState extends State<SystemUsers> {
     } catch (e) {
       _showErr('Failed to delete: $e');
     }
+  }
+
+  void _showUserDetails(Map<String, dynamic> u) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: Text('${u['fullName']} Details'),
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DetailRow('Full Name', u['fullName'] ?? '—'),
+              _DetailRow('Role', (u['role'] ?? '').toString().toUpperCase()),
+              _DetailRow('Contact', u['email'] ?? u['phone'] ?? '—'),
+              _DetailRow('Region', u['region'] ?? '—'),
+              _DetailRow('Zone', u['zone'] ?? '—'),
+              _DetailRow('District', u['district'] ?? '—'),
+              _DetailRow('Status', u['isActive'] == true ? 'Active' : 'Inactive'),
+              _DetailRow('Registered', u['createdAt'] != null 
+                ? DateTime.parse(u['createdAt']).toString().split('.')[0]
+                : '—'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showErr(String msg) {
@@ -293,6 +327,7 @@ class _SystemUsersState extends State<SystemUsers> {
                                   Expanded(flex: 2, child: Text(district, style: GoogleFonts.inter(fontSize: 13, color: AppColors.bodyText))),
                                   Expanded(flex: 2, child: StatusBadge(label: isActive ? 'Active' : 'Inactive', type: isActive ? BadgeType.success : BadgeType.neutral)),
                                   Expanded(flex: 3, child: Row(children: [
+                                    // All users can be activated/deactivated
                                     _ActionBtn(
                                       icon: isActive ? Icons.pause_circle_outline_rounded : Icons.play_circle_outline_rounded,
                                       color: isActive ? AppColors.warningText : AppColors.successText,
@@ -300,18 +335,30 @@ class _SystemUsersState extends State<SystemUsers> {
                                       onTap: () => _toggleStatus(u),
                                     ),
                                     const SizedBox(width: 4),
-                                    _ActionBtn(
-                                      icon: Icons.lock_reset,
-                                      color: AppColors.red,
-                                      tooltip: 'Reset Password',
-                                      onTap: () => _showPasswordResetDialog(u),
-                                    ),
-                                    const SizedBox(width: 4),
-                                    _ActionBtn(icon: Icons.edit_outlined, color: AppColors.primary, tooltip: 'Edit',
-                                        onTap: () => setState(() { _showForm = false; _editingUser = u; })),
-                                    const SizedBox(width: 4),
-                                    _ActionBtn(icon: Icons.delete_outline_rounded, color: AppColors.criticalText, tooltip: 'Delete',
-                                        onTap: () => _deleteUser(u)),
+                                    
+                                    // Only staff users (admin, dho, clinician) can have password reset
+                                    if (['admin', 'dho', 'clinician'].contains(role.toLowerCase())) ...[
+                                      _ActionBtn(
+                                        icon: Icons.lock_reset,
+                                        color: AppColors.red,
+                                        tooltip: 'Reset Password',
+                                        onTap: () => _showPasswordResetDialog(u),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      _ActionBtn(icon: Icons.edit_outlined, color: AppColors.primary, tooltip: 'Edit',
+                                          onTap: () => setState(() { _showForm = false; _editingUser = u; })),
+                                      const SizedBox(width: 4),
+                                      _ActionBtn(icon: Icons.delete_outline_rounded, color: AppColors.criticalText, tooltip: 'Delete',
+                                          onTap: () => _deleteUser(u)),
+                                    ] else ...[
+                                      // Mobile users (prenatal/neonatal) - view only
+                                      _ActionBtn(
+                                        icon: Icons.visibility_outlined,
+                                        color: AppColors.primary,
+                                        tooltip: 'View Details',
+                                        onTap: () => _showUserDetails(u),
+                                      ),
+                                    ],
                                   ])),
                                 ]),
                               );
@@ -328,7 +375,7 @@ class _SystemUsersState extends State<SystemUsers> {
   }
 }
 
-const _roleFilters = ['All', 'admin', 'dho'];
+const _roleFilters = ['All', 'Admin', 'DHO', 'Clinician', 'Prenatal', 'Neonatal'];
 
 Widget _hCell(String label, int flex) => Expanded(
       flex: flex,
@@ -345,12 +392,17 @@ class _RoleBadge extends StatelessWidget {
       'admin':     (AppColors.primary, AppColors.infoBg),
       'dho':       (AppColors.tertiary, const Color(0xFFE0F2F1)),
       'clinician': (AppColors.secondary, AppColors.surfaceContainerLow),
+      'prenatal':  (const Color(0xFF9C27B0), const Color(0xFFF3E5F5)), // Purple for prenatal
+      'neonatal':  (const Color(0xFF4CAF50), const Color(0xFFE8F5E8)), // Green for neonatal
     };
     final c = colors[role.toLowerCase()] ?? (AppColors.mutedText, AppColors.surfaceContainerLow);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: c.$2, borderRadius: BorderRadius.circular(20)),
-      child: Text(role, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: c.$1)),
+      child: Text(
+        role.toUpperCase(), 
+        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: c.$1)
+      ),
     );
   }
 }
@@ -1286,6 +1338,44 @@ class _CascadingDD extends StatelessWidget {
               style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText, fontStyle: FontStyle.italic)),
           ),
       ]),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final String label;
+  final String value;
+  const _DetailRow(this.label, this.value);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              '$label:',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.mutedText,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppColors.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

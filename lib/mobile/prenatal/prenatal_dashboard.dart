@@ -3,7 +3,6 @@ import '../../theme/app_colors.dart';
 import 'screens/home_screen.dart';
 import 'screens/appointments_screen.dart';
 import 'screens/diagnostic_screen.dart';
-import 'screens/ivr_screen.dart';
 import 'widgets/app_drawer.dart';
 
 class PrenatalDashboard extends StatefulWidget {
@@ -21,7 +20,6 @@ class _PrenatalDashboardState extends State<PrenatalDashboard> {
     PrenatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
     AppointmentsScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
     DiagnosticScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    IvrScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
   ];
 
   @override
@@ -63,7 +61,6 @@ class _PinkBottomNav extends StatelessWidget {
               _NavItem(icon: Icons.grid_view_rounded, label: 'Today', index: 0, current: currentIndex, onTap: onTap),
               _NavItem(icon: Icons.calendar_month_outlined, label: 'Schedule', index: 1, current: currentIndex, onTap: onTap),
               _NavItem(icon: Icons.favorite_border, label: 'Health check', index: 2, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.phone_outlined, label: 'Call', index: 3, current: currentIndex, onTap: onTap),
             ],
           ),
         ),

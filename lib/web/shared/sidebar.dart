@@ -51,10 +51,8 @@ const List<NavItem> _flatItems = [
       allowedRoles: [UserRole.dho]),
 ];
 
-// Insights group — Admin only (IVR + Question)
+// Insights group — Admin only (Question only)
 const _insightsChildren = [
-  NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights',
-      allowedRoles: [UserRole.admin]),
   NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights',
       allowedRoles: [UserRole.admin]),
 ];
@@ -80,8 +78,7 @@ class _AppSidebarState extends State<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final isInsightsActive = widget.currentRoute == '/ivr-insights' ||
-        widget.currentRoute == '/question-insights' ||
+    final isInsightsActive = widget.currentRoute == '/question-insights' ||
         widget.currentRoute == '/insights';
 
     // All routes that are handled as flat items (not in groups)

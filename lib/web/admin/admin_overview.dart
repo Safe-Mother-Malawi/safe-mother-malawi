@@ -9,7 +9,6 @@ import '../shared/widgets/chart_card.dart';
 import 'system_users.dart';
 import 'reports_screen_export.dart';
 import 'audit_export_export.dart';
-import 'ivr_insights.dart';
 import 'question_insights.dart';
 import 'insights_screen.dart';
 import '../../../services/api_service.dart';
@@ -46,7 +45,6 @@ class _AdminOverviewState extends State<AdminOverview> {
     switch (_currentRoute) {
       case '/clinicians':        return const SystemUsers();
       case '/audit-export':      return const AuditExport();
-      case '/ivr-insights':      return const IvrInsights();
       case '/question-insights': return const QuestionInsights();
       case '/insights':          return const InsightsScreen();
       case '/reports':           return const ReportsScreen();
@@ -59,7 +57,6 @@ class _AdminOverviewState extends State<AdminOverview> {
       '/overview':          'Overview',
       '/clinicians':        'System Users',
       '/audit-export':      'Audit Export',
-      '/ivr-insights':      'IVR Insights',
       '/question-insights': 'Question Insights',
       '/insights':          'Insights',
       '/reports':           'Reports',
@@ -98,7 +95,6 @@ class _OverviewBodyState extends State<_OverviewBody> {
   int _totalMothers    = 0;
   int _highRiskCases   = 0;
   int _activeAlerts    = 0;
-  int _ivrCalls        = 0;
 
   // Chart data
   List<FlSpot> _registrationSpots = [];
@@ -128,7 +124,6 @@ class _OverviewBodyState extends State<_OverviewBody> {
         _safeGet('/analytics/registrations'),
         _safeGet('/analytics/risk-distribution'),
         _safeGet('/analytics/system-alerts'),
-        _safeGet('/analytics/ivr'),
         _safeGet('/activity-logs'),
       ]);
 
@@ -136,8 +131,7 @@ class _OverviewBodyState extends State<_OverviewBody> {
       final regTrends = _asMap(results[1]);
       final riskDist  = _asList(results[2]);
       final sysAlerts = _asMap(results[3]);
-      final ivrStats  = _asMap(results[4]);
-      final actLogs   = _asList(results[5]);
+      final actLogs   = _asList(results[4]);
 
       // Build registration spots from prenatal monthly data
       final prenatalMonths = _asList(regTrends['prenatal']);
@@ -169,7 +163,6 @@ class _OverviewBodyState extends State<_OverviewBody> {
         _totalMothers      = (overview['totalMothers']    as num?)?.toInt() ?? 0;
         _highRiskCases     = (overview['highRiskCases']   as num?)?.toInt() ?? 0;
         _activeAlerts      = (overview['activeAlerts']    as num?)?.toInt() ?? 0;
-        _ivrCalls          = (ivrStats['totalCalls']      as num?)?.toInt() ?? 0;
         _registrationSpots = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
         _riskDistribution  = riskDistMaps;
         _systemAlerts      = alertsList;
@@ -204,7 +197,7 @@ class _OverviewBodyState extends State<_OverviewBody> {
         children: [
           // KPI Cards
           GridView.count(
-            crossAxisCount: 5, shrinkWrap: true,
+            crossAxisCount: 4, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
             children: [
@@ -217,9 +210,6 @@ class _OverviewBodyState extends State<_OverviewBody> {
                   subtitle: _totalMothers > 0 ? '${(_highRiskCases / _totalMothers * 100).toStringAsFixed(1)}% of total' : ''),
               KpiCard(title: 'Active Alerts', value: _fmt(_activeAlerts),
                   icon: Icons.notifications_active_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
-              KpiCard(title: 'IVR Usage', value: _fmt(_ivrCalls),
-                  icon: Icons.phone_in_talk_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg,
-                  subtitle: 'Calls this month'),
             ],
           ),
 

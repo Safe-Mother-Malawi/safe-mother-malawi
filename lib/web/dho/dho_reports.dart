@@ -30,7 +30,6 @@ class _DhoReportsState extends State<DhoReports> {
   static const _reportTypes = [
     'District Summary',
     'Risk Report',
-    'IVR Report',
     'Clinician Report',
   ];
 

@@ -18,7 +18,6 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
   String? _error;
 
   int _highRisk         = 0;
-  int _ivrCalls         = 0;
   int _completionRate   = 0;
 
   List<FlSpot> _riskTrendHigh = [];
@@ -39,14 +38,12 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
         ApiService.instance.get('/analytics/risk-distribution'),
         ApiService.instance.get('/analytics/districts'),
         ApiService.instance.get('/analytics/task-analytics'),
-        ApiService.instance.get('/analytics/ivr'),
       ]);
 
       final overview  = results[0] as Map<String, dynamic>;
       final riskDist  = results[1] as List<dynamic>;
       final districts = results[2] as List<dynamic>;
       final tasks     = results[3] as Map<String, dynamic>;
-      final ivr       = results[4] as Map<String, dynamic>;
 
       // Build risk trend spots from risk distribution counts (simplified)
       final riskList = riskDist.cast<Map<String, dynamic>>();
@@ -55,7 +52,6 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
 
       setState(() {
         _highRisk         = overview['highRiskCases'] ?? 0;
-        _ivrCalls         = ivr['totalCalls'] ?? 0;
         _completionRate   = tasks['completionRate'] ?? 0;
         _riskDist         = riskList;
         _districtData     = districts.cast<Map<String, dynamic>>();
@@ -100,14 +96,12 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> {
           const SizedBox(height: 24),
 
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: 3, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.3,
             children: [
               KpiCard(title: 'High-Risk Cases', value: _highRisk.toString(),
                   icon: Icons.warning_amber_rounded, iconColor: AppColors.criticalText, iconBg: AppColors.criticalBg),
-              KpiCard(title: 'IVR Calls', value: _ivrCalls.toString(),
-                  icon: Icons.phone_in_talk_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg),
               KpiCard(title: 'Task Completion', value: '$_completionRate%',
                   icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg),
               KpiCard(title: 'Risk Levels', value: _riskDist.length.toString(),
