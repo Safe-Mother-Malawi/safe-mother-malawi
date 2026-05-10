@@ -107,23 +107,6 @@ class _TopNavbarState extends State<TopNavbar> {
             style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.headings)),
         const Spacer(),
 
-        // Search
-        Container(
-          width: 240, height: 38,
-          decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(10)),
-          child: TextField(
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
-            decoration: InputDecoration(
-              hintText: 'Search...',
-              hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
-              prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-
         // Notifications bell
         _IconBtn(
           icon: Icons.notifications_none_rounded,
