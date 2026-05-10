@@ -34,17 +34,20 @@ class ClinicianManagement extends StatefulWidget {
 class _ClinicianManagementState extends State<ClinicianManagement> {
   final _searchCtrl = TextEditingController();
   String _filterStatus = 'All';
+  String _filterFacility = 'All';
   bool _showForm   = false;
   bool _loading    = true;
   String? _error;
 
   List<Map<String, dynamic>> _users = [];
+  List<Map<String, dynamic>> _facilities = [];
   Map<String, dynamic>? _editingUser;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadFacilities();
   }
 
   @override
@@ -63,16 +66,39 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
     }
   }
 
+  Future<void> _loadFacilities() async {
+    try {
+      final data = await ApiService.getHealthFacilities();
+      setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
+    } catch (e) {
+      // Silently fail - facilities filter will just show "All" option
+    }
+  }
+
+  List<String> get _facilityOptions {
+    final facilities = _users
+        .map((u) => u['facilityName']?.toString() ?? u['facility']?.toString() ?? '')
+        .where((f) => f.isNotEmpty)
+        .toSet()
+        .toList();
+    facilities.sort();
+    return ['All', ...facilities];
+  }
+
   List<Map<String, dynamic>> get _filtered => _users.where((u) {
         final name     = (u['fullName'] ?? '').toString().toLowerCase();
         final district = (u['district'] ?? '').toString().toLowerCase();
+        final facility = (u['facilityName'] ?? u['facility'] ?? '').toString();
         final active   = u['isActive'] == true;
         final q        = _searchCtrl.text.toLowerCase();
+        
         final matchSearch = q.isEmpty || name.contains(q) || district.contains(q);
         final matchStatus = _filterStatus == 'All'
             || (_filterStatus == 'Active' && active)
             || (_filterStatus == 'Inactive' && !active);
-        return matchSearch && matchStatus;
+        final matchFacility = _filterFacility == 'All' || facility == _filterFacility;
+        
+        return matchSearch && matchStatus && matchFacility;
       }).toList();
 
   Future<void> _toggleStatus(Map<String, dynamic> u) async {
@@ -180,7 +206,12 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                 try {
                   final res = await ApiService.instance.post('/auth/register', {...data, 'role': 'clinician'}) as Map<String, dynamic>;
                   final newUser = (res['user'] ?? res) as Map<String, dynamic>;
-                  setState(() { _users.insert(0, newUser); _showForm = false; });
+                  setState(() { 
+                    _users.insert(0, newUser); 
+                    _showForm = false; 
+                  });
+                  // Refresh facilities list to include any new facilities
+                  _loadFacilities();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('User created successfully'),
@@ -202,7 +233,12 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               onSubmit: (data) async {
                 try {
                   await ApiService.instance.patch('/users/${_editingUser!['id']}', data);
-                  setState(() { _editingUser!.addAll(data); _editingUser = null; });
+                  setState(() { 
+                    _editingUser!.addAll(data); 
+                    _editingUser = null; 
+                  });
+                  // Refresh facilities list in case facility assignments changed
+                  _loadFacilities();
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('User updated'),
@@ -241,6 +277,32 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                   padding: const EdgeInsets.only(right: 8),
                   child: _Chip(label: s, selected: _filterStatus == s, onTap: () => setState(() => _filterStatus = s)),
                 )),
+            const SizedBox(width: 12),
+            // Health Facility Filter
+            SizedBox(
+              width: 200,
+              child: DropdownButtonFormField<String>(
+                value: _filterFacility,
+                onChanged: (value) => setState(() => _filterFacility = value ?? 'All'),
+                style: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Filter by Facility',
+                  labelStyle: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
+                  filled: true,
+                  fillColor: AppColors.surfaceContainerLowest,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                ),
+                items: _facilityOptions.map((facility) => DropdownMenuItem<String>(
+                  value: facility,
+                  child: Text(
+                    facility == 'All' ? 'All Facilities' : facility,
+                    style: GoogleFonts.inter(fontSize: 12),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )).toList(),
+              ),
+            ),
             const Spacer(),
             Text('${filtered.length} users', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
           ]),

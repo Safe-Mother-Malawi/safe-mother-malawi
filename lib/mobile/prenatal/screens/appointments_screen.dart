@@ -204,7 +204,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     const Spacer(),
                     Switch(
                       value: remindersEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setDialogState(() {
                           remindersEnabled = value;
                         });
@@ -212,7 +212,29 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                         setState(() {
                           appointment['remindersEnabled'] = value;
                         });
-                        // TODO: Send update to backend when API supports it
+                        
+                        // Save reminder preference to backend
+                        try {
+                          await ApiService.instance.savePreferences({
+                            'appointmentReminders': value,
+                          });
+                        } catch (e) {
+                          // Revert on error
+                          setDialogState(() {
+                            remindersEnabled = !value;
+                          });
+                          setState(() {
+                            appointment['remindersEnabled'] = !value;
+                          });
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Failed to save reminder setting: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        }
                       },
                       activeTrackColor: const Color(0xFF1A237E),
                     ),

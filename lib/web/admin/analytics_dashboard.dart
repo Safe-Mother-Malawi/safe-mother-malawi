@@ -253,7 +253,7 @@ class _ExportBtn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OutlinedButton.icon(
-      onPressed: () {},
+      onPressed: () => _handleExport(context, label),
       icon: const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
       label: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
       style: OutlinedButton.styleFrom(
@@ -262,5 +262,32 @@ class _ExportBtn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
+  }
+
+  void _handleExport(BuildContext context, String exportType) {
+    // For now, show a message that export is being prepared
+    // In a full implementation, this would call a backend export API
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$exportType export is being prepared. You will be notified when ready.'),
+        backgroundColor: AppColors.primary,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {},
+        ),
+      ),
+    );
+    
+    // TODO: Implement actual export functionality
+    // This would typically involve:
+    // 1. Calling a backend API to generate the export
+    // 2. Downloading the file when ready
+    // Example:
+    // if (exportType.contains('PDF')) {
+    //   await ApiService.generateAnalyticsReport('pdf');
+    // } else if (exportType.contains('CSV')) {
+    //   await ApiService.generateAnalyticsReport('csv');
+    // }
   }
 }

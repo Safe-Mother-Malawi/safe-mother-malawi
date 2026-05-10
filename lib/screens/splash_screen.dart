@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'clinician/clinician_layout.dart';
 import 'login_dialog.dart';
+import '../services/api_service.dart';
 
 class _SlideData {
   final String imagePath;
@@ -43,6 +44,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   final _newsKey     = GlobalKey();
   final _contactKey  = GlobalKey();
 
+  // Contact form controllers
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _subjectController = TextEditingController();
+  final _messageController = TextEditingController();
+  bool _sendingMessage = false;
+
   late AnimationController _fadeCtrl;
   late Animation<double>   _fadeAnim;
   Timer? _slideTimer;
@@ -67,6 +75,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _scrollController.dispose();
     _pageController.dispose();
     _fadeCtrl.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
+    _subjectController.dispose();
+    _messageController.dispose();
     super.dispose();
   }
 
@@ -483,13 +495,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
                           color: Color(0xFF0A1628))),
                   const SizedBox(height: 24),
-                  _formField('Full Name', Icons.person),
+                  _formField('Full Name', Icons.person, _nameController),
                   const SizedBox(height: 16),
-                  _formField('Email Address', Icons.email),
+                  _formField('Email Address', Icons.email, _emailController),
                   const SizedBox(height: 16),
-                  _formField('Subject', Icons.subject),
+                  _formField('Subject', Icons.subject, _subjectController),
                   const SizedBox(height: 16),
                   TextFormField(
+                    controller: _messageController,
                     maxLines: 4,
                     decoration: InputDecoration(
                       hintText: 'Your message...',
@@ -503,9 +516,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.send),
-                      label: const Text('Send Message', style: TextStyle(fontSize: 15)),
+                      onPressed: _sendingMessage ? null : _sendMessage,
+                      icon: _sendingMessage 
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                        : const Icon(Icons.send),
+                      label: Text(_sendingMessage ? 'Sending...' : 'Send Message', style: const TextStyle(fontSize: 15)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _navy, foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -548,8 +563,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     );
   }
 
-  Widget _formField(String hint, IconData icon) {
+  Widget _formField(String hint, IconData icon, TextEditingController controller) {
     return TextFormField(
+      controller: controller,
       decoration: InputDecoration(
         hintText: hint,
         hintStyle: const TextStyle(color: Colors.black38),
@@ -559,6 +575,61 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
             borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
       ),
     );
+  }
+
+  Future<void> _sendMessage() async {
+    // Validate form
+    if (_nameController.text.trim().isEmpty ||
+        _emailController.text.trim().isEmpty ||
+        _subjectController.text.trim().isEmpty ||
+        _messageController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all fields'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _sendingMessage = true);
+
+    try {
+      // Note: This would require authentication, but for a public contact form,
+      // we might need a different approach or a public endpoint
+      await ApiService.instance.post('/support/contact', {
+        'subject': _subjectController.text.trim(),
+        'message': '${_messageController.text.trim()}\n\nFrom: ${_nameController.text.trim()}\nEmail: ${_emailController.text.trim()}',
+      });
+
+      // Clear form on success
+      _nameController.clear();
+      _emailController.clear();
+      _subjectController.clear();
+      _messageController.clear();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Message sent successfully! We\'ll get back to you soon.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to send message: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _sendingMessage = false);
+      }
+    }
   }
 
   Widget _buildFooter() {

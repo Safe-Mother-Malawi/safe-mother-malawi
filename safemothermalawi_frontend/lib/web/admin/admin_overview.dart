@@ -9,7 +9,6 @@ import '../shared/widgets/chart_card.dart';
 import 'system_users.dart';
 import 'reports_screen_export.dart';
 import 'audit_export_export.dart';
-import 'ivr_insights.dart';
 import 'question_insights.dart';
 import 'insights_screen.dart';
 import '../../../services/api_service.dart';
@@ -46,7 +45,6 @@ class _AdminOverviewState extends State<AdminOverview> {
     switch (_currentRoute) {
       case '/clinicians':        return const SystemUsers();
       case '/audit-export':      return const AuditExport();
-      case '/ivr-insights':      return const IvrInsights();
       case '/question-insights': return const QuestionInsights();
       case '/insights':          return const InsightsScreen();
       case '/reports':           return const ReportsScreen();
@@ -59,7 +57,6 @@ class _AdminOverviewState extends State<AdminOverview> {
       '/overview':          'Overview',
       '/clinicians':        'System Users',
       '/audit-export':      'Audit Export',
-      '/ivr-insights':      'IVR Insights',
       '/question-insights': 'Question Insights',
       '/insights':          'Insights',
       '/reports':           'Reports',

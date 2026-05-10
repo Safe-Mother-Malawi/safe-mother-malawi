@@ -33,13 +33,11 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
     try {
       final results = await Future.wait([
         ApiService.getAnalyticsOverview(),
-        ApiService.getIvrAnalytics(),
         ApiService.getRiskDistribution(),
       ]);
       setState(() {
         _overview = results[0] as Map<String, dynamic>;
-        _ivr      = results[1] as Map<String, dynamic>;
-        _risk     = results[2] as Map<String, dynamic>;
+        _risk     = results[1] as Map<String, dynamic>;
         _loading  = false;
       });
     } catch (e) {
