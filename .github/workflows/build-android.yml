@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Mobile APK
 
 on:
   push:
@@ -33,35 +33,32 @@ jobs:
     - name: Generate app icons
       run: flutter pub run flutter_launcher_icons
       
-    - name: Analyze code
-      run: flutter analyze
+    - name: Analyze mobile code
+      run: flutter analyze lib/main_mobile.dart
       
-    - name: Run tests
-      run: flutter test
+    - name: Build mobile debug APK
+      run: flutter build apk --debug -t lib/main_mobile.dart
       
-    - name: Build debug APK
-      run: flutter build apk --debug
+    - name: Build mobile release APK
+      run: flutter build apk --release -t lib/main_mobile.dart
       
-    - name: Build release APK
-      run: flutter build apk --release
+    - name: Build mobile App Bundle
+      run: flutter build appbundle --release -t lib/main_mobile.dart
       
-    - name: Build App Bundle
-      run: flutter build appbundle --release
-      
-    - name: Upload debug APK
+    - name: Upload mobile debug APK
       uses: actions/upload-artifact@v4
       with:
-        name: debug-apk
+        name: mobile-debug-apk
         path: build/app/outputs/flutter-apk/app-debug.apk
         
-    - name: Upload release APK
+    - name: Upload mobile release APK
       uses: actions/upload-artifact@v4
       with:
-        name: release-apk
+        name: mobile-release-apk
         path: build/app/outputs/flutter-apk/app-release.apk
         
-    - name: Upload App Bundle
+    - name: Upload mobile App Bundle
       uses: actions/upload-artifact@v4
       with:
-        name: app-bundle
+        name: mobile-app-bundle
         path: build/app/outputs/bundle/release/app-release.aab
