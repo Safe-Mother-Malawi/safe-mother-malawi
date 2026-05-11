@@ -68,21 +68,39 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
 
   Future<void> _loadFacilities() async {
     try {
-      final data = await ApiService.getHealthFacilities();
-      setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
+      // Get facilities for the DHO's district only
+      final dhoDistrict = UserStore.instance.district;
+      if (dhoDistrict.isNotEmpty) {
+        final data = await ApiService.getFacilitiesByDistrict(dhoDistrict);
+        setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
+      } else {
+        // Fallback to all facilities if no district is set
+        final data = await ApiService.getHealthFacilities();
+        setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
+      }
     } catch (e) {
       // Silently fail - facilities filter will just show "All" option
     }
   }
 
   List<String> get _facilityOptions {
-    final facilities = _users
+    // Get facilities from health facilities API (primary source)
+    final apiFacilities = _facilities
+        .map((f) => f['facilityName']?.toString() ?? '')
+        .where((f) => f.isNotEmpty)
+        .toSet();
+    
+    // Get facilities from existing users (secondary source for any missing ones)
+    final userFacilities = _users
         .map((u) => u['facilityName']?.toString() ?? u['facility']?.toString() ?? '')
         .where((f) => f.isNotEmpty)
-        .toSet()
-        .toList();
-    facilities.sort();
-    return ['All', ...facilities];
+        .toSet();
+    
+    // Combine both sources, prioritizing API facilities
+    final allFacilities = <String>{...apiFacilities, ...userFacilities}.toList();
+    allFacilities.sort();
+    
+    return ['All', ...allFacilities];
   }
 
   List<Map<String, dynamic>> get _filtered => _users.where((u) {
