@@ -19,31 +19,13 @@ class _CallScreenState extends State<CallScreen> {
   bool _languagesLoading = true;
   final String _apiBaseUrl = 'https://backend-gsgb.onrender.com/api/v1';
 
-  // Emergency contacts including 700
+  // Emergency contact - only 700 for help
   final List<Map<String, String>> _emergencyContacts = [
     {
-      'name': 'Emergency Hotline',
+      'name': 'Emergency Help',
       'number': '700',
-      'description': 'Emergency medical assistance',
+      'description': 'Call for emergency assistance',
       'icon': 'emergency'
-    },
-    {
-      'name': 'Ambulance Service',
-      'number': '998',
-      'description': 'Emergency ambulance',
-      'icon': 'ambulance'
-    },
-    {
-      'name': 'Police Emergency',
-      'number': '997',
-      'description': 'Police emergency line',
-      'icon': 'police'
-    },
-    {
-      'name': 'Fire Emergency',
-      'number': '999',
-      'description': 'Fire emergency services',
-      'icon': 'fire'
     },
   ];
 
@@ -158,7 +140,7 @@ class _CallScreenState extends State<CallScreen> {
             icon: const Icon(Icons.menu, color: Colors.white),
             onPressed: () => widget.onOpenDrawer?.call(),
           ),
-          title: const Text('Emergency Contacts', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
+          title: const Text('Emergency Help', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600)),
         ),
         body: const Center(
           child: CircularProgressIndicator(color: Color(0xFF1A237E)),
@@ -175,7 +157,7 @@ class _CallScreenState extends State<CallScreen> {
           icon: const Icon(Icons.menu, color: Colors.white),
           onPressed: () => widget.onOpenDrawer?.call(),
         ),
-        title: const Text('Emergency Contacts',
+        title: const Text('Emergency Help',
             style: TextStyle(
                 color: Colors.white,
                 fontSize: 18,
@@ -220,7 +202,7 @@ class _CallScreenState extends State<CallScreen> {
                       Icon(Icons.emergency, size: 32, color: Colors.red),
                       const SizedBox(width: 12),
                       const Text(
-                        'Emergency Contacts',
+                        'Emergency Help',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -231,7 +213,7 @@ class _CallScreenState extends State<CallScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Tap any contact to make an emergency call',
+                    'Tap to call for emergency help',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey,

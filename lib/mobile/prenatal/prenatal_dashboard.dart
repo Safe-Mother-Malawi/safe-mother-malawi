@@ -63,7 +63,7 @@ class _PinkBottomNav extends StatelessWidget {
               _NavItem(icon: Icons.grid_view_rounded, label: 'Today', index: 0, current: currentIndex, onTap: onTap),
               _NavItem(icon: Icons.calendar_month_outlined, label: 'Schedule', index: 1, current: currentIndex, onTap: onTap),
               _NavItem(icon: Icons.favorite_border, label: 'Health check', index: 2, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.phone, label: 'Emergency', index: 3, current: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.phone, label: 'Help', index: 3, current: currentIndex, onTap: onTap),
             ],
           ),
         ),
