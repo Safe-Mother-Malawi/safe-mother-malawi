@@ -81,7 +81,7 @@ class _NeoBottomNav extends StatelessWidget {
     (Icons.grid_view_rounded,       Icons.grid_view_rounded,      'Today'),
     (Icons.calendar_month_outlined, Icons.calendar_month,         'Schedule'),
     (Icons.favorite_border_rounded, Icons.favorite_rounded,       'Health check'),
-    (Icons.phone_outlined,          Icons.phone,                  'Call'),
+    (Icons.phone_outlined,          Icons.phone,                  'Help'),
   ];
 
   @override
