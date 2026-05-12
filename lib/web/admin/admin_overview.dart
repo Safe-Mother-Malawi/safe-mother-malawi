@@ -96,11 +96,18 @@ class _OverviewBodyState extends State<_OverviewBody> {
   int _highRiskCases   = 0;
   int _activeAlerts    = 0;
 
+  // ANC data
+  int _totalANCAppointments = 0;
+  int _ancAttendanceRate = 0;
+  int _ancComplianceRate = 0;
+  int _poorCompliancePatients = 0;
+
   // Chart data
   List<FlSpot> _registrationSpots = [];
   List<Map<String, dynamic>> _riskDistribution = [];
   List<Map<String, dynamic>> _systemAlerts = [];
   List<Map<String, dynamic>> _activityLogs = [];
+  List<Map<String, dynamic>> _ancTrends = [];
 
   @override
   void initState() {
@@ -125,6 +132,8 @@ class _OverviewBodyState extends State<_OverviewBody> {
         _safeGet('/analytics/risk-distribution'),
         _safeGet('/analytics/system-alerts'),
         _safeGet('/activity-logs'),
+        _safeGet('/analytics/anc-analytics'),
+        _safeGet('/analytics/anc-compliance'),
       ]);
 
       final overview  = _asMap(results[0]);
@@ -132,6 +141,8 @@ class _OverviewBodyState extends State<_OverviewBody> {
       final riskDist  = _asList(results[2]);
       final sysAlerts = _asMap(results[3]);
       final actLogs   = _asList(results[4]);
+      final ancAnalytics = _asMap(results[5]);
+      final ancCompliance = _asMap(results[6]);
 
       // Build registration spots from prenatal monthly data
       final prenatalMonths = _asList(regTrends['prenatal']);
@@ -158,15 +169,25 @@ class _OverviewBodyState extends State<_OverviewBody> {
           .take(5)
           .toList();
 
+      final ancTrendsList = _asList(ancAnalytics['monthlyTrends'])
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+
       setState(() {
         _totalClinicians   = (overview['totalClinicians'] as num?)?.toInt() ?? 0;
         _totalMothers      = (overview['totalMothers']    as num?)?.toInt() ?? 0;
         _highRiskCases     = (overview['highRiskCases']   as num?)?.toInt() ?? 0;
         _activeAlerts      = (overview['activeAlerts']    as num?)?.toInt() ?? 0;
+        _totalANCAppointments = (ancAnalytics['totalANCAppointments'] as num?)?.toInt() ?? 0;
+        _ancAttendanceRate = (ancAnalytics['attendanceRate'] as num?)?.toInt() ?? 0;
+        _ancComplianceRate = (ancAnalytics['complianceRate'] as num?)?.toInt() ?? 0;
+        _poorCompliancePatients = (ancCompliance['patientsWithPoorCompliance'] as num?)?.toInt() ?? 0;
         _registrationSpots = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
         _riskDistribution  = riskDistMaps;
         _systemAlerts      = alertsList;
         _activityLogs      = actLogsList;
+        _ancTrends         = ancTrendsList;
         _loading           = false;
       });
     } catch (e) {
@@ -213,6 +234,29 @@ class _OverviewBodyState extends State<_OverviewBody> {
             ],
           ),
 
+          const SizedBox(height: 20),
+
+          // ANC Attendance KPI Cards
+          GridView.count(
+            crossAxisCount: 4, shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            children: [
+              KpiCard(title: 'ANC Appointments', value: _fmt(_totalANCAppointments),
+                  icon: Icons.calendar_today_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg,
+                  subtitle: 'Total scheduled'),
+              KpiCard(title: 'Attendance Rate', value: '$_ancAttendanceRate%',
+                  icon: Icons.check_circle_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg,
+                  subtitle: 'Patients attending'),
+              KpiCard(title: 'ANC Compliance', value: '$_ancComplianceRate%',
+                  icon: Icons.schedule_rounded, iconColor: AppColors.infoText, iconBg: AppColors.infoBg,
+                  subtitle: 'WHO schedule adherence'),
+              KpiCard(title: 'Poor Compliance', value: _fmt(_poorCompliancePatients),
+                  icon: Icons.warning_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg,
+                  subtitle: 'Patients needing follow-up'),
+            ],
+          ),
+
           const SizedBox(height: 28),
 
           // Charts row
@@ -220,7 +264,7 @@ class _OverviewBodyState extends State<_OverviewBody> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 3,
+                flex: 2,
                 child: ChartCard(
                   title: 'Monthly Registrations',
                   subtitle: 'Mothers registered over the last 6 months',
@@ -259,6 +303,50 @@ class _OverviewBodyState extends State<_OverviewBody> {
               Expanded(
                 flex: 2,
                 child: ChartCard(
+                  title: 'ANC Attendance Trends',
+                  subtitle: 'Monthly attendance vs missed appointments',
+                  chart: SizedBox(
+                    height: 200,
+                    child: _ancTrends.isEmpty
+                        ? const Center(child: Text('No ANC data yet'))
+                        : LineChart(LineChartData(
+                            gridData: const FlGridData(show: false),
+                            borderData: FlBorderData(show: false),
+                            titlesData: FlTitlesData(
+                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                              bottomTitles: AxisTitles(sideTitles: SideTitles(
+                                showTitles: true,
+                                getTitlesWidget: (val, meta) {
+                                  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                  final idx = val.toInt();
+                                  if (idx < 0 || idx >= months.length) return const SizedBox();
+                                  return Text(months[idx], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                                },
+                              )),
+                            ),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: _buildANCAttendanceSpots(),
+                                isCurved: true, color: AppColors.successText, barWidth: 3,
+                                dotData: const FlDotData(show: false),
+                                belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
+                              ),
+                              LineChartBarData(
+                                spots: _buildANCMissedSpots(),
+                                isCurved: true, color: AppColors.criticalText, barWidth: 3,
+                                dotData: const FlDotData(show: false),
+                              ),
+                            ],
+                          )),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 20),
+              Expanded(
+                flex: 1,
+                child: ChartCard(
                   title: 'Risk Distribution',
                   subtitle: 'Current case breakdown',
                   chart: SizedBox(
@@ -289,6 +377,26 @@ class _OverviewBodyState extends State<_OverviewBody> {
         ],
       ),
     );
+  }
+
+  List<FlSpot> _buildANCAttendanceSpots() {
+    final spots = <FlSpot>[];
+    for (int i = 0; i < _ancTrends.length && i < 6; i++) {
+      final item = _ancTrends[i];
+      final attended = double.tryParse(item['attended']?.toString() ?? '0') ?? 0;
+      spots.add(FlSpot(i.toDouble(), attended));
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
+  }
+
+  List<FlSpot> _buildANCMissedSpots() {
+    final spots = <FlSpot>[];
+    for (int i = 0; i < _ancTrends.length && i < 6; i++) {
+      final item = _ancTrends[i];
+      final missed = double.tryParse(item['missed']?.toString() ?? '0') ?? 0;
+      spots.add(FlSpot(i.toDouble(), missed));
+    }
+    return spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
   }
 
   List<PieChartSectionData> _buildRiskSections() {

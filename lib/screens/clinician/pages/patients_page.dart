@@ -24,6 +24,11 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   bool _historyLoading = false;
   bool _editing = false;
 
+  // ANC data
+  List<Map<String, dynamic>> _ancSchedule = [];
+  Map<String, dynamic>? _ancCompliance;
+  bool _ancLoading = false;
+
   @override
   void initState() {
     super.initState();
@@ -67,6 +72,33 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
       });
     } catch (_) {
       setState(() => _historyLoading = false);
+    }
+
+    // Load ANC data for prenatal patients
+    if (type == 'prenatal') {
+      _loadANCData(patientId);
+    }
+  }
+
+  Future<void> _loadANCData(String patientId) async {
+    setState(() { _ancLoading = true; _ancSchedule = []; _ancCompliance = null; });
+    try {
+      final results = await Future.wait([
+        ApiService.instance.get('/anc/schedule/$patientId'),
+        ApiService.instance.get('/anc/compliance/$patientId'),
+      ]);
+      
+      final scheduleData = results[0];
+      final complianceData = results[1];
+      
+      setState(() {
+        _ancSchedule = (scheduleData is List ? scheduleData : [])
+            .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _ancCompliance = complianceData is Map ? Map<String, dynamic>.from(complianceData) : null;
+        _ancLoading = false;
+      });
+    } catch (_) {
+      setState(() => _ancLoading = false);
     }
   }
 
@@ -334,6 +366,148 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
           ],
 
           const SizedBox(height: 16),
+
+          // ANC Schedule for prenatal patients
+          if (type == 'prenatal') ...[
+            _section('ANC Schedule & Compliance', []),
+            const SizedBox(height: 8),
+            if (_ancLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_ancCompliance != null) ...[
+              // Compliance summary
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.navyL,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.navy.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _ancCompliance!['complianceRate'] >= 75 
+                              ? Icons.check_circle 
+                              : Icons.warning,
+                          color: _ancCompliance!['complianceRate'] >= 75 
+                              ? AppColors.green 
+                              : AppColors.orange,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Compliance: ${_ancCompliance!['complianceRate']}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.g800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_ancCompliance!['completedVisits']}/${_ancCompliance!['totalANCVisits']} visits',
+                          style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Gestational weeks: ${_ancCompliance!['gestationalWeeks']}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                    ),
+                    if (_ancCompliance!['nextRecommendedVisit'] != null) ...[
+                      const SizedBox(height: 4),
+                      final nextVisit = _ancCompliance!['nextRecommendedVisit'] as Map<String, dynamic>;
+                      Text(
+                        'Next: Visit ${nextVisit['visitNumber']} at ${nextVisit['recommendedWeeks']} weeks',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: nextVisit['isOverdue'] == true ? AppColors.red : AppColors.g600,
+                          fontWeight: nextVisit['isOverdue'] == true ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // ANC Schedule
+              ..._ancSchedule.map((visit) {
+                final visitNum = visit['visitNumber']?.toString() ?? '?';
+                final weeks = visit['recommendedWeeks']?.toString() ?? '?';
+                final description = visit['description']?.toString() ?? '';
+                final isOverdue = visit['isOverdue'] == true;
+                final daysPastDue = visit['daysPastDue']?.toString() ?? '0';
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isOverdue ? AppColors.red.withOpacity(0.1) : AppColors.bg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isOverdue ? AppColors.red.withOpacity(0.3) : AppColors.g200,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isOverdue ? AppColors.red : AppColors.navy,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Visit $visitNum',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$weeks weeks',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.g800,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isOverdue)
+                            Text(
+                              '$daysPastDue days overdue',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ] else
+              const Text(
+                'ANC data not available.',
+                style: TextStyle(fontSize: 12, color: AppColors.g400),
+              ),
+            const SizedBox(height: 16),
+          ],
 
           // Risk history
           _section('Risk History', []),
