@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Safe Mother Malawi Logo Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        canvas { border: 1px solid #ccc; margin: 10px; }
+        .logo-container { display: inline-block; margin: 20px; text-align: center; }
+        button { padding: 10px 20px; margin: 5px; background: #E91E8C; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #d1196f; }
+    </style>
+</head>
+<body>
+    <h1>Safe Mother Malawi Logo Generator</h1>
+    <p>This tool generates the logo PNG files for the Safe Mother Malawi application.</p>
+    
+    <div class="logo-container">
+        <h3>LOGO5.png (Dark Background)</h3>
+        <canvas id="logo5" width="512" height="512"></canvas>
+        <br>
+        <button onclick="downloadLogo('logo5', 'LOGO5.png')">Download LOGO5.png</button>
+    </div>
+    
+    <div class="logo-container">
+        <h3>LOGO6.png (Light Background)</h3>
+        <canvas id="logo6" width="512" height="512"></canvas>
+        <br>
+        <button onclick="downloadLogo('logo6', 'LOGO6.png')">Download LOGO6.png</button>
+    </div>
+    
+    <div class="logo-container">
+        <h3>logo 4.png (General)</h3>
+        <canvas id="logo4" width="512" height="512"></canvas>
+        <br>
+        <button onclick="downloadLogo('logo4', 'logo 4.png')">Download logo 4.png</button>
+    </div>
+
+    <script>
+        function createLogo(canvasId, isDarkBackground) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const size = 512;
+            
+            // Clear canvas
+            ctx.clearRect(0, 0, size, size);
+            
+            // Colors based on background type
+            let bgColor, textColor, heartColor;
+            if (isDarkBackground) {
+                bgColor = 'rgba(255, 255, 255, 0.9)';
+                textColor = '#E91E8C';
+                heartColor = '#E91E8C';
+            } else {
+                bgColor = 'rgba(233, 30, 140, 0.1)';
+                textColor = '#E91E8C';
+                heartColor = '#E91E8C';
+            }
+            
+            // Draw background circle
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const radius = size * 0.4;
+            
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = bgColor;
+            ctx.fill();
+            ctx.strokeStyle = textColor;
+            ctx.lineWidth = 6;
+            ctx.stroke();
+            
+            // Draw heart shape
+            const heartSize = size * 0.15;
+            const heartY = centerY - size * 0.05;
+            
+            ctx.fillStyle = heartColor;
+            ctx.beginPath();
+            
+            // Left curve of heart
+            ctx.moveTo(centerX, heartY + heartSize * 0.3);
+            ctx.bezierCurveTo(
+                centerX - heartSize * 0.5, heartY - heartSize * 0.1,
+                centerX - heartSize * 0.5, heartY - heartSize * 0.5,
+                centerX, heartY - heartSize * 0.2
+            );
+            
+            // Right curve of heart
+            ctx.bezierCurveTo(
+                centerX + heartSize * 0.5, heartY - heartSize * 0.5,
+                centerX + heartSize * 0.5, heartY - heartSize * 0.1,
+                centerX, heartY + heartSize * 0.3
+            );
+            
+            ctx.fill();
+            
+            // Draw mother and baby silhouettes
+            ctx.fillStyle = isDarkBackground ? 'rgba(255, 255, 255, 0.7)' : 'rgba(233, 30, 140, 0.7)';
+            
+            // Mother figure
+            const figureSize = size * 0.08;
+            const motherX = centerX - figureSize * 1.5;
+            const motherY = centerY + size * 0.1;
+            
+            // Mother head
+            ctx.beginPath();
+            ctx.arc(motherX, motherY - figureSize * 2, figureSize * 0.6, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Mother body
+            ctx.beginPath();
+            ctx.ellipse(motherX, motherY - figureSize * 0.5, figureSize * 0.8, figureSize * 1.5, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Baby figure
+            const babyX = centerX + figureSize * 1.2;
+            const babyY = centerY + size * 0.08;
+            
+            // Baby head
+            ctx.beginPath();
+            ctx.arc(babyX, babyY - figureSize * 1.5, figureSize * 0.4, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Baby body
+            ctx.beginPath();
+            ctx.ellipse(babyX, babyY - figureSize * 0.3, figureSize * 0.5, figureSize * 1, 0, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Draw text
+            ctx.fillStyle = textColor;
+            ctx.font = `bold ${size * 0.08}px Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('Safe Mother', centerX, centerY + radius * 0.7);
+            
+            // Add subtitle
+            ctx.font = `${size * 0.04}px Arial, sans-serif`;
+            ctx.fillStyle = isDarkBackground ? 'rgba(255, 255, 255, 0.8)' : 'rgba(233, 30, 140, 0.8)';
+            ctx.fillText('Malawi', centerX, centerY + radius * 0.85);
+        }
+        
+        function downloadLogo(canvasId, filename) {
+            const canvas = document.getElementById(canvasId);
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Generate all logos on page load
+        window.onload = function() {
+            createLogo('logo5', true);   // For dark backgrounds
+            createLogo('logo6', false);  // For light backgrounds  
+            createLogo('logo4', false);  // General purpose
+        };
+    </script>
+</body>
+</html>

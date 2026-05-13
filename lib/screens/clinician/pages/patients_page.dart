@@ -419,14 +419,18 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
                     ),
                     if (_ancCompliance!['nextRecommendedVisit'] != null) ...[
                       const SizedBox(height: 4),
-                      final nextVisit = _ancCompliance!['nextRecommendedVisit'] as Map<String, dynamic>;
-                      Text(
-                        'Next: Visit ${nextVisit['visitNumber']} at ${nextVisit['recommendedWeeks']} weeks',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: nextVisit['isOverdue'] == true ? AppColors.red : AppColors.g600,
-                          fontWeight: nextVisit['isOverdue'] == true ? FontWeight.bold : FontWeight.normal,
-                        ),
+                      Builder(
+                        builder: (context) {
+                          final nextVisit = _ancCompliance!['nextRecommendedVisit'] as Map<String, dynamic>;
+                          return Text(
+                            'Next: Visit ${nextVisit['visitNumber']} at ${nextVisit['recommendedWeeks']} weeks',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: nextVisit['isOverdue'] == true ? AppColors.red : AppColors.g600,
+                              fontWeight: nextVisit['isOverdue'] == true ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ],
