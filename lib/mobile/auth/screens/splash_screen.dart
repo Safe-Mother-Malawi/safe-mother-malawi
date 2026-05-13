@@ -44,24 +44,54 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF1A237E),
-      body: Column(
-        children: [
-          Expanded(
-            child: Center(
-              // Clean circular logo — no container, no shadow, no background
-              child: Image.asset(
-                'assets/logo/LOGO5.png',
-                width: 300,
-                height: 300,
-                fit: BoxFit.contain,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Logo with perfect centering
+                    Image.asset(
+                      'assets/logo/LOGO5.png',
+                      width: 280,
+                      height: 280,
+                      fit: BoxFit.contain,
+                    ),
+                    const SizedBox(height: 24),
+                    // App name below logo
+                    const Text(
+                      'Safe Mother',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Malawi',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w300,
+                        letterSpacing: 2.0,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 60),
-            child: _LoadingDots(controller: _dotController),
-          ),
-        ],
+            // Loading dots at bottom
+            Padding(
+              padding: const EdgeInsets.only(bottom: 60),
+              child: _LoadingDots(controller: _dotController),
+            ),
+          ],
+        ),
       ),
     );
   }
