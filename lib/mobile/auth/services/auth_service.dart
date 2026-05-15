@@ -29,6 +29,7 @@ class AuthService {
       }..removeWhere((_, v) => v == null);
 
       final data = await ApiService.instance.register(payload);
+      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so the user is immediately authenticated after registration
       final tokens = data?['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -38,7 +39,8 @@ class AuthService {
         );
       }
       return true;
-    } catch (_) {
+    } catch (e) {
+      print('Registration error: $e'); // Debug logging
       return false;
     }
   }
@@ -47,6 +49,7 @@ class AuthService {
   Future<UserModel?> login(String emailOrPhone, String password) async {
     try {
       final data = await ApiService.instance.login(emailOrPhone, password);
+      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so subsequent API calls are authenticated
       final tokens = data['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -58,7 +61,8 @@ class AuthService {
       final user = data['user'] as Map<String, dynamic>?;
       if (user == null) return null;
       return _userFromMap(user);
-    } catch (_) {
+    } catch (e) {
+      print('Login error: $e'); // Debug logging
       return null;
     }
   }

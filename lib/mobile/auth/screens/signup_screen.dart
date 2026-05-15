@@ -6,6 +6,7 @@ import '../widgets/auth_button.dart';
 import 'login_screen.dart';
 import '../../../../services/api_service.dart';
 import '../../../../utils/validators.dart';
+import '../data/fallback_facilities.dart';
 
 const _kDistricts = [
   'Balaka','Blantyre','Chikwawa','Chiradzulu','Chitipa','Dedza',
@@ -84,7 +85,9 @@ class _SignupScreenState extends State<SignupScreen> {
   Future<void> _loadFacilities(String district) async {
     setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
     try {
+      print('Loading facilities for district: $district'); // Debug log
       final data = await ApiService.getFacilitiesByDistrict(district);
+      print('Received facilities data: ${data.length} items'); // Debug log
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
       
       // Remove duplicates by facility name (keep first occurrence)
@@ -112,8 +115,31 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-    } catch (_) {
-      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
+      print('Successfully loaded ${_facilities.length} facilities'); // Debug log
+    } catch (e) {
+      print('Error loading facilities from API: $e'); // Debug log
+      print('Using fallback facilities for district: $district'); // Debug log
+      
+      // Use fallback data when API fails
+      final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
+      
+      // Sort fallback data the same way
+      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
+      fallbackData.sort((a, b) {
+        final ta = (a['facilityType'] ?? '').toString();
+        final tb = (b['facilityType'] ?? '').toString();
+        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
+        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
+        if (ia != ib) return ia.compareTo(ib);
+        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
+      });
+      
+      setState(() {
+        _facilityObjects = fallbackData;
+        _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _loadingFacilities = false;
+      });
+      print('Successfully loaded ${_facilities.length} fallback facilities'); // Debug log
     }
   }
 

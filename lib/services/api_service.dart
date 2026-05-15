@@ -288,8 +288,19 @@ class ApiService {
   static Future<List<dynamic>> getHealthFacilities() =>
       instance.get('/health-facilities').then(_asList);
 
-  static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
-      instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
+  static Future<List<dynamic>> getFacilitiesByDistrict(String district) async {
+    try {
+      print('API: Fetching facilities for district: $district'); // Debug log
+      final result = await instance.get('/health-facilities?district=${Uri.encodeComponent(district)}');
+      print('API: Received response: ${result.runtimeType}'); // Debug log
+      final list = _asList(result);
+      print('API: Converted to list with ${list.length} items'); // Debug log
+      return list;
+    } catch (e) {
+      print('API: Error fetching facilities: $e'); // Debug log
+      rethrow;
+    }
+  }
 
   static Future<List<String>> getRegions() =>
       instance.get('/health-facilities/regions').then((data) => 
