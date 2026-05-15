@@ -4,7 +4,8 @@ import '../../../services/api_service.dart';
 /// Mobile auth service — delegates to the real backend API.
 class AuthService {
   /// Register a new user via the backend.
-  Future<bool> register(UserModel user) async {
+  /// Returns a Map with 'success' boolean and 'error' message for better error handling.
+  Future<Map<String, dynamic>> register(UserModel user) async {
     try {
       final payload = <String, dynamic>{
         'email': user.email.isNotEmpty ? user.email : null,
@@ -38,10 +39,23 @@ class AuthService {
           tokens['refreshToken'] as String,
         );
       }
-      return true;
+      return {'success': true, 'error': null};
     } catch (e) {
       print('Registration error: $e'); // Debug logging
-      return false;
+      
+      // Determine error type based on the exception
+      String errorMessage;
+      if (e.toString().contains('Failed to fetch') || e.toString().contains('ClientException')) {
+        errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
+      } else if (e.toString().contains('409') || e.toString().contains('already exists')) {
+        errorMessage = 'Phone number or email already registered. Try logging in instead.';
+      } else if (e.toString().contains('400')) {
+        errorMessage = 'Invalid registration data. Please check your information and try again.';
+      } else {
+        errorMessage = 'Registration failed. Please try again later.';
+      }
+      
+      return {'success': false, 'error': errorMessage};
     }
   }
 

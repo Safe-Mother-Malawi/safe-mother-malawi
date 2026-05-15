@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 import '../../../../services/api_service.dart';
 import '../../../../utils/validators.dart';
+import '../data/fallback_facilities.dart';
 
 class NeonatalSignupScreen extends StatefulWidget {
   const NeonatalSignupScreen({super.key});
@@ -86,12 +87,31 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: c));
 
   Future<void> _loadFacilities(String district) async {
-    setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
+    setState(() { 
+      _loadingFacilities = true; 
+      _facilities = []; 
+      _facilityObjects = []; 
+      _facilityName = null; 
+    });
+    
     try {
+      print('Loading facilities for district: $district'); // Debug log
       final data = await ApiService.getFacilitiesByDistrict(district);
+      print('Received facilities data: ${data.length} items'); // Debug log
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
+      
+      // Remove duplicates by facility name (keep first occurrence)
+      final seen = <String>{};
+      final uniqueObjects = objects.where((f) {
+        final name = (f['facilityName'] ?? '').toString();
+        if (seen.contains(name)) return false;
+        seen.add(name);
+        return true;
+      }).toList();
+      
+      // Sort: Hospitals first, then Health Centres, then others alphabetically
       const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
-      objects.sort((a, b) {
+      uniqueObjects.sort((a, b) {
         final ta = (a['facilityType'] ?? '').toString();
         final tb = (b['facilityType'] ?? '').toString();
         final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
@@ -99,13 +119,69 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         if (ia != ib) return ia.compareTo(ib);
         return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
       });
+      
       setState(() {
-        _facilityObjects = objects;
-        _facilities = objects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _facilityObjects = uniqueObjects;
+        _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-    } catch (_) {
-      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
+      print('Successfully loaded ${_facilities.length} facilities from API'); // Debug log
+    } catch (e) {
+      print('Error loading facilities from API: $e'); // Debug log
+      print('Loading fallback facilities for district: $district'); // Debug log
+      
+      // Always use fallback data when API fails
+      _loadFallbackFacilities(district);
+    }
+  }
+
+  void _loadFallbackFacilities(String district) {
+    try {
+      print('Attempting to load fallback facilities for: $district'); // Debug log
+      final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
+      print('Fallback data loaded: ${fallbackData.length} facilities for $district'); // Debug log
+      
+      if (fallbackData.isEmpty) {
+        print('WARNING: No fallback facilities found for district: $district'); // Debug log
+        setState(() {
+          _facilityObjects = [];
+          _facilities = [];
+          _loadingFacilities = false;
+        });
+        return;
+      }
+      
+      // Sort fallback data the same way
+      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
+      fallbackData.sort((a, b) {
+        final ta = (a['facilityType'] ?? '').toString();
+        final tb = (b['facilityType'] ?? '').toString();
+        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
+        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
+        if (ia != ib) return ia.compareTo(ib);
+        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
+      });
+      
+      setState(() {
+        _facilityObjects = fallbackData;
+        _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _loadingFacilities = false;
+      });
+      print('Successfully loaded ${_facilities.length} fallback facilities for $district'); // Debug log
+      
+      // Debug: Print first few facilities
+      if (_facilities.isNotEmpty) {
+        print('First few facilities for $district: ${_facilities.take(3).join(', ')}');
+      } else {
+        print('ERROR: No facility names extracted from fallback data for $district');
+      }
+    } catch (e) {
+      print('ERROR loading fallback facilities for $district: $e'); // Debug log
+      setState(() {
+        _facilityObjects = [];
+        _facilities = [];
+        _loadingFacilities = false;
+      });
     }
   }
 
@@ -146,10 +222,10 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
       securityQuestion: _secQuestion,
       securityAnswer: _secAnswerCtrl.text.trim().toLowerCase(),
     );
-    final ok = await AuthService().register(user);
+    final result = await AuthService().register(user);
     setState(() => _loading = false);
     if (!mounted) return;
-    if (ok) {
+    if (result['success']) {
       _snack('Account created successfully!', const Color(0xFF1A3A6B));
       Navigator.pushAndRemoveUntil(
         context,
@@ -157,7 +233,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         (_) => false,
       );
     } else {
-      _snack('Phone/email already registered. Try logging in.', Colors.red);
+      _snack(result['error'] ?? 'Registration failed. Please try again.', Colors.red);
     }
   }
 
@@ -299,7 +375,12 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
             decoration: _dec('Select your district'),
             items: _districts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
             onChanged: (v) {
-              setState(() => _district = v!);
+              setState(() {
+                _district = v!;
+                _facilityName = null; // Reset facility selection
+                _facilities = [];
+                _facilityObjects = [];
+              });
               _loadFacilities(v!);
             },
             validator: (v) => v == null ? 'Please select your district' : null,
@@ -313,29 +394,50 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
                     SizedBox(width: 10),
                     Text('Loading facilities...', style: TextStyle(fontSize: 13, color: Color(0xFF757575))),
                   ])
-                : DropdownButtonFormField<String>(
-                    key: ValueKey(_district),
-                    value: _facilities.contains(_facilityName) ? _facilityName : null,
-                    decoration: _dec('Select health facility'),
-                    items: _facilityObjects.map((f) {
-                      final name = f['facilityName']?.toString() ?? '';
-                      final type = f['facilityType']?.toString() ?? '';
-                      return DropdownMenuItem<String>(
-                        value: name,
+                : _facilityObjects.isEmpty && _district.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(name, style: const TextStyle(fontSize: 13, color: Color(0xFF212121))),
-                            if (type.isNotEmpty)
-                              Text(type, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
+                            Text(
+                              'Unable to load facilities for this district.',
+                              style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Please check your internet connection or try again later.',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                            ),
                           ],
                         ),
-                      );
-                    }).toList(),
-                    onChanged: _district.isEmpty ? null : (v) => setState(() => _facilityName = v),
-                    validator: (v) => v == null ? 'Please select a health facility' : null,
-                  ),
+                      )
+                    : DropdownButtonFormField<String>(
+                        key: ValueKey(_district),
+                        value: _facilities.contains(_facilityName) ? _facilityName : null,
+                        decoration: _dec('Select health facility'),
+                        isExpanded: true,
+                        items: _facilityObjects.map((f) {
+                          final name = f['facilityName']?.toString() ?? '';
+                          final type = f['facilityType']?.toString() ?? '';
+                          return DropdownMenuItem<String>(
+                            value: name,
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: Text(
+                                '$name${type.isNotEmpty ? ' ($type)' : ''}',
+                                style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: _district.isEmpty || _facilityObjects.isEmpty
+                            ? null
+                            : (v) => setState(() => _facilityName = v),
+                        validator: (v) => v == null ? 'Please select a health facility' : null,
+                      ),
           ),
           const SizedBox(height: 28),
           SizedBox(

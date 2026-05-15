@@ -5,6 +5,7 @@ import '../widgets/auth_button.dart';
 import '../../../utils/validators.dart';
 import '../../../widgets/password_strength_indicator.dart';
 import 'login_screen.dart';
+import 'forgot_password_screen.dart';
 
 /// Email-based password reset flow (3 steps):
 ///   Step 0 — Enter email
@@ -81,7 +82,7 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
               Navigator.pop(context);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+                MaterialPageRoute(builder: (_) => ForgotPasswordScreen()),
               );
             },
             style: ElevatedButton.styleFrom(

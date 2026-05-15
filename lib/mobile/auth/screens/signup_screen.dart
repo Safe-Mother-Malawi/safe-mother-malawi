@@ -257,17 +257,17 @@ class _SignupScreenState extends State<SignupScreen> {
       securityQuestion: _secQuestion,
       securityAnswer: _secAnswerCtrl.text.trim().toLowerCase(),
     );
-    final ok = await AuthService().register(user);
+    final result = await AuthService().register(user);
     setState(() => _loading = false);
     if (!mounted) return;
-    if (ok) {
+    if (result['success']) {
       _snack('Account created successfully!', const Color(0xFF1A237E));
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (_) => false);
     } else {
-      _snack('Account already exists. Try logging in.', Colors.red);
+      _snack(result['error'] ?? 'Registration failed. Please try again.', Colors.red);
     }
   }
 
