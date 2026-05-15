@@ -70,16 +70,25 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
     }
 
     setState(() => _loading = true);
-    final ok = await AuthService().requestPasswordReset(email);
-    setState(() => _loading = false);
+    
+    try {
+      final ok = await AuthService().requestPasswordReset(email);
+      setState(() => _loading = false);
 
-    if (!mounted) return;
-    if (ok) {
-      _snack('Check your email for reset instructions', const Color(0xFF1A237E));
-      // Show step 1 to enter token
-      setState(() => _step = 1);
-    } else {
-      _snack('Failed to send reset email. Please try again.', Colors.red);
+      if (!mounted) return;
+      if (ok) {
+        _snack('Check your email for reset instructions', const Color(0xFF1A237E));
+        // Show step 1 to enter token
+        setState(() => _step = 1);
+      } else {
+        _snack('Failed to send reset email. Please try again.', Colors.red);
+      }
+    } catch (e) {
+      setState(() => _loading = false);
+      if (!mounted) return;
+      
+      // Show the specific error message from the auth service
+      _snack(e.toString().replaceAll('Exception: ', ''), Colors.red);
     }
   }
 

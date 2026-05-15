@@ -151,8 +151,16 @@ class AuthService {
         {'email': email},
       );
       return true;
-    } catch (_) {
-      return false;
+    } catch (e) {
+      print('Password reset request failed: $e');
+      // Re-throw with more specific error message
+      if (e.toString().contains('Failed to send reset email')) {
+        throw Exception('Email service is currently unavailable. Please try again later or use the security question option.');
+      } else if (e.toString().contains('400')) {
+        throw Exception('Please check your email address and try again.');
+      } else {
+        throw Exception('Failed to send reset email. Please check your internet connection and try again.');
+      }
     }
   }
 
