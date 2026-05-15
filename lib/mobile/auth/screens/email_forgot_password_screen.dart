@@ -57,6 +57,44 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
   void _snack(String msg, Color color) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
 
+  void _showSecurityQuestionOption() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Email Service Unavailable'),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('The email service is currently experiencing issues.'),
+            SizedBox(height: 12),
+            Text('You can reset your password using your security question instead.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const ForgotPasswordScreen()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A237E),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Use Security Question'),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ── Step 0: Request password reset ────────────────────────────────────────
   Future<void> _requestReset() async {
     final email = _emailCtrl.text.trim();
@@ -88,7 +126,13 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
       if (!mounted) return;
       
       // Show the specific error message from the auth service
-      _snack(e.toString().replaceAll('Exception: ', ''), Colors.red);
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
+      _snack(errorMessage, Colors.red);
+      
+      // If the error suggests using security question, show a helpful button
+      if (errorMessage.contains('security question')) {
+        _showSecurityQuestionOption();
+      }
     }
   }
 

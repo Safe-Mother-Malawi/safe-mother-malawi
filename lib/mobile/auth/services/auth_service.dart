@@ -146,18 +146,37 @@ class AuthService {
   /// Returns true if request was successful (neutral response).
   Future<bool> requestPasswordReset(String email) async {
     try {
-      await ApiService.instance.post(
+      final response = await ApiService.instance.post(
         '/auth/forgot-password/request-reset',
         {'email': email},
       );
+      
+      // Check if response contains error information
+      if (response is Map<String, dynamic> && response.containsKey('error')) {
+        final errorMessage = response['error'] as String;
+        final useSecurityQuestion = response['useSecurityQuestion'] as bool? ?? false;
+        
+        if (useSecurityQuestion) {
+          throw Exception('$errorMessage\n\nTip: Try the security question option instead.');
+        } else {
+          throw Exception(errorMessage);
+        }
+      }
+      
       return true;
     } catch (e) {
       print('Password reset request failed: $e');
-      // Re-throw with more specific error message
-      if (e.toString().contains('Failed to send reset email')) {
-        throw Exception('Email service is currently unavailable. Please try again later or use the security question option.');
-      } else if (e.toString().contains('400')) {
+      
+      // If it's already our custom exception, re-throw it
+      if (e is Exception) {
+        rethrow;
+      }
+      
+      // Handle other errors
+      if (e.toString().contains('400')) {
         throw Exception('Please check your email address and try again.');
+      } else if (e.toString().contains('500')) {
+        throw Exception('Email service is temporarily unavailable. Please try the security question option.');
       } else {
         throw Exception('Failed to send reset email. Please check your internet connection and try again.');
       }
