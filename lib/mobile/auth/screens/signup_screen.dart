@@ -84,17 +84,23 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _loadFacilities(String district) async {
     setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
+    
     try {
       print('Loading facilities for district: $district'); // Debug log
       final data = await ApiService.getFacilitiesByDistrict(district);
       print('Received facilities data: ${data.length} items'); // Debug log
+      
+      if (data.isEmpty) {
+        throw Exception('No facilities returned from API');
+      }
+      
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
       
       // Remove duplicates by facility name (keep first occurrence)
       final seen = <String>{};
       final uniqueObjects = objects.where((f) {
         final name = (f['facilityName'] ?? '').toString();
-        if (seen.contains(name)) return false;
+        if (seen.contains(name) || name.isEmpty) return false;
         seen.add(name);
         return true;
       }).toList();
@@ -115,13 +121,26 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-      print('Successfully loaded ${_facilities.length} facilities'); // Debug log
+      print('Successfully loaded ${_facilities.length} facilities from API'); // Debug log
+      
     } catch (e) {
       print('Error loading facilities from API: $e'); // Debug log
       print('Using fallback facilities for district: $district'); // Debug log
       
       // Use fallback data when API fails
       final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
+      print('Fallback data contains ${fallbackData.length} facilities'); // Debug log
+      
+      if (fallbackData.isEmpty) {
+        print('WARNING: No fallback facilities found for district: $district'); // Debug log
+        // Set a default facility if no fallback data
+        setState(() {
+          _facilityObjects = [{'facilityName': '$district District Hospital', 'facilityType': 'Hospital'}];
+          _facilities = ['$district District Hospital'];
+          _loadingFacilities = false;
+        });
+        return;
+      }
       
       // Sort fallback data the same way
       const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
@@ -430,42 +449,107 @@ class _SignupScreenState extends State<SignupScreen> {
           else if (_facilityObjects.isEmpty && _district != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No health facilities found for this district',
-                style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: const Color(0xFFFFB74D)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.warning_amber, color: Color(0xFFF57C00), size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'No health facilities found for $_district. Please try selecting a different district or contact support.',
+                        style: const TextStyle(fontSize: 12, color: Color(0xFFF57C00)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            )
-          else
+            ),
+          
+          // Always show the dropdown, but disable it when appropriate
           DropdownButtonFormField<String>(
-            key: ValueKey(_district),
+            key: ValueKey('${_district}_${_facilities.length}'),
             value: _facilities.contains(_facilityName) ? _facilityName : null,
             decoration: _dd('Health Centre / Zone *'),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
+            style: TextStyle(
+              fontSize: 14, 
+              color: (_district == null || _facilityObjects.isEmpty) 
+                ? const Color(0xFFBDBDBD) 
+                : const Color(0xFF212121)
+            ),
             isExpanded: true,
             hint: Text(
-              _district == null ? 'Select district first' : 'Select health facility',
-              style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
+              _district == null 
+                ? 'Select district first' 
+                : _loadingFacilities 
+                  ? 'Loading facilities...'
+                  : _facilityObjects.isEmpty
+                    ? 'No facilities available'
+                    : 'Select health facility',
+              style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)
+            ),
             items: _facilityObjects.isEmpty ? [] : _facilityObjects.map((f) {
               final name = f['facilityName']?.toString() ?? '';
+              final type = f['facilityType']?.toString() ?? '';
               return DropdownMenuItem<String>(
                 value: name,
                 child: SizedBox(
                   width: double.infinity,
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(fontSize: 13, color: Color(0xFF212121), fontWeight: FontWeight.w500),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                      if (type.isNotEmpty)
+                        Text(
+                          type,
+                          style: const TextStyle(fontSize: 11, color: Color(0xFF757575)),
+                        ),
+                    ],
                   ),
                 ),
               );
             }).toList(),
-            onChanged: _district == null || _facilityObjects.isEmpty
+            onChanged: (_district == null || _facilityObjects.isEmpty || _loadingFacilities)
                 ? null
                 : (v) => setState(() => _facilityName = v),
             validator: (v) => v == null ? 'Please select a health facility' : null,
           ),
           const SizedBox(height: 12),
+          
+          // Debug information (temporary)
+          if (_district != null)
+            Container(
+              padding: const EdgeInsets.all(8),
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF5F5F5),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Debug Info:', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                  Text('District: $_district', style: const TextStyle(fontSize: 10)),
+                  Text('Loading: $_loadingFacilities', style: const TextStyle(fontSize: 10)),
+                  Text('Facilities count: ${_facilities.length}', style: const TextStyle(fontSize: 10)),
+                  Text('Objects count: ${_facilityObjects.length}', style: const TextStyle(fontSize: 10)),
+                  if (_facilities.isNotEmpty)
+                    Text('First facility: ${_facilities.first}', style: const TextStyle(fontSize: 10)),
+                ],
+              ),
+            ),
+          
           AuthTextField(
             hint: 'Email Address (optional)',
             controller: _emailCtrl,
