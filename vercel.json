@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "cd safemothermalawi_frontend && git clone https://github.com/flutter/flutter.git -b stable --depth 1 && flutter/bin/flutter config --no-analytics && flutter/bin/flutter pub get && flutter/bin/flutter build web --release",
-  "outputDirectory": "safemothermalawi_frontend/build/web",
-  "installCommand": "echo 'No install needed'",
+  "buildCommand": "flutter/bin/flutter build web --release",
+  "outputDirectory": "build/web",
+  "installCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && flutter/bin/flutter config --no-analytics && flutter/bin/flutter pub get",
   "framework": null
 }

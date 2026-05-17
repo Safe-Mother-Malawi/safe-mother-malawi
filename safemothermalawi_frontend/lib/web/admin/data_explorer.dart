@@ -302,7 +302,7 @@ class _IvrTabState extends State<_IvrTab> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getIvrCalls(limit: 100);
+      final data = await ApiService.getRiskAssessments(limit: 100);
       setState(() { _data = data; _loading = false; });
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
