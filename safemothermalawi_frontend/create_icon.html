@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Safe Mother Malawi - App Icon Generator</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        canvas { border: 1px solid #ccc; margin: 20px 0; }
+        button { padding: 10px 20px; margin: 10px; background: #003178; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #0D47A1; }
+    </style>
+</head>
+<body>
+    <h1>Safe Mother Malawi - App Icon Generator</h1>
+    <p>Generating app icon with woman/mother symbol...</p>
+    
+    <canvas id="iconCanvas" width="1024" height="1024"></canvas>
+    <br>
+    <button onclick="downloadIcon()">Download Icon</button>
+    
+    <script>
+        const canvas = document.getElementById('iconCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // App colors
+        const primaryColor = '#003178';
+        const lightColor = '#E3F2FD';
+        const whiteColor = '#FFFFFF';
+        
+        function createIcon() {
+            const size = 1024;
+            
+            // Create gradient background
+            const gradient = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+            gradient.addColorStop(0, '#1565C0');
+            gradient.addColorStop(1, primaryColor);
+            
+            // Fill background
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw woman/mother icon
+            ctx.fillStyle = whiteColor;
+            ctx.strokeStyle = whiteColor;
+            ctx.lineWidth = 8;
+            
+            const centerX = size / 2;
+            const centerY = size / 2;
+            const scale = size / 400; // Scale factor for 1024x1024
+            
+            // Draw woman figure
+            // Head (circle)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY - 80 * scale, 40 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // Body (rounded rectangle)
+            ctx.beginPath();
+            ctx.roundRect(centerX - 30 * scale, centerY - 30 * scale, 60 * scale, 100 * scale, 20 * scale);
+            ctx.fill();
+            
+            // Arms
+            ctx.beginPath();
+            ctx.roundRect(centerX - 60 * scale, centerY - 20 * scale, 25 * scale, 60 * scale, 12 * scale);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.roundRect(centerX + 35 * scale, centerY - 20 * scale, 25 * scale, 60 * scale, 12 * scale);
+            ctx.fill();
+            
+            // Dress/skirt (triangle-like shape)
+            ctx.beginPath();
+            ctx.moveTo(centerX - 40 * scale, centerY + 70 * scale);
+            ctx.lineTo(centerX + 40 * scale, centerY + 70 * scale);
+            ctx.lineTo(centerX + 60 * scale, centerY + 140 * scale);
+            ctx.lineTo(centerX - 60 * scale, centerY + 140 * scale);
+            ctx.closePath();
+            ctx.fill();
+            
+            // Heart symbol (representing care/love)
+            ctx.fillStyle = '#FF6B9D';
+            const heartX = centerX + 50 * scale;
+            const heartY = centerY - 60 * scale;
+            const heartSize = 15 * scale;
+            
+            // Draw heart
+            ctx.beginPath();
+            ctx.moveTo(heartX, heartY + heartSize/4);
+            ctx.bezierCurveTo(heartX, heartY, heartX - heartSize/2, heartY, heartX - heartSize/2, heartY + heartSize/4);
+            ctx.bezierCurveTo(heartX - heartSize/2, heartY + heartSize/2, heartX, heartY + heartSize, heartX, heartY + heartSize);
+            ctx.bezierCurveTo(heartX, heartY + heartSize, heartX + heartSize/2, heartY + heartSize/2, heartX + heartSize/2, heartY + heartSize/4);
+            ctx.bezierCurveTo(heartX + heartSize/2, heartY, heartX, heartY, heartX, heartY + heartSize/4);
+            ctx.fill();
+            
+            // Add subtle shadow/depth
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.beginPath();
+            ctx.arc(centerX + 2 * scale, centerY - 78 * scale, 40 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'app_icon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+        
+        // Create the icon when page loads
+        createIcon();
+    </script>
+</body>
+</html>
