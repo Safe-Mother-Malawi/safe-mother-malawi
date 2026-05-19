@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
@@ -15,7 +17,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
   bool _editing  = false;
   bool _loading  = true;
   bool _saving   = false;
+  bool _uploadingPhoto = false;
   String? _error;
+  String? _photoUrl; // base64 data URL or null
 
   Map<String, dynamic> _profile = {};
 
@@ -70,6 +74,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
     _phoneCtrl.text    = (data['phone']       ?? '').toString();
     _districtCtrl.text = (data['district']    ?? '').toString();
     _facilityCtrl.text = (data['facilityName'] ?? data['facility'] ?? '').toString();
+    _photoUrl          = data['profilePhotoUrl'] as String?;
   }
 
   /// DHO and clinician cannot change email (used for login), district, or
@@ -77,6 +82,49 @@ class _MyProfilePageState extends State<MyProfilePage> {
   bool get _isAdminAssignedRole {
     final role = (_profile['role'] ?? '').toString().toLowerCase();
     return role == 'dho' || role == 'clinician';
+  }
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512, maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final base64Str = 'data:$mime;base64,${base64Encode(bytes)}';
+      final url = await ApiService.uploadProfilePhoto(base64Str);
+      setState(() => _photoUrl = url);
+      // Update session cache
+      AuthServiceWeb.instance.updateCurrentUser({..._profile, 'profilePhotoUrl': url});
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Photo upload failed: $e'),
+          backgroundColor: AppColors.red,
+        ));
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    setState(() => _uploadingPhoto = true);
+    try {
+      await ApiService.uploadProfilePhoto(null);
+      setState(() => _photoUrl = null);
+      AuthServiceWeb.instance.updateCurrentUser({..._profile, 'profilePhotoUrl': null});
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 
   Future<void> _save() async {
@@ -197,11 +245,32 @@ class _MyProfilePageState extends State<MyProfilePage> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundColor: Colors.white.withValues(alpha: 0.15),
-                  child: Text(initials,
-                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white)),
+                GestureDetector(
+                  onTap: _pickPhoto,
+                  child: Stack(children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
+                          ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
+                          : null,
+                      child: _uploadingPhoto
+                          ? const SizedBox(width: 24, height: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : _photoUrl == null
+                              ? Text(initials,
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white))
+                              : null,
+                    ),
+                    Positioned(
+                      bottom: 0, right: 0,
+                      child: Container(
+                        width: 22, height: 22,
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded, size: 13, color: AppColors.navy),
+                      ),
+                    ),
+                  ]),
                 ),
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

@@ -14,6 +14,7 @@ import 'insights_screen.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});
@@ -86,7 +87,7 @@ class _OverviewBody extends StatefulWidget {
   State<_OverviewBody> createState() => _OverviewBodyState();
 }
 
-class _OverviewBodyState extends State<_OverviewBody> {
+class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
   bool _loading = true;
   String? _error;
 
@@ -113,6 +114,60 @@ class _OverviewBodyState extends State<_OverviewBody> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final results = await Future.wait([
+        _safeGet('/analytics/overview'),
+        _safeGet('/analytics/registrations'),
+        _safeGet('/analytics/risk-distribution'),
+        _safeGet('/analytics/system-alerts'),
+        _safeGet('/activity-logs'),
+        _safeGet('/analytics/anc-analytics'),
+        _safeGet('/analytics/anc-compliance'),
+      ]);
+      final overview      = _asMap(results[0]);
+      final regTrends     = _asMap(results[1]);
+      final riskDist      = _asList(results[2]);
+      final sysAlerts     = _asMap(results[3]);
+      final actLogs       = _asList(results[4]);
+      final ancAnalytics  = _asMap(results[5]);
+      final ancCompliance = _asMap(results[6]);
+      final prenatalMonths = _asList(regTrends['prenatal']);
+      final spots = <FlSpot>[];
+      for (int i = 0; i < prenatalMonths.length && i < 6; i++) {
+        final item = prenatalMonths[i];
+        final count = double.tryParse(item is Map ? (item['count'] ?? '0').toString() : '0') ?? 0;
+        spots.add(FlSpot(i.toDouble(), count));
+      }
+      final riskDistMaps = riskDist.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final alertsList   = _asList(sysAlerts['alerts']).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final actLogsList  = actLogs.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).take(5).toList();
+      final ancTrendsList = _asList(ancAnalytics['monthlyTrends']).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      if (mounted) setState(() {
+        _totalClinicians        = (overview['totalClinicians'] as num?)?.toInt() ?? 0;
+        _totalMothers           = (overview['totalMothers']    as num?)?.toInt() ?? 0;
+        _highRiskCases          = (overview['highRiskCases']   as num?)?.toInt() ?? 0;
+        _activeAlerts           = (overview['activeAlerts']    as num?)?.toInt() ?? 0;
+        _totalANCAppointments   = (ancAnalytics['totalANCAppointments'] as num?)?.toInt() ?? 0;
+        _ancAttendanceRate      = (ancAnalytics['attendanceRate'] as num?)?.toInt() ?? 0;
+        _ancComplianceRate      = (ancAnalytics['complianceRate'] as num?)?.toInt() ?? 0;
+        _poorCompliancePatients = (ancCompliance['patientsWithPoorCompliance'] as num?)?.toInt() ?? 0;
+        _registrationSpots      = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
+        _riskDistribution       = riskDistMaps;
+        _systemAlerts           = alertsList;
+        _activityLogs           = actLogsList;
+        _ancTrends              = ancTrendsList;
+      });
+    } catch (_) {}
   }
 
   Future<dynamic> _safeGet(String path) async {

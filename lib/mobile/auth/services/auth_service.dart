@@ -41,8 +41,6 @@ class AuthService {
       }
       return {'success': true, 'error': null};
     } catch (e) {
-      print('Registration error: $e'); // Debug logging
-      
       // Determine error type based on the exception
       String errorMessage;
       if (e.toString().contains('Failed to fetch') || e.toString().contains('ClientException')) {
@@ -76,7 +74,6 @@ class AuthService {
       if (user == null) return null;
       return _userFromMap(user);
     } catch (e) {
-      print('Login error: $e'); // Debug logging
       return null;
     }
   }
@@ -179,9 +176,6 @@ class AuthService {
       
       return true;
     } catch (e) {
-      print('Password reset request failed: $e');
-      
-      // If it's already our custom exception, re-throw it
       if (e is Exception) {
         rethrow;
       }

@@ -91,9 +91,7 @@ class _SignupScreenState extends State<SignupScreen> {
     });
     
     try {
-      print('Loading facilities for district: $district'); // Debug log
       final data = await ApiService.getFacilitiesByDistrict(district);
-      print('Received facilities data: ${data.length} items'); // Debug log
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
       
       // Remove duplicates by facility name (keep first occurrence)
@@ -121,24 +119,17 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-      print('Successfully loaded ${_facilities.length} facilities from API'); // Debug log
     } catch (e) {
-      print('Error loading facilities from API: $e'); // Debug log
-      print('Loading fallback facilities for district: $district'); // Debug log
-      
-      // Always use fallback data when API fails
+      // Fall back to local data when API fails
       _loadFallbackFacilities(district);
     }
   }
 
   void _loadFallbackFacilities(String district) {
     try {
-      print('Attempting to load fallback facilities for: $district'); // Debug log
       final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
-      print('Fallback data loaded: ${fallbackData.length} facilities for $district'); // Debug log
       
       if (fallbackData.isEmpty) {
-        print('No fallback facilities found for district: $district'); // Debug log
         setState(() {
           _facilityObjects = [];
           _facilities = [];
@@ -163,14 +154,7 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-      print('Successfully loaded ${_facilities.length} fallback facilities'); // Debug log
-      
-      // Debug: Print first few facilities
-      if (_facilities.isNotEmpty) {
-        print('First few facilities: ${_facilities.take(3).join(', ')}');
-      }
     } catch (e) {
-      print('Error loading fallback facilities: $e'); // Debug log
       setState(() {
         _facilityObjects = [];
         _facilities = [];

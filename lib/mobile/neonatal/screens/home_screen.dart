@@ -150,6 +150,7 @@ class _HomeBody extends StatefulWidget {
 class _HomeBodyState extends State<_HomeBody> {
   List<Map<String, dynamic>> _todayAppointments = [];
   bool _loadingAppointments = true;
+  bool _appointmentError = false;
 
   @override
   void initState() {
@@ -158,6 +159,7 @@ class _HomeBodyState extends State<_HomeBody> {
   }
 
   Future<void> _loadTodayAppointments() async {
+    setState(() { _loadingAppointments = true; _appointmentError = false; });
     try {
       final allAppointments = await ApiService.getAppointments();
       final today = DateTime.now();
@@ -169,17 +171,14 @@ class _HomeBodyState extends State<_HomeBody> {
             return date.year == today.year && date.month == today.month && date.day == today.day;
           })
           .toList();
-      
       if (mounted) {
         setState(() {
           _todayAppointments = todayAppointments;
           _loadingAppointments = false;
         });
       }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loadingAppointments = false);
-      }
+    } catch (_) {
+      if (mounted) setState(() { _loadingAppointments = false; _appointmentError = true; });
     }
   }
 
@@ -224,7 +223,32 @@ class _HomeBodyState extends State<_HomeBody> {
                 const SizedBox(height: 14),
                 _DailyFeedsCard(data: widget.data),
                 const SizedBox(height: 14),
-                if (!_loadingAppointments && _todayAppointments.isNotEmpty)
+                if (_loadingAppointments)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Center(child: SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF795548)))),
+                  )
+                else if (_appointmentError)
+                  GestureDetector(
+                    onTap: _loadTodayAppointments,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFEBEE),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFFCDD2)),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 16),
+                        SizedBox(width: 8),
+                        Expanded(child: Text('Could not load appointments. Tap to retry.',
+                            style: TextStyle(fontSize: 12, color: Color(0xFFC62828)))),
+                      ]),
+                    ),
+                  )
+                else if (_todayAppointments.isNotEmpty)
                   _TodayAppointmentsCard(appointments: _todayAppointments)
                 else
                   _TodayAppointmentCard(data: widget.data),

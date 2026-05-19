@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         applicationId = "com.moh.safemothermalawi"
-        minSdk = 26  // Required by twilio_voice plugin
+        minSdk = 21  // Flutter minimum
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

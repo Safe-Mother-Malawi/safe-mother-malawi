@@ -7,6 +7,7 @@ import '../../state/user_store.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class DhoQuestionInsights extends StatefulWidget {
   const DhoQuestionInsights({super.key});
@@ -14,7 +15,7 @@ class DhoQuestionInsights extends StatefulWidget {
   State<DhoQuestionInsights> createState() => _DhoQuestionInsightsState();
 }
 
-class _DhoQuestionInsightsState extends State<DhoQuestionInsights> {
+class _DhoQuestionInsightsState extends State<DhoQuestionInsights> with LiveDataMixin {
   Map<String, dynamic> _dist = {};
   List<dynamic> _assessments = [];
   bool _loading = true;
@@ -26,6 +27,26 @@ class _DhoQuestionInsightsState extends State<DhoQuestionInsights> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final results = await Future.wait([
+        ApiService.getRiskDistribution(),
+        ApiService.getRiskAssessments(limit: 200),
+      ]);
+      if (mounted) setState(() {
+        _dist        = results[0] as Map<String, dynamic>;
+        _assessments = results[1] as List<dynamic>;
+      });
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -150,15 +171,34 @@ class _DhoQuestionInsightsState extends State<DhoQuestionInsights> {
                 child: ChartCard(
                   title: 'Risk Patterns',
                   subtitle: 'District risk distribution',
+                  legend: Row(children: [
+                    const LegendItem(color: AppColors.successText, label: 'Low'),
+                    const SizedBox(width: 12),
+                    const LegendItem(color: AppColors.warningText, label: 'Moderate'),
+                    const SizedBox(width: 12),
+                    const LegendItem(color: AppColors.criticalText, label: 'High'),
+                  ]),
                   chart: SizedBox(
-                    height: 260,
+                    height: 240,
                     child: PieChart(PieChartData(
-                      sectionsSpace: 3,
-                      centerSpaceRadius: 44,
+                      sectionsSpace: 4,
+                      centerSpaceRadius: 48,
                       sections: [
-                        PieChartSectionData(value: low.toDouble(), color: AppColors.successText, title: 'Low\n${low.toStringAsFixed(0)}', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white), radius: 55),
-                        PieChartSectionData(value: medium.toDouble(), color: AppColors.warningText, title: 'Med\n${medium.toStringAsFixed(0)}', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white), radius: 55),
-                        PieChartSectionData(value: high.toDouble(), color: AppColors.criticalText, title: 'High\n${high.toStringAsFixed(0)}', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white), radius: 55),
+                        if (low > 0) PieChartSectionData(
+                          value: low.toDouble(), color: AppColors.successText,
+                          title: '${low.toStringAsFixed(0)}',
+                          titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                          radius: 58),
+                        if (medium > 0) PieChartSectionData(
+                          value: medium.toDouble(), color: AppColors.warningText,
+                          title: '${medium.toStringAsFixed(0)}',
+                          titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                          radius: 58),
+                        if (high > 0) PieChartSectionData(
+                          value: high.toDouble(), color: AppColors.criticalText,
+                          title: '${high.toStringAsFixed(0)}',
+                          titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                          radius: 58),
                       ],
                     )),
                   ),

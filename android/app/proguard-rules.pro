@@ -8,10 +8,6 @@
 -keep class io.flutter.**  { *; }
 -keep class io.flutter.plugins.**  { *; }
 
-# Keep Twilio Voice plugin classes
--keep class com.twilio.** { *; }
--dontwarn com.twilio.**
-
 # Keep HTTP and networking classes
 -keep class okhttp3.** { *; }
 -keep class retrofit2.** { *; }

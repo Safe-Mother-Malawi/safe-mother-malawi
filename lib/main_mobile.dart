@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'mobile/auth/screens/splash_screen.dart';
 import 'mobile/auth/services/auth_service.dart';
 import 'providers/theme_provider.dart';
+import 'providers/mobile_user_provider.dart';
 
 // Global navigator key — used by logout to always reach the root navigator
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -21,6 +22,7 @@ class SafeMotherMobileApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => MobileUserProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

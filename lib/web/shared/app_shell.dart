@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import 'sidebar.dart';
 import 'top_navbar.dart';
+import 'widgets/error_boundary.dart';
 
 class AppShell extends StatelessWidget {
   final UserRole role;
@@ -40,7 +41,7 @@ class AppShell extends StatelessWidget {
                   userName: userName,
                   pageTitle: pageTitle,
                 ),
-                Expanded(child: body),
+                Expanded(child: ErrorBoundary(child: body)),
               ],
             ),
           ),

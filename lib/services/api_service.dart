@@ -15,7 +15,6 @@ class ApiException implements Exception {
 }
 
 /// Central HTTP client for all backend calls.
-/// Base URL: http://41.70.47.173:3000/api/v1
 class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
@@ -70,43 +69,6 @@ class ApiService {
 
   // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-  Future<dynamic> get(String path) async {
-    final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
-    return _handle(res);
-  }
-
-  Future<dynamic> post(String path, Map<String, dynamic> body) async {
-    final res = await http.post(
-      Uri.parse('$_base$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _handle(res);
-  }
-
-  Future<dynamic> patch(String path, Map<String, dynamic> body) async {
-    final res = await http.patch(
-      Uri.parse('$_base$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _handle(res);
-  }
-
-  Future<dynamic> put(String path, Map<String, dynamic> body) async {
-    final res = await http.put(
-      Uri.parse('$_base$path'),
-      headers: _headers,
-      body: jsonEncode(body),
-    );
-    return _handle(res);
-  }
-
-  Future<void> delete(String path) async {
-    final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
-    _handle(res);
-  }
-
   dynamic _handle(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
@@ -116,6 +78,78 @@ class ApiService {
     throw ApiException(res.statusCode, msg);
   }
 
+  /// Attempt to refresh the access token using the stored refresh token.
+  /// Returns true if successful, false otherwise.
+  Future<bool> refreshAccessToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final refreshToken = prefs.getString('refresh_token');
+      if (refreshToken == null) return false;
+
+      final res = await http.post(
+        Uri.parse('$_base/auth/refresh'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'refreshToken': refreshToken}),
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        final newAccess  = data['accessToken']  as String?;
+        final newRefresh = data['refreshToken'] as String?;
+        if (newAccess != null && newRefresh != null) {
+          await saveToken(newAccess, newRefresh);
+          return true;
+        }
+      }
+      return false;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Wraps an API call with automatic token refresh on 401.
+  Future<dynamic> _withRefresh(Future<dynamic> Function() call) async {
+    try {
+      return await call();
+    } on ApiException catch (e) {
+      if (e.statusCode == 401) {
+        final refreshed = await refreshAccessToken();
+        if (refreshed) return await call();
+      }
+      rethrow;
+    }
+  }
+
+  Future<dynamic> get(String path) async =>
+      _withRefresh(() async {
+        final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
+        return _handle(res);
+      });
+
+  Future<dynamic> post(String path, Map<String, dynamic> body) async =>
+      _withRefresh(() async {
+        final res = await http.post(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
+        return _handle(res);
+      });
+
+  Future<dynamic> patch(String path, Map<String, dynamic> body) async =>
+      _withRefresh(() async {
+        final res = await http.patch(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
+        return _handle(res);
+      });
+
+  Future<dynamic> put(String path, Map<String, dynamic> body) async =>
+      _withRefresh(() async {
+        final res = await http.put(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
+        return _handle(res);
+      });
+
+  Future<void> delete(String path) async =>
+      _withRefresh(() async {
+        final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
+        _handle(res);
+      });
+
   String _tryParseError(String body) {
     try {
       final j = jsonDecode(body);
@@ -123,6 +157,24 @@ class ApiService {
     } catch (_) {
       return body;
     }
+  }
+
+  /// Returns a user-friendly message when the server is unreachable.
+  /// Render free tier spins down after inactivity — first request can take 30–60s.
+  static String friendlyError(Object e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('ClientException') ||
+        s.contains('Failed host lookup') || s.contains('Connection refused')) {
+      return 'Cannot reach server. If this is the first request, the server may be waking up — please wait 30 seconds and try again.';
+    }
+    if (s.contains('401') || s.contains('Unauthorized')) {
+      return 'Session expired. Please log in again.';
+    }
+    if (s.contains('403')) return 'You do not have permission to do that.';
+    if (s.contains('404')) return 'Resource not found.';
+    if (s.contains('500')) return 'Server error. Please try again later.';
+    if (s.contains('TimeoutException')) return 'Request timed out. Please check your connection.';
+    return 'Something went wrong. Please try again.';
   }
 
   /// Safely coerce a dynamic API response to a List.
@@ -232,10 +284,20 @@ class ApiService {
 
   static Future<List<dynamic>> getRiskAssessments({int page = 1, int limit = 50}) async {
     final data = await instance.get('/risk-assessments?limit=$limit&offset=${(page - 1) * limit}');
+    List<dynamic> list;
     if (data is Map<String, dynamic>) {
-      return (data['assessments'] as List<dynamic>?) ?? [];
+      list = (data['assessments'] as List<dynamic>?) ?? [];
+    } else {
+      list = _asList(data);
     }
-    return _asList(data);
+    // Normalize field names: backend may return riskScore/risk instead of score/riskLevel
+    return list.map((item) {
+      if (item is! Map<String, dynamic>) return item;
+      final normalized = Map<String, dynamic>.from(item);
+      normalized['riskLevel'] ??= normalized['risk'] ?? normalized['riskLevel'] ?? 'Unknown';
+      normalized['score']     ??= normalized['riskScore'] ?? normalized['score'] ?? 0;
+      return normalized;
+    }).toList();
   }
 
   // ── Appointments ──────────────────────────────────────────────────────────
@@ -283,6 +345,19 @@ class ApiService {
   static Future<void> markNotificationRead(String id) =>
       instance.patch('/notifications/$id/read', {});
 
+  static Future<void> markAllNotificationsRead() =>
+      instance.patch('/notifications/mark-all-read', {});
+
+  // ── Profile photo ─────────────────────────────────────────────────────────
+
+  /// Upload a base64 photo. Pass null to remove.
+  static Future<String?> uploadProfilePhoto(String? base64DataUrl) async {
+    final data = await instance.patch('/users/me/photo', {
+      'photoBase64': base64DataUrl,
+    });
+    return (data as Map<String, dynamic>?)?['profilePhotoUrl'] as String?;
+  }
+
   // ── Health facilities ─────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getHealthFacilities() =>
@@ -290,14 +365,9 @@ class ApiService {
 
   static Future<List<dynamic>> getFacilitiesByDistrict(String district) async {
     try {
-      print('API: Fetching facilities for district: $district'); // Debug log
       final result = await instance.get('/health-facilities?district=${Uri.encodeComponent(district)}');
-      print('API: Received response: ${result.runtimeType}'); // Debug log
-      final list = _asList(result);
-      print('API: Converted to list with ${list.length} items'); // Debug log
-      return list;
+      return _asList(result);
     } catch (e) {
-      print('API: Error fetching facilities: $e'); // Debug log
       rethrow;
     }
   }

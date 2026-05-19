@@ -7,6 +7,7 @@ import '../../state/user_store.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class DhoTaskPerformance extends StatefulWidget {
   const DhoTaskPerformance({super.key});
@@ -14,7 +15,7 @@ class DhoTaskPerformance extends StatefulWidget {
   State<DhoTaskPerformance> createState() => _DhoTaskPerformanceState();
 }
 
-class _DhoTaskPerformanceState extends State<DhoTaskPerformance> {
+class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMixin {
   Map<String, dynamic> _data = {};
   bool _loading = true;
   String? _error;
@@ -25,6 +26,20 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final data = await ApiService.getTaskAnalytics();
+      if (mounted) setState(() => _data = data);
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -103,30 +118,48 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> {
                   chart: SizedBox(
                     height: 200,
                     child: LineChart(LineChartData(
-                      gridData: const FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true, drawVerticalLine: false,
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                      ),
                       borderData: FlBorderData(show: false),
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (_) => AppColors.successText,
+                          tooltipRoundedRadius: 8,
+                          getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
+                            '${s.y.toStringAsFixed(0)}%',
+                            GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                          )).toList(),
+                        ),
+                      ),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, _) {
-                              const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-                              final i = v.toInt();
-                              if (i < 0 || i >= m.length) return const SizedBox();
-                              return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
-                            },
-                          ),
-                        ),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (v, _) {
+                            const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+                            final i = v.toInt();
+                            if (i < 0 || i >= m.length) return const SizedBox();
+                            return Padding(padding: const EdgeInsets.only(top: 6),
+                              child: Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)));
+                          },
+                        )),
                       ),
                       lineBarsData: [
                         LineChartBarData(
                           spots: _buildTrend(_data['completionTrend']),
-                          isCurved: true, color: AppColors.successText, barWidth: 2.5,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
+                          isCurved: true, curveSmoothness: 0.4,
+                          color: AppColors.successText, barWidth: 3,
+                          dotData: FlDotData(show: true,
+                            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                              radius: 4, color: Colors.white,
+                              strokeWidth: 2.5, strokeColor: AppColors.successText)),
+                          belowBarData: BarAreaData(show: true,
+                            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                              colors: [AppColors.successText.withValues(alpha: 0.18), AppColors.successText.withValues(alpha: 0.0)])),
                         ),
                       ],
                     )),
@@ -138,16 +171,23 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> {
                 child: ChartCard(
                   title: 'Task Types',
                   subtitle: 'By category',
+                  legend: Row(children: [
+                    const LegendItem(color: AppColors.primary, label: 'ANC'),
+                    const SizedBox(width: 10),
+                    const LegendItem(color: AppColors.accent, label: 'PNC'),
+                    const SizedBox(width: 10),
+                    const LegendItem(color: AppColors.warningText, label: 'Vacc'),
+                  ]),
                   chart: SizedBox(
                     height: 200,
                     child: PieChart(PieChartData(
-                      sectionsSpace: 3,
-                      centerSpaceRadius: 40,
+                      sectionsSpace: 4,
+                      centerSpaceRadius: 44,
                       sections: [
-                        PieChartSectionData(value: 38, color: AppColors.primary, title: 'ANC\n38%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 30, color: AppColors.accent, title: 'PNC\n30%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 20, color: AppColors.warningText, title: 'Vacc\n20%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
-                        PieChartSectionData(value: 12, color: AppColors.secondary, title: 'Risk\n12%', titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white), radius: 50),
+                        PieChartSectionData(value: 38, color: AppColors.primary, title: '38%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 30, color: AppColors.accent, title: '30%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 20, color: AppColors.warningText, title: '20%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 12, color: AppColors.secondary, title: '12%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
                       ],
                     )),
                   ),

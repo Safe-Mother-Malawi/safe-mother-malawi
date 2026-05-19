@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import '../../state/user_store.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class DistrictAnalytics extends StatefulWidget {
   const DistrictAnalytics({super.key});
@@ -13,7 +14,7 @@ class DistrictAnalytics extends StatefulWidget {
   State<DistrictAnalytics> createState() => _DistrictAnalyticsState();
 }
 
-class _DistrictAnalyticsState extends State<DistrictAnalytics> {
+class _DistrictAnalyticsState extends State<DistrictAnalytics> with LiveDataMixin {
   Map<String, dynamic> _overview = {};
   Map<String, dynamic> _risk = {};
   bool _loading = true;
@@ -25,6 +26,26 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final results = await Future.wait([
+        ApiService.getAnalyticsOverview(),
+        ApiService.getRiskDistribution(),
+      ]);
+      if (mounted) setState(() {
+        _overview = results[0] as Map<String, dynamic>;
+        _risk     = results[1] as Map<String, dynamic>;
+      });
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -114,32 +135,50 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                   chart: SizedBox(
                     height: 200,
                     child: LineChart(LineChartData(
-                      gridData: const FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true, drawVerticalLine: false,
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                      ),
                       borderData: FlBorderData(show: false),
+                      lineTouchData: LineTouchData(
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipColor: (_) => AppColors.primary,
+                          tooltipRoundedRadius: 8,
+                          getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
+                            s.y.toStringAsFixed(0),
+                            GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                          )).toList(),
+                        ),
+                      ),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, _) {
-                              const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-                              final i = v.toInt();
-                              if (i < 0 || i >= m.length) return const SizedBox();
-                              return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
-                            },
-                          ),
-                        ),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (v, _) {
+                            const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
+                            final i = v.toInt();
+                            if (i < 0 || i >= m.length) return const SizedBox();
+                            return Padding(padding: const EdgeInsets.only(top: 6),
+                              child: Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)));
+                          },
+                        )),
                       ),
                       lineBarsData: [
                         LineChartBarData(
                           spots: riskTrend.isNotEmpty
                               ? riskTrend.asMap().entries.map((e) => FlSpot(e.key.toDouble(), (e.value as num).toDouble())).toList()
                               : const [FlSpot(0, 110), FlSpot(1, 130), FlSpot(2, 120), FlSpot(3, 155), FlSpot(4, 148), FlSpot(5, 170)],
-                          isCurved: true, color: AppColors.criticalText, barWidth: 2.5,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.criticalText.withValues(alpha: 0.07)),
+                          isCurved: true, curveSmoothness: 0.4,
+                          color: AppColors.criticalText, barWidth: 3,
+                          dotData: FlDotData(show: true,
+                            getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                              radius: 4, color: Colors.white,
+                              strokeWidth: 2.5, strokeColor: AppColors.criticalText)),
+                          belowBarData: BarAreaData(show: true,
+                            gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
+                              colors: [AppColors.criticalText.withValues(alpha: 0.18), AppColors.criticalText.withValues(alpha: 0.0)])),
                         ),
                       ],
                     )),
@@ -154,23 +193,38 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                   chart: SizedBox(
                     height: 200,
                     child: BarChart(BarChartData(
-                      gridData: const FlGridData(show: false),
+                      gridData: FlGridData(
+                        show: true, drawVerticalLine: false,
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                      ),
                       borderData: FlBorderData(show: false),
+                      barTouchData: BarTouchData(
+                        touchTooltipData: BarTouchTooltipData(
+                          getTooltipColor: (_) => AppColors.primary,
+                          tooltipRoundedRadius: 8,
+                          getTooltipItem: (group, _, rod, __) {
+                            const labels = ['ANC', 'PNC', 'Tasks'];
+                            return BarTooltipItem(
+                              '${labels[group.x]}: ${rod.toY.toInt()}%',
+                              GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                            );
+                          },
+                        ),
+                      ),
                       titlesData: FlTitlesData(
                         leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                         topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            getTitlesWidget: (v, _) {
-                              const labels = ['ANC', 'PNC', 'Tasks'];
-                              final i = v.toInt();
-                              if (i < 0 || i >= labels.length) return const SizedBox();
-                              return Text(labels[i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText));
-                            },
-                          ),
-                        ),
+                        bottomTitles: AxisTitles(sideTitles: SideTitles(
+                          showTitles: true,
+                          getTitlesWidget: (v, _) {
+                            const labels = ['ANC', 'PNC', 'Tasks'];
+                            final i = v.toInt();
+                            if (i < 0 || i >= labels.length) return const SizedBox();
+                            return Padding(padding: const EdgeInsets.only(top: 6),
+                              child: Text(labels[i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)));
+                          },
+                        )),
                       ),
                       barGroups: [
                         _bar(0, (_overview['ancRate'] ?? 78) as num),
@@ -189,16 +243,16 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
   }
 
   BarChartGroupData _bar(int x, num val) {
-    return BarChartGroupData(
-      x: x,
-      barRods: [
-        BarChartRodData(
-          toY: val.toDouble(),
-          color: AppColors.primary,
-          width: 14,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+    return BarChartGroupData(x: x, barRods: [
+      BarChartRodData(
+        toY: val.toDouble(),
+        gradient: const LinearGradient(
+          begin: Alignment.bottomCenter, end: Alignment.topCenter,
+          colors: [AppColors.primary, Color(0xFF1976D2)],
         ),
-      ],
-    );
+        width: 28,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
+      ),
+    ]);
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
@@ -8,6 +9,7 @@ import 'email_forgot_password_screen.dart';
 import '../../prenatal/prenatal_dashboard.dart';
 import '../../neonatal/neonatal_dashboard.dart';
 import '../../clinician/clinician_dashboard.dart';
+import '../../../providers/mobile_user_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loading = false);
     if (!mounted) return;
     if (user != null) {
+      // Populate reactive provider so any widget can read the current user
+      context.read<MobileUserProvider>().update(user);
+
       // Mobile app only allows PRENATAL and NEONATAL users
       if (user.role == 'prenatal') {
         Navigator.pushAndRemoveUntil(
@@ -52,13 +57,19 @@ class _LoginScreenState extends State<LoginScreen> {
           MaterialPageRoute(builder: (_) => const NeonatalDashboard()),
           (_) => false,
         );
+      } else if (user.role == 'clinician') {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const ClinicianDashboard()),
+          (_) => false,
+        );
       } else {
-        // Block CLINICIAN, DHO, ADMIN roles
-        await AuthService().logout(); // Clear the token
+        // Block DHO, ADMIN roles — web portal only
+        await AuthService().logout();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'This mobile app is for patients only. ${user.role.toUpperCase()} users should use the web portal.',
+              '${user.role.toUpperCase()} accounts use the web portal at safemothermalawi.vercel.app',
             ),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 5),

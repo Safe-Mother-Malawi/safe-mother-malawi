@@ -6,6 +6,7 @@ import '../services/auth_service_web.dart';
 import '../services/api_service.dart';
 import 'email_forgot_password_dialog.dart';
 import '../utils/validators.dart';
+import '../state/notification_store.dart';
 
 class LoginDialog extends StatefulWidget {
   const LoginDialog({super.key});
@@ -62,6 +63,9 @@ class _LoginDialogState extends State<LoginDialog> {
         });
         return;
       }
+
+      // Start real-time notifications
+      NotificationStore.instance.start();
 
       Widget dest;
       if (role == 'admin') {

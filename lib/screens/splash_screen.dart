@@ -595,11 +595,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     setState(() => _sendingMessage = true);
 
     try {
-      // Note: This would require authentication, but for a public contact form,
-      // we might need a different approach or a public endpoint
-      await ApiService.instance.post('/support/contact', {
+      // Public contact endpoint — no authentication required
+      await ApiService.instance.post('/contact', {
+        'name': _nameController.text.trim(),
+        'email': _emailController.text.trim(),
         'subject': _subjectController.text.trim(),
-        'message': '${_messageController.text.trim()}\n\nFrom: ${_nameController.text.trim()}\nEmail: ${_emailController.text.trim()}',
+        'message': _messageController.text.trim(),
       });
 
       // Clear form on success

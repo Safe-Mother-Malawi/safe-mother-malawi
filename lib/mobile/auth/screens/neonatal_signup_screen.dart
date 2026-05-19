@@ -95,12 +95,9 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
     });
     
     try {
-      print('Loading facilities for district: $district'); // Debug log
       final data = await ApiService.getFacilitiesByDistrict(district);
-      print('Received facilities data: ${data.length} items'); // Debug log
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
       
-      // Remove duplicates by facility name (keep first occurrence)
       final seen = <String>{};
       final uniqueObjects = objects.where((f) {
         final name = (f['facilityName'] ?? '').toString();
@@ -109,7 +106,6 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         return true;
       }).toList();
       
-      // Sort: Hospitals first, then Health Centres, then others alphabetically
       const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
       uniqueObjects.sort((a, b) {
         final ta = (a['facilityType'] ?? '').toString();
@@ -125,24 +121,16 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-      print('Successfully loaded ${_facilities.length} facilities from API'); // Debug log
     } catch (e) {
-      print('Error loading facilities from API: $e'); // Debug log
-      print('Loading fallback facilities for district: $district'); // Debug log
-      
-      // Always use fallback data when API fails
       _loadFallbackFacilities(district);
     }
   }
 
   void _loadFallbackFacilities(String district) {
     try {
-      print('Attempting to load fallback facilities for: $district'); // Debug log
       final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
-      print('Fallback data loaded: ${fallbackData.length} facilities for $district'); // Debug log
       
       if (fallbackData.isEmpty) {
-        print('WARNING: No fallback facilities found for district: $district'); // Debug log
         setState(() {
           _facilityObjects = [];
           _facilities = [];
@@ -151,7 +139,6 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         return;
       }
       
-      // Sort fallback data the same way
       const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
       fallbackData.sort((a, b) {
         final ta = (a['facilityType'] ?? '').toString();
@@ -167,16 +154,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-      print('Successfully loaded ${_facilities.length} fallback facilities for $district'); // Debug log
-      
-      // Debug: Print first few facilities
-      if (_facilities.isNotEmpty) {
-        print('First few facilities for $district: ${_facilities.take(3).join(', ')}');
-      } else {
-        print('ERROR: No facility names extracted from fallback data for $district');
-      }
     } catch (e) {
-      print('ERROR loading fallback facilities for $district: $e'); // Debug log
       setState(() {
         _facilityObjects = [];
         _facilities = [];

@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../main_mobile.dart';
 import 'auth_service.dart';
 import '../screens/login_screen.dart';
+import '../../../providers/mobile_user_provider.dart';
 
 /// Logs out the current user and navigates to LoginScreen using the root
 /// navigator, clearing the entire stack. Safe to call from any context.
 Future<void> performLogout() async {
   await AuthService().logout();
+  // Clear reactive user state if provider is accessible
+  final ctx = navigatorKey.currentState?.context;
+  if (ctx != null) {
+    try {
+      ctx.read<MobileUserProvider>().clear();
+    } catch (_) {}
+  }
   navigatorKey.currentState?.pushAndRemoveUntil(
     MaterialPageRoute(builder: (_) => const LoginScreen()),
     (_) => false,

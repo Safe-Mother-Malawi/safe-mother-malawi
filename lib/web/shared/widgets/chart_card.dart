@@ -7,6 +7,7 @@ class ChartCard extends StatelessWidget {
   final String? subtitle;
   final Widget chart;
   final List<Widget>? actions;
+  final Widget? legend;
 
   const ChartCard({
     super.key,
@@ -14,6 +15,7 @@ class ChartCard extends StatelessWidget {
     required this.chart,
     this.subtitle,
     this.actions,
+    this.legend,
   });
 
   @override
@@ -21,13 +23,19 @@ class ChartCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFEEF2FF), width: 1),
+        boxShadow: [
           BoxShadow(
-            color: AppColors.shadowColor,
-            blurRadius: 24,
-            offset: Offset(0, 4),
+            color: AppColors.primary.withValues(alpha: 0.06),
+            blurRadius: 32,
+            offset: const Offset(0, 8),
+          ),
+          const BoxShadow(
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -43,13 +51,14 @@ class ChartCard extends StatelessWidget {
                   Text(
                     title,
                     style: GoogleFonts.publicSans(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                       color: AppColors.headings,
+                      letterSpacing: -0.2,
                     ),
                   ),
                   if (subtitle != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       subtitle!,
                       style: GoogleFonts.inter(
@@ -63,10 +72,33 @@ class ChartCard extends StatelessWidget {
               if (actions != null) Row(children: actions!),
             ],
           ),
+          if (legend != null) ...[
+            const SizedBox(height: 14),
+            legend!,
+          ],
           const SizedBox(height: 20),
           chart,
         ],
       ),
     );
+  }
+}
+
+/// A small coloured dot + label for chart legends
+class LegendItem extends StatelessWidget {
+  final Color color;
+  final String label;
+  const LegendItem({super.key, required this.color, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Container(
+        width: 10, height: 10,
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
+      ),
+      const SizedBox(width: 6),
+      Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+    ]);
   }
 }

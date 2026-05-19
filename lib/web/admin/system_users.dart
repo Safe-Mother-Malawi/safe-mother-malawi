@@ -789,7 +789,6 @@ class _AddUserFormState extends State<_AddUserForm> {
     setState(() => _loadingRegions = true);
     try {
       final regions = await ApiService.getRegions();
-      print('DEBUG: Loaded regions: $regions');
       setState(() {
         _regions = regions;
         _region = regions.isNotEmpty ? regions.first : null;
@@ -800,7 +799,6 @@ class _AddUserFormState extends State<_AddUserForm> {
         _loadZones(_region!);
       }
     } catch (e) {
-      print('DEBUG: Error loading regions: $e');
       setState(() {
         _loadingRegions = false;
         _regionError = 'Failed to load regions: ${e.toString().split('\n').first}';
@@ -824,7 +822,6 @@ class _AddUserFormState extends State<_AddUserForm> {
     });
     try {
       final zones = await ApiService.getZones(region);
-      print('DEBUG: Loaded zones for region "$region": $zones');
       setState(() {
         _zones = zones;
         _zone = zones.isNotEmpty ? zones.first : null;
@@ -834,7 +831,6 @@ class _AddUserFormState extends State<_AddUserForm> {
         _loadDistricts(_zone!);
       }
     } catch (e) {
-      print('DEBUG: Error loading zones: $e');
       setState(() {
         _loadingZones = false;
         _zoneError = 'Failed to load zones: ${e.toString()}';
@@ -858,14 +854,12 @@ class _AddUserFormState extends State<_AddUserForm> {
     });
     try {
       final districts = await ApiService.getDistricts(zone);
-      print('DEBUG: Loaded districts for zone "$zone": $districts');
       setState(() {
         _districts = districts;
         _district = districts.isNotEmpty ? districts.first : null;
         _loadingDistricts = false;
       });
     } catch (e) {
-      print('DEBUG: Error loading districts: $e');
       setState(() {
         _loadingDistricts = false;
         _districtError = 'Failed to load districts: ${e.toString()}';

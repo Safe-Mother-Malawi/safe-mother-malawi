@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import '../../auth/models/user_model.dart';
 import '../../../services/api_service.dart';
 
@@ -20,7 +22,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _babyNameController;
 
   bool _isLoading = false;
+  bool _uploadingPhoto = false;
   String? _errorMessage;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -32,6 +36,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _facilityController = TextEditingController(text: widget.user.facilityName);
     _lmpDateController = TextEditingController(text: widget.user.lmpDate);
     _babyNameController = TextEditingController(text: widget.user.babyName);
+    // Load existing photo from backend
+    _loadPhoto();
+  }
+
+  Future<void> _loadPhoto() async {
+    try {
+      final user = await ApiService.instance.currentUser();
+      if (mounted && user != null) {
+        setState(() => _photoUrl = user['profilePhotoUrl'] as String?);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _pickPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512, maxHeight: 512,
+      imageQuality: 80,
+    );
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploadingPhoto = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final ext = picked.name.split('.').last.toLowerCase();
+      final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
+      final base64Str = 'data:$mime;base64,${base64Encode(bytes)}';
+      final url = await ApiService.uploadProfilePhoto(base64Str);
+      if (mounted) setState(() => _photoUrl = url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Photo upload failed: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
   }
 
   @override
@@ -144,6 +187,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Photo picker
+            Center(
+              child: GestureDetector(
+                onTap: _uploadingPhoto ? null : _pickPhoto,
+                child: Stack(children: [
+                  CircleAvatar(
+                    radius: 52,
+                    backgroundColor: const Color(0xFFE8EAF6),
+                    backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
+                        ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
+                        : null,
+                    child: _uploadingPhoto
+                        ? const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A237E))
+                        : _photoUrl == null
+                            ? const Icon(Icons.person, size: 52, color: Color(0xFF9E9E9E))
+                            : null,
+                  ),
+                  Positioned(
+                    bottom: 2, right: 2,
+                    child: Container(
+                      width: 30, height: 30,
+                      decoration: const BoxDecoration(color: Color(0xFF1A237E), shape: BoxShape.circle),
+                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Center(child: Text('Tap to change photo',
+                style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)))),
+            const SizedBox(height: 20),
             if (_errorMessage != null)
               Container(
                 padding: const EdgeInsets.all(12),

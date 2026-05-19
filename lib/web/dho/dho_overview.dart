@@ -17,6 +17,7 @@ import '../admin/reports_screen_export.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class DhoOverview extends StatefulWidget {
   const DhoOverview({super.key});
@@ -91,7 +92,7 @@ class _DhoOverviewBody extends StatefulWidget {
   State<_DhoOverviewBody> createState() => _DhoOverviewBodyState();
 }
 
-class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
+class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
   bool _loading = true;
   String? _error;
 
@@ -113,6 +114,55 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final user = AuthServiceWeb.instance.currentUser;
+      final district = user?['district'] as String? ?? _district;
+      final results = await Future.wait([
+        _safeGet('/analytics/overview'),
+        _safeGet('/analytics/registrations'),
+        _safeGet('/analytics/risk-distribution'),
+        _safeGet('/analytics/system-alerts'),
+        _safeGet('/analytics/anc-analytics?district=$district'),
+        _safeGet('/analytics/anc-compliance?district=$district'),
+      ]);
+      final overview      = _asMap(results[0]);
+      final regTrends     = _asMap(results[1]);
+      final riskDist      = _asList(results[2]);
+      final sysAlerts     = _asMap(results[3]);
+      final ancAnalytics  = _asMap(results[4]);
+      final ancCompliance = _asMap(results[5]);
+      final prenatalMonths = _asList(regTrends['prenatal']);
+      final spots = <FlSpot>[];
+      for (int i = 0; i < prenatalMonths.length && i < 6; i++) {
+        final item = prenatalMonths[i];
+        final count = double.tryParse(item is Map ? (item['count'] ?? '0').toString() : '0') ?? 0;
+        spots.add(FlSpot(i.toDouble(), count));
+      }
+      final riskDistMaps  = riskDist.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final alertsList    = _asList(sysAlerts['alerts']).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final ancTrendsList = _asList(ancAnalytics['monthlyTrends']).whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      if (mounted) setState(() {
+        _totalMothers           = (overview['totalMothers']  as num?)?.toInt() ?? 0;
+        _highRiskCases          = (overview['highRiskCases'] as num?)?.toInt() ?? 0;
+        _ancAttendanceRate      = (ancAnalytics['attendanceRate'] as num?)?.toInt() ?? 0;
+        _ancComplianceRate      = (ancAnalytics['complianceRate'] as num?)?.toInt() ?? 0;
+        _poorCompliancePatients = (ancCompliance['patientsWithPoorCompliance'] as num?)?.toInt() ?? 0;
+        _trendSpots             = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
+        _riskDist               = riskDistMaps;
+        _districtAlerts         = alertsList;
+        _ancTrends              = ancTrendsList;
+      });
+    } catch (_) {}
   }
 
   Future<dynamic> _safeGet(String path) async {
@@ -274,11 +324,23 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> {
                             return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
                           })),
                       ),
-                      lineBarsData: [LineChartBarData(
-                        spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
-                        dotData: const FlDotData(show: false),
-                        belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
-                      )],
+                      lineBarsData: [
+                        LineChartBarData(
+                          spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
+                          dotData: const FlDotData(show: false),
+                          belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
+                        ),
+                        if (_ancTrends.isNotEmpty)
+                          LineChartBarData(
+                            spots: _ancTrends.asMap().entries.map((e) {
+                              final count = double.tryParse(e.value['count']?.toString() ?? '0') ?? 0;
+                              return FlSpot(e.key.toDouble(), count);
+                            }).toList(),
+                            isCurved: true, color: AppColors.successText, barWidth: 2,
+                            dotData: const FlDotData(show: false),
+                            dashArray: [4, 4],
+                          ),
+                      ],
                     ))),
             )),
             const SizedBox(width: 20),

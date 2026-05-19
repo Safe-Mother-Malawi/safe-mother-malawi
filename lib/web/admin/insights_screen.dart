@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
+import '../../../utils/live_data_mixin.dart';
 
 /// Question Insights screen — health assessment patterns
 class InsightsScreen extends StatefulWidget {
@@ -15,7 +16,7 @@ class InsightsScreen extends StatefulWidget {
   State<InsightsScreen> createState() => _InsightsScreenState();
 }
 
-class _InsightsScreenState extends State<InsightsScreen> {
+class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
 
   Map<String, dynamic> _dist = {};
   List<dynamic> _assessments = [];
@@ -26,6 +27,26 @@ class _InsightsScreenState extends State<InsightsScreen> {
   void initState() {
     super.initState();
     _load();
+    startPolling(_silentLoad);
+  }
+
+  @override
+  void dispose() {
+    stopPolling();
+    super.dispose();
+  }
+
+  Future<void> _silentLoad() async {
+    try {
+      final results = await Future.wait([
+        ApiService.getRiskDistribution(),
+        ApiService.getRiskAssessments(limit: 200),
+      ]);
+      if (mounted) setState(() {
+        _dist        = results[0] as Map<String, dynamic>;
+        _assessments = results[1] as List<dynamic>;
+      });
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -142,8 +163,24 @@ class _InsightsScreenState extends State<InsightsScreen> {
                           chart: SizedBox(
                             height: 240,
                             child: BarChart(BarChartData(
-                              gridData: const FlGridData(show: false),
+                              gridData: FlGridData(
+                                show: true, drawVerticalLine: false,
+                                getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                              ),
                               borderData: FlBorderData(show: false),
+                              barTouchData: BarTouchData(
+                                touchTooltipData: BarTouchTooltipData(
+                                  getTooltipColor: (_) => AppColors.primary,
+                                  tooltipRoundedRadius: 8,
+                                  getTooltipItem: (group, _, rod, __) {
+                                    const labels = ['Low', 'Medium', 'High'];
+                                    return BarTooltipItem(
+                                      '${labels[group.x]}\n${rod.toY.toInt()}',
+                                      GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                    );
+                                  },
+                                ),
+                              ),
                               titlesData: FlTitlesData(
                                 leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                                 rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -154,14 +191,29 @@ class _InsightsScreenState extends State<InsightsScreen> {
                                     const l = ['Low', 'Medium', 'High'];
                                     final i = v.toInt();
                                     if (i < 0 || i >= l.length) return const SizedBox();
-                                    return Text(l[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: Text(l[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                                    );
                                   },
                                 )),
                               ),
                               barGroups: [
-                                BarChartGroupData(x: 0, barRods: [BarChartRodData(toY: low.toDouble(), color: AppColors.successText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
-                                BarChartGroupData(x: 1, barRods: [BarChartRodData(toY: medium.toDouble(), color: AppColors.warningText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
-                                BarChartGroupData(x: 2, barRods: [BarChartRodData(toY: high.toDouble(), color: AppColors.criticalText, width: 40, borderRadius: const BorderRadius.vertical(top: Radius.circular(6)))]),
+                                BarChartGroupData(x: 0, barRods: [BarChartRodData(
+                                  toY: low.toDouble(),
+                                  gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                                    colors: [AppColors.successText, AppColors.successText.withValues(alpha: 0.7)]),
+                                  width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
+                                BarChartGroupData(x: 1, barRods: [BarChartRodData(
+                                  toY: medium.toDouble(),
+                                  gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                                    colors: [AppColors.warningText, AppColors.warningText.withValues(alpha: 0.7)]),
+                                  width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
+                                BarChartGroupData(x: 2, barRods: [BarChartRodData(
+                                  toY: high.toDouble(),
+                                  gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
+                                    colors: [AppColors.criticalText, AppColors.criticalText.withValues(alpha: 0.7)]),
+                                  width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
                               ],
                             )),
                           ),

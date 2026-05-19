@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../auth/services/auth_service.dart';
 import '../../auth/models/user_model.dart';
-import '../../../utils/validators.dart';
+import '../../../services/api_service.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -12,6 +13,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -24,6 +26,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       setState(() => _user = user);
     }
+    // Load photo separately from backend
+    try {
+      final raw = await ApiService.instance.currentUser();
+      if (mounted && raw != null) {
+        setState(() => _photoUrl = raw['profilePhotoUrl'] as String?);
+      }
+    } catch (_) {}
   }
 
   Future<void> _editProfile() async {
@@ -68,7 +77,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       CircleAvatar(
                         radius: 44,
                         backgroundColor: Colors.white.withValues(alpha: 0.3),
-                        child: const Icon(Icons.person, size: 48, color: Colors.white),
+                        backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
+                            ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
+                            : null,
+                        child: _photoUrl == null
+                            ? const Icon(Icons.person, size: 48, color: Colors.white)
+                            : null,
                       ),
                       Positioned(
                         bottom: 0,
