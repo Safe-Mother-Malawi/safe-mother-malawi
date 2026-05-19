@@ -227,7 +227,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
     final result = await AuthService().register(user);
     setState(() => _loading = false);
     if (!mounted) return;
-    if (result['success']) {
+    if (result) {
       _snack('Account created successfully!', const Color(0xFF1A3A6B));
       Navigator.pushAndRemoveUntil(
         context,
@@ -235,7 +235,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         (_) => false,
       );
     } else {
-      _snack(result['error'] ?? 'Registration failed. Please try again.', Colors.red);
+      _snack('Registration failed. Please try again.', Colors.red);
     }
   }
 

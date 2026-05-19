@@ -237,10 +237,6 @@ class ApiService {
     }
     return _asList(data);
   }
-      return (data['responses'] as List<dynamic>?) ?? [];
-    }
-    return _asList(data);
-  }
 
   // ── Appointments ──────────────────────────────────────────────────────────
 
