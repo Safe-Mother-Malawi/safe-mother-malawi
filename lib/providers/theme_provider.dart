@@ -15,9 +15,6 @@ class ThemeProvider extends ChangeNotifier {
         seedColor: AppColors.primary,
         brightness: Brightness.light,
       ),
-      textTheme: GoogleFonts.interTextTheme(
-        ThemeData.light().textTheme,
-      ),
       scaffoldBackgroundColor: AppColors.pageBg,
     );
   }

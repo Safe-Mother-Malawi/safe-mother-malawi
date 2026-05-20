@@ -23,7 +23,6 @@ class SafeMotherApp extends StatelessWidget {
           seedColor: AppColors.primary,
           brightness: Brightness.light,
         ),
-        textTheme: GoogleFonts.interTextTheme(),
         scaffoldBackgroundColor: AppColors.pageBg,
       ),
       home: const SplashScreen(),
