@@ -1,5 +1,6 @@
 import 'api_service.dart';
 import '../state/user_store.dart';
+import 'package:flutter/foundation.dart';
 
 /// Web portal authentication — calls POST /auth/login
 class AuthServiceWeb {
@@ -22,19 +23,30 @@ class AuthServiceWeb {
   }
 
   Future<String> login(String email, String password) async {
-    final data = await ApiService.instance.post('/auth/login', {
-      'identifier': email,
-      'password': password,
-    });
+    debugPrint('🔐 AuthServiceWeb.login() called with email: $email');
+    debugPrint('📡 API Base URL: ${ApiService.baseUrl}');
+    
+    try {
+      final data = await ApiService.instance.post('/auth/login', {
+        'identifier': email,
+        'password': password,
+      });
 
-    final tokens = data['tokens'];
-    await ApiService.instance.saveToken(
-      tokens['accessToken'] as String,
-      tokens['refreshToken'] as String,
-    );
+      debugPrint('✅ Login successful, received data: ${data.keys}');
 
-    _currentUser = data['user'] as Map<String, dynamic>;
-    return _currentUser!['role'] as String;
+      final tokens = data['tokens'];
+      await ApiService.instance.saveToken(
+        tokens['accessToken'] as String,
+        tokens['refreshToken'] as String,
+      );
+
+      _currentUser = data['user'] as Map<String, dynamic>;
+      debugPrint('✅ User role: ${_currentUser!['role']}');
+      return _currentUser!['role'] as String;
+    } catch (e) {
+      debugPrint('❌ Login failed: $e');
+      rethrow;
+    }
   }
 
   Future<void> logout() async {
