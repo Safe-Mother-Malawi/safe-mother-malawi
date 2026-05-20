@@ -77,11 +77,20 @@ class ApiService {
   }
 
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
+    debugPrint('📤 POST $_base$path');
+    debugPrint('📦 Body: $body');
     final res = await http.post(
       Uri.parse('$_base$path'),
       headers: _headers,
       body: jsonEncode(body),
     );
+    debugPrint('📥 Response Status: ${res.statusCode}');
+    debugPrint('📥 Response Headers: ${res.headers}');
+    if (res.statusCode >= 200 && res.statusCode < 300) {
+      debugPrint('✅ Success');
+    } else {
+      debugPrint('❌ Error: ${res.body}');
+    }
     return _handle(res);
   }
 
