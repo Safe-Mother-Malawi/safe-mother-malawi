@@ -359,7 +359,7 @@ class _BabyInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +416,7 @@ class _BabyInfoCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8EAF6),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _kOrange.withValues(alpha: 0.4)),
+                  border: Border.all(color: _kOrange.withOpacity(0.4)),
                 ),
                 child: Column(
                   children: [
@@ -525,7 +525,7 @@ class _DailyFeedsCardState extends State<_DailyFeedsCard> {
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -636,7 +636,7 @@ class _TodayAppointmentCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -669,12 +669,12 @@ class _TodayAppointmentCard extends StatelessWidget {
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
                     const SizedBox(height: 2),
                     Text(dateStr,
-                        style: TextStyle(fontSize: 11, color: Colors.white.withValues(alpha: 0.75))),
+                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.75))),
                   ],
                 ),
                 const SizedBox(width: 16),
                 // Divider
-                Container(width: 1, height: 36, color: Colors.white.withValues(alpha: 0.15)),
+                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.15)),
                 const SizedBox(width: 16),
                 // Details
                 Expanded(
@@ -694,7 +694,7 @@ class _TodayAppointmentCard extends StatelessWidget {
                 Container(
                   width: 28, height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
+                    color: Colors.white.withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.chevron_right, color: Colors.white, size: 18),
@@ -754,7 +754,7 @@ class _TodayAppointmentsCard extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFE3E8FF), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1A237E).withValues(alpha: 0.08),
+                    color: const Color(0xFF1A237E).withOpacity(0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

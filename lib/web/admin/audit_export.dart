@@ -334,7 +334,7 @@ class _AuditExportState extends State<AuditExport> {
                       decoration: BoxDecoration(
                         color: e.key.isEven
                             ? AppColors.surfaceContainerLowest
-                            : AppColors.pageBg.withValues(alpha: 0.4),
+                            : AppColors.pageBg.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(children: [
@@ -457,7 +457,7 @@ class _DropField extends StatelessWidget {
                 color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          initialValue: value,
+          value: value,
           onChanged: onChanged,
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(

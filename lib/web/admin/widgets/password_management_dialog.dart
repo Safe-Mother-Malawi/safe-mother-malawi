@@ -132,7 +132,7 @@ class _PasswordManagementDialogState extends State<PasswordManagementDialog> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.red.withValues(alpha: 0.1),
+                      color: AppColors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(Icons.security, color: AppColors.red, size: 24),
@@ -169,9 +169,9 @@ class _PasswordManagementDialogState extends State<PasswordManagementDialog> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.red.withValues(alpha: 0.05),
+                  color: AppColors.red.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.red.withValues(alpha: 0.2)),
+                  border: Border.all(color: AppColors.red.withOpacity(0.2)),
                 ),
                 child: const Row(
                   children: [
@@ -276,7 +276,7 @@ class _PasswordManagementDialogState extends State<PasswordManagementDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.red.withValues(alpha: 0.1),
+                    color: AppColors.red.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
@@ -333,7 +333,7 @@ class _PasswordManagementDialogState extends State<PasswordManagementDialog> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.navy.withValues(alpha: 0.05),
+                    color: AppColors.navy.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Column(

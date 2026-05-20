@@ -70,7 +70,7 @@ class _ErrorCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.criticalBg),
-          boxShadow: [BoxShadow(color: AppColors.criticalText.withValues(alpha: 0.08), blurRadius: 24)],
+          boxShadow: [BoxShadow(color: AppColors.criticalText.withOpacity(0.08), blurRadius: 24)],
         ),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Container(

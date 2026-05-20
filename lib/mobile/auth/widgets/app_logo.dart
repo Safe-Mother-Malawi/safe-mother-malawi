@@ -52,7 +52,7 @@ class _TextLogo extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: darkBackground
-                ? Colors.white.withValues(alpha: 0.15)
+                ? Colors.white.withOpacity(0.15)
                 : const Color(0xFFFCE4EC),
             shape: BoxShape.circle,
           ),

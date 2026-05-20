@@ -50,7 +50,7 @@ class _PinkBottomNav extends StatelessWidget {
         color: Colors.white,
         border: const Border(top: BorderSide(color: AppColors.border, width: 1)),
         boxShadow: [
-          BoxShadow(color: AppColors.navbarBg.withValues(alpha: 0.08), blurRadius: 12, offset: const Offset(0, -3)),
+          BoxShadow(color: AppColors.navbarBg.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, -3)),
         ],
       ),
       child: SafeArea(

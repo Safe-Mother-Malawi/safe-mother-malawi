@@ -247,7 +247,7 @@ Widget _dropdown(String label, String? value, List<String> items,
     ),
     const SizedBox(height: 6),
     DropdownButtonFormField<String>(
-      initialValue: value,
+      value: value,
       decoration: InputDecoration(
         filled: true,
         fillColor: AppColors.bg,
@@ -479,7 +479,7 @@ class _PrenatalFormState extends State<_PrenatalForm> {
                 decoration: BoxDecoration(
                   color: AppColors.navyL,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.navy.withValues(alpha: 0.3)),
+                  border: Border.all(color: AppColors.navy.withOpacity(0.3)),
                 ),
                 child: Row(children: [
                   const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.navy),
@@ -628,7 +628,7 @@ Widget _lockedDistrictField(String district) {
       decoration: BoxDecoration(
         color: AppColors.infoBg,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.3)),
       ),
       child: Row(children: [
         const Icon(Icons.location_on_rounded, size: 15, color: AppColors.primary),
@@ -657,7 +657,7 @@ Widget _lockedFacilityField(String facilityName) {
       decoration: BoxDecoration(
         color: const Color(0xFFE0F2F1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF00695C).withValues(alpha: 0.3)),
+        border: Border.all(color: const Color(0xFF00695C).withOpacity(0.3)),
       ),
       child: Row(children: [
         const Icon(Icons.local_hospital_outlined, size: 15, color: Color(0xFF00695C)),

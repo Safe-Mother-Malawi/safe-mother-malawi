@@ -612,7 +612,7 @@ class _ReportDrop extends StatelessWidget {
         Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
-          initialValue: value, onChanged: onChanged,
+          value: value, onChanged: onChanged,
           style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             filled: true, fillColor: AppColors.surfaceContainerHighest,

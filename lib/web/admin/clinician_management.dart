@@ -356,7 +356,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                               final isActive = u['isActive'] == true;
                               final district = (u['district'] ?? '—').toString();
                               return Container(
-                                color: index.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
+                                color: index.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                                 child: Row(children: [
                                   Expanded(flex: 1, child: Text('${index + 1}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
@@ -825,7 +825,7 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 1.5),
+        border: Border.all(color: AppColors.accent.withOpacity(0.4), width: 1.5),
         boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1112,7 +1112,7 @@ class _ReadOnly extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.infoBg,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+            border: Border.all(color: AppColors.primary.withOpacity(0.2)),
           ),
           child: Row(children: [
             const Icon(Icons.lock_outline_rounded, size: 13, color: AppColors.primary),

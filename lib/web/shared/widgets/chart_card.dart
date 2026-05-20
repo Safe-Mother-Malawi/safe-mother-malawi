@@ -28,7 +28,7 @@ class ChartCard extends StatelessWidget {
         border: Border.all(color: const Color(0xFFEEF2FF), width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.06),
+            color: AppColors.primary.withOpacity(0.06),
             blurRadius: 32,
             offset: const Offset(0, 8),
           ),

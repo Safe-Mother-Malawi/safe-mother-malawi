@@ -231,7 +231,7 @@ class _PrenatalHealthCheckScreenState extends State<PrenatalHealthCheckScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: _getSeverityColor(currentQuestion['severityTag']).withValues(alpha: 0.1),
+                          color: _getSeverityColor(currentQuestion['severityTag']).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: _getSeverityColor(currentQuestion['severityTag']),

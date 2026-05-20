@@ -227,7 +227,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20)),
               child: Text('Clinician Portal',
                   style: GoogleFonts.inter(
@@ -410,7 +410,7 @@ class _NotificationListState extends State<_NotificationList> {
             : n.type == NotifType.appointment ? Icons.calendar_today_rounded : Icons.info_outline_rounded;
         return ListTile(
           leading: CircleAvatar(
-            backgroundColor: color.withValues(alpha: 0.1),
+            backgroundColor: color.withOpacity(0.1),
             child: Icon(icon, color: color, size: 18),
           ),
           title: Text(n.title,

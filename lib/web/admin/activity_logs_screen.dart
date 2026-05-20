@@ -249,7 +249,7 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
                               final status = (log['status'] ?? 'Success').toString();
                               final time = (log['createdAt'] ?? log['timestamp'] ?? '—').toString();
                               return Container(
-                                color: i.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
+                                color: i.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                                 child: Row(
                                   children: [
@@ -404,13 +404,13 @@ class _TaskAnalyticsTabState extends State<_TaskAnalyticsTab> {
                           spots: _buildTrendSpots(_data['completionTrend']),
                           isCurved: true, color: AppColors.successText, barWidth: 2.5,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
+                          belowBarData: BarAreaData(show: true, color: AppColors.successText.withOpacity(0.08)),
                         ),
                         LineChartBarData(
                           spots: _buildTrendSpots(_data['missedTrend']),
                           isCurved: true, color: AppColors.criticalText, barWidth: 2,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.criticalText.withValues(alpha: 0.06)),
+                          belowBarData: BarAreaData(show: true, color: AppColors.criticalText.withOpacity(0.06)),
                         ),
                       ],
                     )),

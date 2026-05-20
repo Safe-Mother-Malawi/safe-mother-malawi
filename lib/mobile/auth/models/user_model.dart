@@ -11,10 +11,16 @@ class UserModel {
   final String age;
   final String nationality;
   final String district;
+  final String village;
   final String facilityName;
   final String pregnancyMonths;
   final String pregnancyWeeks;       // extra weeks (0–4) on top of months
   final String expectedDeliveryDate;
+  final String gravida;
+  final String parity;
+  final List<String> existingConditions;
+  final String emergencyContact;
+
   // Extended neonatal fields
   final String babyGender;       // 'Male' | 'Female'
   final String babyBirthWeight;  // in kg e.g. '3.2'
@@ -34,10 +40,15 @@ class UserModel {
     this.age = '',
     this.nationality = '',
     this.district = '',
+    this.village = '',
     this.facilityName = '',
     this.pregnancyMonths = '',
     this.pregnancyWeeks = '',
     this.expectedDeliveryDate = '',
+    this.gravida = '',
+    this.parity = '',
+    this.existingConditions = const [],
+    this.emergencyContact = '',
     this.babyGender = '',
     this.babyBirthWeight = '',
     this.securityQuestion = '',

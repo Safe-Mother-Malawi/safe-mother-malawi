@@ -16,10 +16,12 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
   String? _error;
 
   int _prenatalCount  = 0;
-  int _neonatalCount  = 0;
-  int _alertCount     = 0;
+  int _highRiskCount  = 0;
+  int _missedVisits   = 0;
+  int _dueDeliveries  = 0;
   String _userName    = '';
 
+  List<Map<String, dynamic>> _alerts = [];
   List<Map<String, dynamic>> _recentPrenatal = [];
   List<Map<String, dynamic>> _todayAppts     = [];
 
@@ -34,30 +36,50 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
     try {
       final results = await Future.wait([
         ApiService.instance.get('/patients/prenatal').catchError((_) => <dynamic>[]),
-        ApiService.instance.get('/patients/neonatal').catchError((_) => <dynamic>[]),
         ApiService.instance.get('/alerts/active').catchError((_) => <dynamic>[]),
         ApiService.instance.get('/appointments?upcoming=true').catchError((_) => <dynamic>[]),
+        ApiService.instance.get('/appointments').catchError((_) => <dynamic>[]), // All appts to check missed
       ]);
 
-      final prenatal = (results[0] is List ? results[0] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final neonatal = (results[1] is List ? results[1] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final alerts   = (results[2] is List ? results[2] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final appts    = (results[3] is List ? results[3] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final prenatal = (results[0] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final alerts   = (results[1] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final appts    = (results[2] as List?)?.cast<Map<String, dynamic>>() ?? [];
+      final allAppts = (results[3] as List?)?.cast<Map<String, dynamic>>() ?? [];
 
       final today = DateTime.now().toIso8601String().substring(0, 10);
-      final todayAppts = appts
-          .where((a) => (a['date'] as String?)?.startsWith(today) == true)
-          .toList();
+      final todayAppts = appts.where((a) => (a['date'] as String?)?.startsWith(today) == true).toList();
+
+      int highRisk = 0;
+      int dueDeliv = 0;
+      for (final p in prenatal) {
+        if (p['pregnancyMonths'] != null && int.tryParse(p['pregnancyMonths'].toString()) == 9) {
+          dueDeliv++;
+        }
+      }
+      
+      // Calculate missed visits (appointments in the past that are not completed)
+      int missed = allAppts.where((a) {
+        if (a['status'] == 'completed' || a['status'] == 'cancelled') return false;
+        final dateStr = a['date'] as String?;
+        if (dateStr == null) return false;
+        final date = DateTime.tryParse(dateStr);
+        if (date == null) return false;
+        return date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+      }).length;
+
+      // Filter alerts to match clinician priorities
+      final highPriorityAlerts = alerts.where((a) {
+        final title = (a['title'] as String?)?.toLowerCase() ?? '';
+        return title.contains('hypertension') || title.contains('danger') || title.contains('risk') || title.contains('missed');
+      }).toList();
 
       if (!mounted) return;
       setState(() {
         _prenatalCount  = prenatal.length;
-        _neonatalCount  = neonatal.length;
-        _alertCount     = alerts.length;
+        _highRiskCount  = highPriorityAlerts.length; // Approximation for demo
+        _missedVisits   = missed;
+        _dueDeliveries  = dueDeliv;
+        _alerts         = alerts;
         _recentPrenatal = prenatal.take(5).toList();
         _todayAppts     = todayAppts.take(5).toList();
         _loading        = false;
@@ -127,20 +149,26 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
         ),
         const SizedBox(height: 20),
 
-        // Metric cards
+        // Patient Overview Metric cards
         Row(children: [
-          Expanded(child: _metricCard(Icons.people_outline, '${_prenatalCount + _neonatalCount}', 'Active Patients', 'Total', AppColors.navy, AppColors.navyL)),
+          Expanded(child: _metricCard(Icons.pregnant_woman, '$_prenatalCount', 'Active Pregnancies', 'Total enrolled', AppColors.navy, AppColors.navyL)),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.pregnant_woman, '$_prenatalCount', 'Pregnant', 'ANC active', AppColors.navy, AppColors.navyL)),
+          Expanded(child: _metricCard(Icons.warning_amber_rounded, '$_highRiskCount', 'High-Risk', 'Requires attention', AppColors.orange, AppColors.orangeL)),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.child_friendly_outlined, '$_neonatalCount', 'Neonatal', 'PNC active', AppColors.navy, AppColors.navyL)),
+          Expanded(child: _metricCard(Icons.event_busy, '$_missedVisits', 'Missed Visits', 'Overdue ANC', AppColors.red, const Color(0xFFFFEBEE))),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.notifications_active_outlined, '$_alertCount', 'Alerts', 'Active alerts', AppColors.orange, AppColors.orangeL)),
+          Expanded(child: _metricCard(Icons.child_care, '$_dueDeliveries', 'Due Deliveries', 'Near-term', AppColors.green, const Color(0xFFE8F5E9))),
         ]),
         const SizedBox(height: 20),
 
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 3, child: _buildRecentPatients()),
+          Expanded(flex: 3, child: Column(
+            children: [
+              _buildRecentPatients(),
+              const SizedBox(height: 20),
+              _buildAlertsPanel(),
+            ],
+          )),
           const SizedBox(width: 16),
           Expanded(flex: 2, child: _buildTodayAppointments()),
         ]),
@@ -154,8 +182,11 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.g200)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Icon(icon, color: color, size: 20),
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
+            child: Icon(icon, color: color, size: 20),
+          ),
         ]),
         const SizedBox(height: 12),
         Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color, height: 1)),
@@ -206,6 +237,59 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
                   decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(12)),
                   child: const Text('Prenatal', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.navy)),
                 ),
+              ]),
+            );
+          }),
+      ]),
+    );
+  }
+
+  Widget _buildAlertsPanel() {
+    return Container(
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.orange.withOpacity(0.5))),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: AppColors.orangeL, borderRadius: const BorderRadius.vertical(top: Radius.circular(11))),
+          child: const Row(children: [
+            Icon(Icons.warning_amber_rounded, color: AppColors.orange, size: 18),
+            SizedBox(width: 8),
+            Text('Action Required Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.g800)),
+          ]),
+        ),
+        if (_alerts.isEmpty)
+          const Padding(
+            padding: EdgeInsets.all(24),
+            child: Center(child: Text('No active alerts.', style: TextStyle(color: AppColors.g400))),
+          )
+        else
+          ..._alerts.map((a) {
+            final title = a['title'] as String? ?? 'Alert';
+            final desc  = a['description'] as String? ?? '';
+            final level = a['level'] as String? ?? 'info';
+            
+            Color iconColor = AppColors.orange;
+            IconData icon = Icons.info_outline;
+            
+            if (level == 'critical' || title.toLowerCase().contains('danger') || title.toLowerCase().contains('severe')) {
+              iconColor = AppColors.red;
+              icon = Icons.dangerous_outlined;
+            } else if (title.toLowerCase().contains('missed')) {
+              iconColor = AppColors.red;
+              icon = Icons.event_busy;
+            }
+
+            return Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.g200, width: 0.5))),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Icon(icon, color: iconColor, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: iconColor)),
+                  const SizedBox(height: 4),
+                  Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.g600)),
+                ])),
               ]),
             );
           }),

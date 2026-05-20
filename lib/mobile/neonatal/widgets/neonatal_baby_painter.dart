@@ -60,7 +60,7 @@ class _BabyPainter extends CustomPainter {
     );
 
     // Cheeks
-    final cheekPaint = Paint()..color = const Color(0xFFFFAB91).withValues(alpha: 0.55);
+    final cheekPaint = Paint()..color = const Color(0xFFFFAB91).withOpacity(0.55);
     canvas.drawCircle(Offset(cx - size.width * 0.14, size.height * 0.37), size.width * 0.07, cheekPaint);
     canvas.drawCircle(Offset(cx + size.width * 0.14, size.height * 0.37), size.width * 0.07, cheekPaint);
 
@@ -99,7 +99,7 @@ class _BabyPainter extends CustomPainter {
     );
 
     // Nose dot
-    final nosePaint = Paint()..color = const Color(0xFFBF360C).withValues(alpha: 0.4);
+    final nosePaint = Paint()..color = const Color(0xFFBF360C).withOpacity(0.4);
     canvas.drawCircle(Offset(cx, size.height * 0.36), 2.5, nosePaint);
 
     // Hair wisps

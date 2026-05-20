@@ -328,7 +328,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
                         LineChartBarData(
                           spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
                           dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
+                          belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
                         ),
                         if (_ancTrends.isNotEmpty)
                           LineChartBarData(

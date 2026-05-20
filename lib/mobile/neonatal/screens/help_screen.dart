@@ -241,7 +241,7 @@ class _HelpScreenState extends State<HelpScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
             ),
             child: Column(children: [
               _LinkTile(
@@ -277,7 +277,7 @@ class _HelpScreenState extends State<HelpScreen> {
             decoration: BoxDecoration(
               color: AppColors.statusRedBg,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.statusRed.withValues(alpha: 0.3)),
+              border: Border.all(color: AppColors.statusRed.withOpacity(0.3)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -350,7 +350,7 @@ class _LinkTile extends StatelessWidget {
       child: Row(children: [
         Container(
           width: 38, height: 38,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
           child: Icon(icon, color: color, size: 20),
         ),
         const SizedBox(width: 14),

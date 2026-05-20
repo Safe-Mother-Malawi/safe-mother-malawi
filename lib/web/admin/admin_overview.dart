@@ -11,6 +11,9 @@ import 'reports_screen_export.dart';
 import 'audit_export_export.dart';
 import 'question_insights.dart';
 import 'insights_screen.dart';
+import 'facilities_management.dart';
+import 'sms_management.dart';
+import 'system_logs.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
@@ -49,6 +52,9 @@ class _AdminOverviewState extends State<AdminOverview> {
       case '/question-insights': return const QuestionInsights();
       case '/insights':          return const InsightsScreen();
       case '/reports':           return const ReportsScreen();
+      case '/facilities':        return const FacilitiesManagementScreen();
+      case '/sms':               return const SMSManagementScreen();
+      case '/logs':              return const SystemLogs();
       default:                   return const _OverviewBody();
     }
   }
@@ -61,6 +67,9 @@ class _AdminOverviewState extends State<AdminOverview> {
       '/question-insights': 'Question Insights',
       '/insights':          'Insights',
       '/reports':           'Reports',
+      '/facilities':        'Health Facilities',
+      '/sms':               'SMS Management',
+      '/logs':              'Audit Logs',
     };
     return titles[_currentRoute] ?? 'Admin Dashboard';
   }
@@ -348,7 +357,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                               spots: _registrationSpots,
                               isCurved: true, color: AppColors.primary, barWidth: 3,
                               dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withValues(alpha: 0.08)),
+                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
                             )],
                           )),
                   ),
@@ -386,7 +395,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                                 spots: _buildANCAttendanceSpots(),
                                 isCurved: true, color: AppColors.successText, barWidth: 3,
                                 dotData: const FlDotData(show: false),
-                                belowBarData: BarAreaData(show: true, color: AppColors.successText.withValues(alpha: 0.08)),
+                                belowBarData: BarAreaData(show: true, color: AppColors.successText.withOpacity(0.08)),
                               ),
                               LineChartBarData(
                                 spots: _buildANCMissedSpots(),

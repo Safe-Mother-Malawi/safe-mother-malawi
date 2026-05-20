@@ -140,7 +140,7 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text('Malawi EPI Schedule',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.75), fontSize: 13)),
+                        style: TextStyle(color: Colors.white.withOpacity(0.75), fontSize: 13)),
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -167,7 +167,7 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
                         Container(
                           width: 52, height: 52,
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.2),
+                            color: Colors.white.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
                           child: Center(
@@ -319,9 +319,9 @@ class _VaccineTile extends StatelessWidget {
           color: isGiven ? const Color(0xFFF1FBF2) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isGiven ? _kGreen.withValues(alpha: 0.35) : const Color(0xFFE0E0E0),
+            color: isGiven ? _kGreen.withOpacity(0.35) : const Color(0xFFE0E0E0),
           ),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6, offset: const Offset(0, 2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
         ),
         child: Row(
           children: [
@@ -337,7 +337,7 @@ class _VaccineTile extends StatelessWidget {
                   width: 2,
                 ),
                 boxShadow: isGiven
-                    ? [BoxShadow(color: _kGreen.withValues(alpha: 0.3), blurRadius: 6, spreadRadius: 1)]
+                    ? [BoxShadow(color: _kGreen.withOpacity(0.3), blurRadius: 6, spreadRadius: 1)]
                     : null,
               ),
               child: isGiven

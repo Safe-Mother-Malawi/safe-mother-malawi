@@ -204,7 +204,7 @@ class DailyFeedDetailScreen extends StatelessWidget {
                             style: TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
-                                color: Colors.white.withValues(alpha: 0.7),
+                                color: Colors.white.withOpacity(0.7),
                                 letterSpacing: 1.0)),
                         const SizedBox(height: 6),
                         Text(article.title,
@@ -234,7 +234,7 @@ class DailyFeedDetailScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
                     ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +257,7 @@ class DailyFeedDetailScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: _kLightBg,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _kPrimary.withValues(alpha: 0.3)),
+                      border: Border.all(color: _kPrimary.withOpacity(0.3)),
                     ),
                     child: Text(
                       'Day ${data.ageInDays} · ${data.stageLabel}',
@@ -296,7 +296,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

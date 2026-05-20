@@ -233,7 +233,7 @@ class _EmailForgotPasswordDialogState extends State<EmailForgotPasswordDialog> {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withOpacity(0.06),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.close, size: 16, color: Colors.black54),

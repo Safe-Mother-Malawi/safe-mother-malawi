@@ -40,7 +40,7 @@ class PrenatalHealthCheckResultScreen extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [riskColor, riskColor.withValues(alpha: 0.8)],
+                  colors: [riskColor, riskColor.withOpacity(0.8)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -70,7 +70,7 @@ class PrenatalHealthCheckResultScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -96,7 +96,7 @@ class PrenatalHealthCheckResultScreen extends StatelessWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: riskColor.withValues(alpha: 0.1),
+                      color: riskColor.withOpacity(0.1),
                       border: Border.all(color: riskColor, width: 1),
                       borderRadius: BorderRadius.circular(12),
                     ),

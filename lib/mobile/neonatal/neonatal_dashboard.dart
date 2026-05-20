@@ -90,7 +90,7 @@ class _NeoBottomNav extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         border: const Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, -2))],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, -2))],
       ),
       child: SafeArea(
         top: false,
@@ -205,9 +205,9 @@ class _NeoDrawer extends StatelessWidget {
                 Container(
                   width: 90, height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: Colors.white.withOpacity(0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                   ),
                   child: const AppLogo(size: 90, darkBackground: true),
                 ),
@@ -215,11 +215,11 @@ class _NeoDrawer extends StatelessWidget {
                 Text(babyName,
                     style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                 Text('Mother: $motherName',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
                 if (data != null) ...[
                   const SizedBox(height: 4),
                   Text('Day ${data!.ageInDays} · ${data!.stageLabel}',
-                      style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 12)),
+                      style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 12)),
                 ],
               ],
             ),

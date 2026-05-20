@@ -9,6 +9,7 @@ import 'pregnancy_detail_screen.dart';
 import 'notifications_screen.dart';
 import 'nutrition_detail_screen.dart';
 import 'exercise_detail_screen.dart';
+import 'anc_visits_screen.dart';
 
 class PrenatalHomeScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -305,6 +306,8 @@ class _BodyState extends State<_Body> {
                 
                 _BabyThisWeekCard(data: widget.data),
                 const SizedBox(height: 16),
+                _ANCScheduleCard(),
+                const SizedBox(height: 16),
                 _DueDateCard(data: widget.data, onEdit: widget.onEditDueDate),
                 const SizedBox(height: 20),
                 _ThisWeekForYou(data: widget.data),
@@ -331,7 +334,7 @@ class _ProgressCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))],
+        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))],
       ),
       child: Row(
         children: [
@@ -412,7 +415,7 @@ class _BabyThisWeekCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF3949AB).withValues(alpha: 0.15),
+                color: const Color(0xFF3949AB).withOpacity(0.15),
                 blurRadius: 20,
                 offset: const Offset(0, 6),
               ),
@@ -440,7 +443,7 @@ class _BabyThisWeekCard extends StatelessWidget {
                       width: double.infinity,
                       height: 230,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => Center(
+                      errorBuilder: (_, __, ___) => Center(
                         child: BabyFallbackPainter(week: data.currentWeek, size: 190),
                       ),
                     ),
@@ -493,7 +496,7 @@ class _BabyThisWeekCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF1A237E).withValues(alpha: 0.3),
+                              color: const Color(0xFF1A237E).withOpacity(0.3),
                               blurRadius: 10,
                               offset: const Offset(0, 4),
                             ),
@@ -547,6 +550,53 @@ class _StatBox extends StatelessWidget {
     );
   }
 }
+// ─── ANC Schedule Card ────────────────────────────────────────────────────────
+class _ANCScheduleCard extends StatelessWidget {
+  const _ANCScheduleCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => const ANCVisitsScreen()));
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFE3F2FD),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF1565C0).withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.medical_services_outlined, color: Color(0xFF1565C0), size: 22),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('WHO ANC Schedule', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF1565C0))),
+                  SizedBox(height: 2),
+                  Text('Track your 8 recommended visits',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF5C6BC0))),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios, color: Color(0xFF1565C0), size: 16),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Due Date Card ────────────────────────────────────────────────────────────
 
 class _DueDateCard extends StatelessWidget {
@@ -568,7 +618,7 @@ class _DueDateCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFF1A237E).withValues(alpha: 0.15),
+              color: const Color(0xFF1A237E).withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(Icons.calendar_month, color: Color(0xFF1A237E), size: 22),
@@ -685,7 +735,7 @@ class _WeeklyTipCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF3949AB).withValues(alpha: 0.08),
+              color: const Color(0xFF3949AB).withOpacity(0.08),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -789,7 +839,7 @@ class _TodayAppointmentsCard extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFE3E8FF), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1A237E).withValues(alpha: 0.08),
+                    color: const Color(0xFF1A237E).withOpacity(0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

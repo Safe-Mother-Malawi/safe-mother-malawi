@@ -250,7 +250,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
                   child: Stack(children: [
                     CircleAvatar(
                       radius: 36,
-                      backgroundColor: Colors.white.withValues(alpha: 0.15),
+                      backgroundColor: Colors.white.withOpacity(0.15),
                       backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
                           ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
                           : null,
@@ -359,7 +359,7 @@ class _MyProfilePageState extends State<MyProfilePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: const Border(top: BorderSide(color: AppColors.g200)),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, -2))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, -2))],
         ),
         child: Row(children: [
           if (_editing) ...[

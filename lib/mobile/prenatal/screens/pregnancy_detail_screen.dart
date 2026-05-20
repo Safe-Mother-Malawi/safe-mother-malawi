@@ -34,7 +34,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF3949AB).withValues(alpha: 0.15),
+                    color: const Color(0xFF3949AB).withOpacity(0.15),
                     blurRadius: 20,
                     offset: const Offset(0, 6),
                   ),
@@ -59,7 +59,7 @@ class PregnancyDetailScreen extends StatelessWidget {
                     width: double.infinity,
                     height: 280,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Center(
+                    errorBuilder: (_, __, ___) => Center(
                       child: BabyFallbackPainter(week: data.currentWeek, size: 220),
                     ),
                   ),
@@ -187,9 +187,9 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w600, fontSize: 13)),
     );
@@ -209,7 +209,7 @@ class _DetailStat extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [BoxShadow(color: const Color(0xFF3949AB).withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
         children: [
@@ -242,7 +242,7 @@ class _InfoSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +250,7 @@ class _InfoSection extends StatelessWidget {
           Container(
             width: 40,
             height: 40,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 22),
           ),
           const SizedBox(width: 12),

@@ -95,7 +95,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                       CircleAvatar(
                         radius: 44,
                         backgroundColor:
-                            Colors.white.withValues(alpha: 0.3),
+                            Colors.white.withOpacity(0.3),
                         child: const Icon(Icons.person,
                             size: 48, color: Colors.white),
                       ),
@@ -129,7 +129,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 14, vertical: 5),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text('👶 Neonatal',
@@ -256,7 +256,7 @@ class _InfoCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
+                color: Colors.black.withOpacity(0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2))
           ],

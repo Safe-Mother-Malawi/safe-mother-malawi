@@ -26,7 +26,7 @@ class BabyIllustration extends StatelessWidget {
         width: size,
         height: size,
         fit: cover ? BoxFit.cover : BoxFit.contain,
-        errorBuilder: (_, _, _) => CustomPaint(
+        errorBuilder: (_, __, ___) => CustomPaint(
           size: Size(size, size),
           painter: _BabyPainter(week: week),
         ),
@@ -66,7 +66,7 @@ class _BabyPainter extends CustomPainter {
     final bodyPaint = Paint()..color = const Color(0xFFFFB6C1);
     final skinPaint = Paint()..color = const Color(0xFFFFCDD2);
     final outlinePaint = Paint()
-      ..color = const Color(0xFFE91E8C).withValues(alpha: 0.4)
+      ..color = const Color(0xFFE91E8C).withOpacity(0.4)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     final eyePaint = Paint()..color = const Color(0xFF880E4F);
@@ -111,7 +111,7 @@ class _BabyPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx - r * 0.28, cy - r * 0.7), r * 0.1, eye);
     canvas.drawCircle(Offset(cx + r * 0.28, cy - r * 0.7), r * 0.1, eye);
     final smilePaint = Paint()
-      ..color = const Color(0xFFE91E8C).withValues(alpha: 0.6)
+      ..color = const Color(0xFFE91E8C).withOpacity(0.6)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
     canvas.drawArc(
@@ -133,7 +133,7 @@ class _BabyPainter extends CustomPainter {
     canvas.drawCircle(Offset(cx - r * 0.3, cy - r * 0.65), r * 0.11, eye);
     canvas.drawCircle(Offset(cx + r * 0.3, cy - r * 0.65), r * 0.11, eye);
     final smilePaint = Paint()
-      ..color = const Color(0xFFE91E8C).withValues(alpha: 0.7)
+      ..color = const Color(0xFFE91E8C).withOpacity(0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawArc(
@@ -141,9 +141,9 @@ class _BabyPainter extends CustomPainter {
       0, math.pi, false, smilePaint,
     );
     canvas.drawCircle(Offset(cx - r * 0.5, cy - r * 0.5),
-        r * 0.15, Paint()..color = const Color(0xFFFF80AB).withValues(alpha: 0.5));
+        r * 0.15, Paint()..color = const Color(0xFFFF80AB).withOpacity(0.5));
     canvas.drawCircle(Offset(cx + r * 0.5, cy - r * 0.5),
-        r * 0.15, Paint()..color = const Color(0xFFFF80AB).withValues(alpha: 0.5));
+        r * 0.15, Paint()..color = const Color(0xFFFF80AB).withOpacity(0.5));
   }
 
   void _drawArm(Canvas canvas, double x, double y, double angle, double r,

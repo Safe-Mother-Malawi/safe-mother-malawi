@@ -117,10 +117,10 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A237E).withValues(alpha: 0.12),
+                  color: const Color(0xFF1A237E).withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                      color: const Color(0xFF1A237E).withValues(alpha: 0.3)),
+                      color: const Color(0xFF1A237E).withOpacity(0.3)),
                 ),
                 child: Text(
                   '${actual.babyName} is currently Day ${actual.ageInDays} · ${actual.stageLabel}',
@@ -140,7 +140,7 @@ class _BabyTrackerScreenState extends State<BabyTrackerScreen> {
                 borderRadius: BorderRadius.circular(14),
                 boxShadow: [
                   BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.04),
+                      color: Colors.black.withOpacity(0.04),
                       blurRadius: 8,
                       offset: const Offset(0, 2))
                 ],
@@ -244,7 +244,7 @@ class _InfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -253,7 +253,7 @@ class _InfoCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10)),
             child: Icon(icon, color: color, size: 22),
           ),

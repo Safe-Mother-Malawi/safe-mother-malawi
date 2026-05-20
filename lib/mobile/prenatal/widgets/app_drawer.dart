@@ -73,9 +73,9 @@ class AppDrawer extends StatelessWidget {
                 Container(
                   width: 90, height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
+                    color: Colors.white.withOpacity(0.15),
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.3), width: 2),
+                    border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
                   ),
                   child: const AppLogo(size: 90, darkBackground: true),
                 ),

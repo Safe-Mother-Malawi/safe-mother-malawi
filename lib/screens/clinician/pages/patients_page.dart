@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
+import 'anc_visit_page.dart';
 
 class ClinicianPatientsPage extends StatefulWidget {
   const ClinicianPatientsPage({super.key});
@@ -369,7 +370,34 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
 
           // ANC Schedule for prenatal patients
           if (type == 'prenatal') ...[
-            _section('ANC Schedule & Compliance', []),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _section('ANC Schedule & Compliance', []),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ANCVisitPage(
+                        prenatalPatientId: p['id']?.toString(),
+                        patientName: p['fullName']?.toString(),
+                      ),
+                    ));
+                    if (result == true) {
+                      _loadANCData(p['id'].toString());
+                      _loadHistory(p['id'].toString(), type);
+                    }
+                  },
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Record ANC Visit', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
             if (_ancLoading)
               const Center(child: CircularProgressIndicator())
@@ -544,8 +572,112 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
             }),
 
           const SizedBox(height: 16),
+
+          // ANC Timeline
+          if (type == 'prenatal') ...[
+            _section('Clinical Timeline', []),
+            const SizedBox(height: 8),
+            _buildANCTimeline(),
+          ],
         ]),
       ),
+    );
+  }
+
+  Widget _buildANCTimeline() {
+    // Generate a simple mock timeline from the risk history and appointments
+    // In production, this would be an endpoint returning a chronological feed
+    final items = <Map<String, dynamic>>[];
+    
+    // Add risk history items
+    for (var r in _riskHistory) {
+      items.add({
+        'type': 'risk',
+        'title': 'Risk Assessment: ${r['riskLevel']}',
+        'date': r['submittedAt'] ?? '',
+        'icon': Icons.warning_amber_rounded,
+        'color': AppColors.orange,
+      });
+    }
+
+    // Add ANC appointments (completed)
+    for (var a in _ancSchedule) {
+      if (a['status'] == 'completed') {
+        items.add({
+          'type': 'visit',
+          'title': 'Completed Visit ${a['visitNumber']}',
+          'date': a['date'] ?? '',
+          'icon': Icons.medical_services,
+          'color': AppColors.navy,
+        });
+        
+        // Mock labs and medications based on completion
+        items.add({
+          'type': 'lab',
+          'title': 'Lab: Hb & Urine test',
+          'date': a['date'] ?? '',
+          'icon': Icons.science_outlined,
+          'color': AppColors.primary,
+        });
+        items.add({
+          'type': 'meds',
+          'title': 'Medication: Iron & Folic Acid issued',
+          'date': a['date'] ?? '',
+          'icon': Icons.medication,
+          'color': AppColors.green,
+        });
+      }
+    }
+
+    if (items.isEmpty) {
+      return const Text('No timeline data available.', style: TextStyle(fontSize: 12, color: AppColors.g400));
+    }
+
+    items.sort((a, b) {
+      final da = DateTime.tryParse(a['date'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final db = DateTime.tryParse(b['date'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return db.compareTo(da); // Newest first
+    });
+
+    return Column(
+      children: items.map((item) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: (item['color'] as Color).withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(item['icon'] as IconData, size: 14, color: item['color'] as Color),
+                ),
+                Container(
+                  width: 2,
+                  height: 30,
+                  color: AppColors.g200,
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item['title'], style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.g800)),
+                    const SizedBox(height: 2),
+                    Text(
+                      (item['date'] as String).length >= 10 ? (item['date'] as String).substring(0, 10) : item['date'],
+                      style: const TextStyle(fontSize: 10, color: AppColors.g400),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }).toList(),
     );
   }
 

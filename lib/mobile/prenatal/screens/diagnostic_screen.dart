@@ -281,7 +281,7 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
-            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))],
           ),
           child: Text(q['questionText']?.toString() ?? '',
               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
@@ -352,7 +352,7 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
           decoration: BoxDecoration(
             color: ui['bg'] as Color,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: (ui['color'] as Color).withValues(alpha: 0.3)),
+            border: Border.all(color: (ui['color'] as Color).withOpacity(0.3)),
           ),
           child: Column(children: [
             Icon(ui['icon'] as IconData, color: ui['color'] as Color, size: 56),
@@ -445,7 +445,7 @@ class _AnswerBtn extends StatelessWidget {
             width: selected ? 2 : 1,
           ),
           boxShadow: selected
-              ? [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 8, offset: const Offset(0, 3))]
+              ? [BoxShadow(color: color.withOpacity(0.15), blurRadius: 8, offset: const Offset(0, 3))]
               : [],
         ),
         child: Column(children: [

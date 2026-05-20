@@ -190,7 +190,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             children: events.take(3).map((_) => Container(
                               width: 5, height: 5, margin: const EdgeInsets.symmetric(horizontal: 1),
                               decoration: BoxDecoration(
-                                color: isSelected ? Colors.white.withValues(alpha: 0.8) : AppColors.navy,
+                                color: isSelected ? Colors.white.withOpacity(0.8) : AppColors.navy,
                                 shape: BoxShape.circle,
                               ),
                             )).toList()),

@@ -159,7 +159,7 @@ class _SystemLogsState extends State<SystemLogs> {
                   final ts     = _timeStr(log['createdAt']?.toString());
 
                   return Container(
-                    color: e.key.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
+                    color: e.key.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Row(children: [
                       Expanded(flex: 1, child: Text('$idx', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),

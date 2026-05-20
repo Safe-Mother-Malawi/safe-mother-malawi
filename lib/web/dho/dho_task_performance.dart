@@ -120,7 +120,7 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                     child: LineChart(LineChartData(
                       gridData: FlGridData(
                         show: true, drawVerticalLine: false,
-                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withOpacity(0.06), strokeWidth: 1),
                       ),
                       borderData: FlBorderData(show: false),
                       lineTouchData: LineTouchData(
@@ -159,7 +159,7 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                               strokeWidth: 2.5, strokeColor: AppColors.successText)),
                           belowBarData: BarAreaData(show: true,
                             gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                              colors: [AppColors.successText.withValues(alpha: 0.18), AppColors.successText.withValues(alpha: 0.0)])),
+                              colors: [AppColors.successText.withOpacity(0.18), AppColors.successText.withOpacity(0.0)])),
                         ),
                       ],
                     )),

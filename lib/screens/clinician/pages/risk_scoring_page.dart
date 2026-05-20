@@ -345,7 +345,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(color: AppColors.g100, borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: color.withValues(alpha: 0.5))),
+                    border: Border.all(color: color.withOpacity(0.5))),
                 child: Row(children: [
                   Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 6),
                       decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
@@ -417,7 +417,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(color: rb, borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: rc.withValues(alpha: 0.2))),
+                      border: Border.all(color: rc.withOpacity(0.2))),
                   child: Row(children: [
                     Container(width: 7, height: 7, decoration: BoxDecoration(color: rc, shape: BoxShape.circle)),
                     const SizedBox(width: 8),

@@ -137,7 +137,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> with LiveDataMixi
                     child: LineChart(LineChartData(
                       gridData: FlGridData(
                         show: true, drawVerticalLine: false,
-                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withOpacity(0.06), strokeWidth: 1),
                       ),
                       borderData: FlBorderData(show: false),
                       lineTouchData: LineTouchData(
@@ -178,7 +178,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> with LiveDataMixi
                               strokeWidth: 2.5, strokeColor: AppColors.criticalText)),
                           belowBarData: BarAreaData(show: true,
                             gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter,
-                              colors: [AppColors.criticalText.withValues(alpha: 0.18), AppColors.criticalText.withValues(alpha: 0.0)])),
+                              colors: [AppColors.criticalText.withOpacity(0.18), AppColors.criticalText.withOpacity(0.0)])),
                         ),
                       ],
                     )),
@@ -195,7 +195,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> with LiveDataMixi
                     child: BarChart(BarChartData(
                       gridData: FlGridData(
                         show: true, drawVerticalLine: false,
-                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                        getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withOpacity(0.06), strokeWidth: 1),
                       ),
                       borderData: FlBorderData(show: false),
                       barTouchData: BarTouchData(

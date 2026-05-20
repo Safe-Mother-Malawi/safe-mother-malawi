@@ -349,7 +349,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           )),
           const SizedBox(height: 14),
           _Field(label: 'District *', child: DropdownButtonFormField<String>(
-            initialValue: _district.isEmpty ? null : _district,
+            value: _district.isEmpty ? null : _district,
             decoration: _dec('Select your district'),
             items: _districts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
             onChanged: (v) {
@@ -586,7 +586,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           _Field(
             label: 'Choose a question *',
             child: DropdownButtonFormField<String>(
-              initialValue: _secQuestion,
+              value: _secQuestion,
               decoration: InputDecoration(
                 filled: true,
                 fillColor: const Color(0xFFF5F5F5),
@@ -694,7 +694,7 @@ class _SectionHeader extends StatelessWidget {
     Container(
       width: 36, height: 36,
       decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+          color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
       child: Icon(icon, color: color, size: 20),
     ),
     const SizedBox(width: 10),

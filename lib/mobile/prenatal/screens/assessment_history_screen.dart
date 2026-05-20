@@ -162,7 +162,7 @@ class _PrenatalAssessmentHistoryScreenState extends State<PrenatalAssessmentHist
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF1A237E).withValues(alpha: 0.08),
+                                  color: const Color(0xFF1A237E).withOpacity(0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -176,7 +176,7 @@ class _PrenatalAssessmentHistoryScreenState extends State<PrenatalAssessmentHist
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: _getRiskColor(riskLevel).withValues(alpha: 0.1),
+                                      color: _getRiskColor(riskLevel).withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(

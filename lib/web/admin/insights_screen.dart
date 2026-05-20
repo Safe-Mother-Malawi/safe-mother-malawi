@@ -165,7 +165,7 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
                             child: BarChart(BarChartData(
                               gridData: FlGridData(
                                 show: true, drawVerticalLine: false,
-                                getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withValues(alpha: 0.06), strokeWidth: 1),
+                                getDrawingHorizontalLine: (_) => FlLine(color: AppColors.primary.withOpacity(0.06), strokeWidth: 1),
                               ),
                               borderData: FlBorderData(show: false),
                               barTouchData: BarTouchData(
@@ -202,17 +202,17 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
                                 BarChartGroupData(x: 0, barRods: [BarChartRodData(
                                   toY: low.toDouble(),
                                   gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                                    colors: [AppColors.successText, AppColors.successText.withValues(alpha: 0.7)]),
+                                    colors: [AppColors.successText, AppColors.successText.withOpacity(0.7)]),
                                   width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
                                 BarChartGroupData(x: 1, barRods: [BarChartRodData(
                                   toY: medium.toDouble(),
                                   gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                                    colors: [AppColors.warningText, AppColors.warningText.withValues(alpha: 0.7)]),
+                                    colors: [AppColors.warningText, AppColors.warningText.withOpacity(0.7)]),
                                   width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
                                 BarChartGroupData(x: 2, barRods: [BarChartRodData(
                                   toY: high.toDouble(),
                                   gradient: LinearGradient(begin: Alignment.bottomCenter, end: Alignment.topCenter,
-                                    colors: [AppColors.criticalText, AppColors.criticalText.withValues(alpha: 0.7)]),
+                                    colors: [AppColors.criticalText, AppColors.criticalText.withOpacity(0.7)]),
                                   width: 44, borderRadius: const BorderRadius.vertical(top: Radius.circular(8)))]),
                               ],
                             )),

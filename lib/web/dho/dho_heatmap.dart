@@ -135,7 +135,7 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                               point: LatLng(f['lat'] as double, f['lon'] as double),
                               radius: isCentral ? 22 : (f['type'] == 'District' ? 16 : 12),
                               color: color.withValues(alpha: 0.2 + val * 0.3),
-                              borderColor: color.withValues(alpha: 0.8),
+                              borderColor: color.withOpacity(0.8),
                               borderStrokeWidth: isCentral ? 2.5 : 1.5,
                             );
                           }).toList(),
@@ -156,7 +156,7 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                                     color: color,
                                     shape: BoxShape.circle,
                                     border: Border.all(color: Colors.white, width: 1.5),
-                                    boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 6)],
+                                    boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 6)],
                                   ),
                                   child: Icon(
                                     isCentral ? Icons.local_hospital_rounded : Icons.circle,

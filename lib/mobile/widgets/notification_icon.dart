@@ -71,8 +71,8 @@ class _NotificationIconState extends State<NotificationIcon> {
         height: 38,
         decoration: BoxDecoration(
           color: widget.iconColor == Colors.white 
-              ? Colors.white.withValues(alpha: 0.25)
-              : widget.iconColor.withValues(alpha: 0.15),
+              ? Colors.white.withOpacity(0.25)
+              : widget.iconColor.withOpacity(0.15),
           shape: BoxShape.circle,
         ),
         child: Stack(
@@ -95,7 +95,7 @@ class _NotificationIconState extends State<NotificationIcon> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: widget.iconColor == Colors.white 
-                          ? Colors.white.withValues(alpha: 0.3)
+                          ? Colors.white.withOpacity(0.3)
                           : Colors.white,
                       width: 1.5,
                     ),

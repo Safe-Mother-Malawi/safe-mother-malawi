@@ -536,4 +536,17 @@ class ApiService {
       throw ApiException(response.statusCode, 'Failed to submit contact form');
     }
   }
+
+  static Future<Map<String, dynamic>> getClinicianDashboard(String clinicianId) async {
+    try {
+      final res = await ApiService.instance.get('/dashboard/clinician/$clinicianId');
+      return (res as Map<String, dynamic>?) ?? {};
+    } catch (_) {
+      return {
+        'overview': {'activePatients': 0, 'newThisWeek': 0, 'criticalAlerts': 0, 'pendingTasks': 0},
+        'timeline': [],
+        'alerts': [],
+      };
+    }
+  }
 }

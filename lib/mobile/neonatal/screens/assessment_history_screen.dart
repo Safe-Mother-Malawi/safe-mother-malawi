@@ -163,7 +163,7 @@ class _NeonatalAssessmentHistoryScreenState extends State<NeonatalAssessmentHist
                               borderRadius: BorderRadius.circular(12),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primary.withValues(alpha: 0.08),
+                                  color: AppColors.primary.withOpacity(0.08),
                                   blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
@@ -177,7 +177,7 @@ class _NeonatalAssessmentHistoryScreenState extends State<NeonatalAssessmentHist
                                     width: 48,
                                     height: 48,
                                     decoration: BoxDecoration(
-                                      color: _getRiskColor(riskLevel).withValues(alpha: 0.1),
+                                      color: _getRiskColor(riskLevel).withOpacity(0.1),
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Icon(

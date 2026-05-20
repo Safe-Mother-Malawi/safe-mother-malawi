@@ -212,7 +212,7 @@ class _LoginDialogState extends State<LoginDialog> {
         child: Container(
           width: 30, height: 30,
           decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.06), shape: BoxShape.circle),
+              color: Colors.black.withOpacity(0.06), shape: BoxShape.circle),
           child: const Icon(Icons.close, size: 16, color: Colors.black54),
         ),
       ),

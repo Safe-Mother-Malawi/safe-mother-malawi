@@ -122,7 +122,7 @@ class _TopNavbarState extends State<TopNavbar> {
     return Container(
       height: 64,
       decoration: BoxDecoration(
-        color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
+        color: AppColors.surfaceContainerLowest.withOpacity(0.9),
         boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 12, offset: Offset(0, 2))],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -245,7 +245,7 @@ class _NotificationListState extends State<_NotificationList> {
           child: InkWell(
             onTap: () => NotificationStore.instance.markRead(n.id),
             child: Container(
-              color: n.read ? Colors.transparent : color.withValues(alpha: 0.04),
+              color: n.read ? Colors.transparent : color.withOpacity(0.04),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
