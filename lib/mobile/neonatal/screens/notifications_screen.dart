@@ -252,3 +252,4 @@ class _NeonatalNotificationsScreenState
     return const Color(0xFF2E7D32);
   }
 }
+

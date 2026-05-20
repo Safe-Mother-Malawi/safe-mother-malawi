@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 
@@ -94,9 +94,9 @@ class _SystemLogsState extends State<SystemLogs> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('System Logs', style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text('System Logs', style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 6),
-          Text('Full audit trail of all system events', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+          Text('Full audit trail of all system events', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Container(
@@ -112,10 +112,10 @@ class _SystemLogsState extends State<SystemLogs> {
                 child: TextField(
                   controller: _searchCtrl,
                   onChanged: (_) => setState(() => _page = 0),
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
                   decoration: InputDecoration(
                     hintText: 'Search logs...',
-                    hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+                    hintStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
                     prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                     filled: true, fillColor: AppColors.surfaceContainerLow,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -162,11 +162,11 @@ class _SystemLogsState extends State<SystemLogs> {
                     color: e.key.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     child: Row(children: [
-                      Expanded(flex: 1, child: Text('$idx', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
-                      Expanded(flex: 3, child: Text(ts, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
-                      Expanded(flex: 2, child: Text(action, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
-                      Expanded(flex: 5, child: Text(desc, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
-                      Expanded(flex: 3, child: Text(actorName, style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
+                      Expanded(flex: 1, child: Text('$idx', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
+                      Expanded(flex: 3, child: Text(ts, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText))),
+                      Expanded(flex: 2, child: Text(action, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
+                      Expanded(flex: 5, child: Text(desc, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText))),
+                      Expanded(flex: 3, child: Text(actorName, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
                     ]),
                   );
                 }),
@@ -176,13 +176,13 @@ class _SystemLogsState extends State<SystemLogs> {
           const SizedBox(height: 16),
 
           Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-            Text('${filtered.length} records', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+            Text('${filtered.length} records', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
             const SizedBox(width: 16),
             IconButton(
               onPressed: _page > 0 ? () => setState(() => _page--) : null,
               icon: const Icon(Icons.chevron_left_rounded), color: AppColors.primary,
             ),
-            Text('${_page + 1} / $totalPages', style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface)),
+            Text('${_page + 1} / $totalPages', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface)),
             IconButton(
               onPressed: _page < totalPages - 1 ? () => setState(() => _page++) : null,
               icon: const Icon(Icons.chevron_right_rounded), color: AppColors.primary,
@@ -195,7 +195,7 @@ class _SystemLogsState extends State<SystemLogs> {
 
   Widget _hdr(String label, int flex) => Expanded(
     flex: flex,
-    child: Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.5)),
+    child: Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.5)),
   );
 }
 
@@ -208,7 +208,7 @@ class _LogDrop extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(mainAxisSize: MainAxisSize.min, children: [
-      Text('$label: ', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+      Text('$label: ', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(8)),
@@ -216,7 +216,7 @@ class _LogDrop extends StatelessWidget {
           child: DropdownButton<String>(
             value: items.contains(value) ? value : items.first,
             onChanged: onChanged,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
             items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList(),
           ),
         ),
@@ -224,3 +224,4 @@ class _LogDrop extends StatelessWidget {
     ]);
   }
 }
+

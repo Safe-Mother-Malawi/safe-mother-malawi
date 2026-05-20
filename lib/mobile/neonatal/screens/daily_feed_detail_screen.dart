@@ -366,3 +366,4 @@ class _Section {
   final List<String> points;
   const _Section(this.title, this.icon, this.points);
 }
+

@@ -920,3 +920,4 @@ class _TodayAppointmentsCard extends StatelessWidget {
     );
   }
 }
+

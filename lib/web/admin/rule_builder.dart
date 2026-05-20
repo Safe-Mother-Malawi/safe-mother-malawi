@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 
 class RuleBuilder extends StatefulWidget {
@@ -37,13 +37,13 @@ class _RuleBuilderState extends State<RuleBuilder> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Rule Builder',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.headings)),
           const SizedBox(height: 6),
           Text('Create automated task assignment rules',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(
@@ -67,7 +67,7 @@ class _RuleBuilderState extends State<RuleBuilder> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('New Rule',
-                          style: GoogleFonts.publicSans(
+                          style: TextStyle(fontFamily: 'Public Sans', 
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: AppColors.headings)),
@@ -140,11 +140,11 @@ class _RuleBuilderState extends State<RuleBuilder> {
                               child: TextField(
                                 controller: _thenDetailCtrl,
                                 onChanged: (v) => _thenDetail = v,
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 13, color: AppColors.onSurface),
                                 decoration: InputDecoration(
                                   hintText: 'Describe action detail...',
-                                  hintStyle: GoogleFonts.inter(
+                                  hintStyle: TextStyle(fontFamily: 'Roboto', 
                                       fontSize: 13, color: AppColors.mutedText),
                                   filled: true,
                                   fillColor: AppColors.surfaceContainerLowest,
@@ -177,7 +177,7 @@ class _RuleBuilderState extends State<RuleBuilder> {
                             Expanded(
                               child: Text(
                                 'IF $_ifCondition $_ifOperator $_ifValue → THEN $_thenAction${_thenDetail.isNotEmpty ? ': $_thenDetail' : ''}',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 13,
                                     color: AppColors.bodyText,
                                     fontStyle: FontStyle.italic),
@@ -214,7 +214,7 @@ class _RuleBuilderState extends State<RuleBuilder> {
                                   color: Colors.white, size: 18),
                               const SizedBox(width: 8),
                               Text('Save Rule',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Roboto', 
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white)),
@@ -247,7 +247,7 @@ class _RuleBuilderState extends State<RuleBuilder> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Active Rules',
-                          style: GoogleFonts.publicSans(
+                          style: TextStyle(fontFamily: 'Public Sans', 
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                               color: AppColors.headings)),
@@ -289,7 +289,7 @@ class _BlockLabel extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(label,
-          style: GoogleFonts.publicSans(
+          style: TextStyle(fontFamily: 'Public Sans', 
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: Colors.white,
@@ -317,7 +317,7 @@ class _RuleDrop extends StatelessWidget {
         child: DropdownButton<String>(
           value: value,
           onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           items: items
               .map((i) => DropdownMenuItem(value: i, child: Text(i)))
               .toList(),
@@ -361,7 +361,7 @@ class _RuleCard extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               Text(isActive ? 'Active' : 'Inactive',
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Roboto', 
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: isActive
@@ -389,7 +389,7 @@ class _RuleCard extends StatelessWidget {
           const SizedBox(height: 8),
           RichText(
             text: TextSpan(
-              style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText),
               children: [
                 const TextSpan(
                     text: 'IF ',
@@ -411,3 +411,4 @@ class _RuleCard extends StatelessWidget {
     );
   }
 }
+

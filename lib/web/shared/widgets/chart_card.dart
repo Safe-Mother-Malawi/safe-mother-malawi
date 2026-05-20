@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../theme/app_colors.dart';
 
 class ChartCard extends StatelessWidget {
@@ -50,7 +50,7 @@ class ChartCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.publicSans(
+                    style: TextStyle(fontFamily: 'Public Sans', 
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.headings,
@@ -61,7 +61,7 @@ class ChartCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       subtitle!,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                         fontSize: 12,
                         color: AppColors.mutedText,
                       ),
@@ -98,7 +98,8 @@ class LegendItem extends StatelessWidget {
         decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3)),
       ),
       const SizedBox(width: 6),
-      Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+      Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
     ]);
   }
 }
+

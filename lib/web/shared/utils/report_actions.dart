@@ -36,3 +36,4 @@ Future<void> downloadReport(
     ));
   }
 }
+

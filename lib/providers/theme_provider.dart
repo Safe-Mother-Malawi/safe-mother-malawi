@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../theme/app_colors.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
@@ -40,3 +40,4 @@ class ThemeProvider extends ChangeNotifier {
     // Dark mode disabled
   }
 }
+

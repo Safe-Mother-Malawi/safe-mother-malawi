@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_colors.dart';
@@ -80,21 +80,21 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
           Row(
             children: [
               Text('Heatmaps',
-                  style: GoogleFonts.publicSans(
+                  style: TextStyle(fontFamily: 'Public Sans', 
                       fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(20)),
                 child: Text(_district.isNotEmpty ? _district : 'District',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
               ),
               const Spacer(),
             ],
           ),
           const SizedBox(height: 6),
           Text('Risk hotspots at actual health facility locations${_district.isNotEmpty ? ' — $_district District' : ''}',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(
@@ -184,10 +184,10 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Facility Rankings',
-                          style: GoogleFonts.publicSans(
+                          style: TextStyle(fontFamily: 'Public Sans', 
                               fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       Text('by risk level',
-                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                          style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                       const SizedBox(height: 14),
                       ...sorted.map((f) {
                         final val = f['risk'] as double;
@@ -202,11 +202,11 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                                 children: [
                                   Expanded(
                                     child: Text(f['name'] as String,
-                                        style: GoogleFonts.inter(fontSize: 11, color: AppColors.onSurface),
+                                        style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.onSurface),
                                         overflow: TextOverflow.ellipsis),
                                   ),
                                   Text('${(val * 100).toStringAsFixed(0)}%',
-                                      style: GoogleFonts.inter(
+                                      style: TextStyle(fontFamily: 'Roboto', 
                                           fontSize: 11, fontWeight: FontWeight.w600, color: color)),
                                 ],
                               ),
@@ -235,3 +235,4 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
     );
   }
 }
+

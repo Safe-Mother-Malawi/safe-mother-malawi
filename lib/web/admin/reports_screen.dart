@@ -2,7 +2,7 @@ import 'dart:convert';
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../shared/widgets/status_badge.dart';
 import '../../../services/api_service.dart';
@@ -99,7 +99,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text('Delete Report', style: GoogleFonts.publicSans(fontWeight: FontWeight.w600)),
+        title: Text('Delete Report', style: TextStyle(fontFamily: 'Public Sans', fontWeight: FontWeight.w600)),
         content: const Text('Are you sure you want to delete this report? This cannot be undone.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
@@ -221,9 +221,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Reports', style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text('Reports', style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 6),
-          Text('Generate and download system reports', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+          Text('Generate and download system reports', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -235,7 +235,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Generate New Report', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                Text('Generate New Report', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const SizedBox(height: 20),
                 Wrap(spacing: 16, runSpacing: 16, children: [
                   _ReportDrop(label: 'Report Type', value: _reportType,
@@ -269,7 +269,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         const Icon(Icons.summarize_rounded, color: Colors.white, size: 18),
                       const SizedBox(width: 10),
                       Text(_generating ? 'Generating...' : 'Generate Report',
-                          style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600,
+                          style: TextStyle(fontFamily: 'Roboto', fontSize: 14, fontWeight: FontWeight.w600,
                               color: _generating ? AppColors.mutedText : Colors.white)),
                     ]),
                   ),
@@ -298,7 +298,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
-                Text('Report History', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                Text('Report History', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const Spacer(),
               ]),
               const SizedBox(height: 16),
@@ -307,7 +307,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               else if (_error != null)
                 Text('Failed to load reports: $_error', style: const TextStyle(color: Colors.red))
               else if (_reports.isEmpty)
-                Text('No reports generated yet.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))
+                Text('No reports generated yet.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))
               else
                 ..._reports.map((r) => _ReportRow(
                       report: r,
@@ -363,8 +363,8 @@ class _ReportRow extends StatelessWidget {
         ),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
-          Text('$type · $date', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+          Text(title, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
+          Text('$type · $date', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
         ])),
         StatusBadge(label: format, type: BadgeType.info),
         const SizedBox(width: 8),
@@ -458,7 +458,7 @@ class _ReportViewDialogState extends State<_ReportViewDialog> {
                 const Icon(Icons.description_rounded, color: Colors.white, size: 20),
                 const SizedBox(width: 10),
                 Expanded(child: Text(title,
-                    style: GoogleFonts.publicSans(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
+                    style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white),
                     overflow: TextOverflow.ellipsis)),
                 IconButton(
                   onPressed: () => Navigator.pop(context),
@@ -491,7 +491,7 @@ class _ReportViewDialogState extends State<_ReportViewDialog> {
                       : SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                           child: data == null
-                              ? Text('No data available.', style: GoogleFonts.inter(color: AppColors.mutedText))
+                              ? Text('No data available.', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText))
                               : _DataView(data: data),
                         ),
             ),
@@ -512,8 +512,8 @@ class _MetaChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(color: AppColors.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
       child: RichText(text: TextSpan(children: [
-        TextSpan(text: '$label: ', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
-        TextSpan(text: value, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.onSurface)),
+        TextSpan(text: '$label: ', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
+        TextSpan(text: value, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.onSurface)),
       ])),
     );
   }
@@ -533,7 +533,7 @@ class _DataView extends StatelessWidget {
     }
     if (data is List) {
       final list = data as List;
-      if (list.isEmpty) return Text('Empty list.', style: GoogleFonts.inter(color: AppColors.mutedText));
+      if (list.isEmpty) return Text('Empty list.', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText));
       if (list.first is Map) {
         return _buildTable(list.cast<Map>());
       }
@@ -541,11 +541,11 @@ class _DataView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: list.map((item) => Padding(
           padding: const EdgeInsets.only(bottom: 4),
-          child: Text('• $item', style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface)),
+          child: Text('• $item', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface)),
         )).toList(),
       );
     }
-    return Text('$data', style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface));
+    return Text('$data', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface));
   }
 
   Widget _buildEntry(BuildContext context, String key, dynamic value) {
@@ -555,7 +555,7 @@ class _DataView extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
+          Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
           const SizedBox(height: 4),
           Container(
             padding: const EdgeInsets.all(12),
@@ -569,9 +569,9 @@ class _DataView extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         SizedBox(width: 160, child: Text(label,
-            style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
         Expanded(child: Text('$value',
-            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
       ]),
     );
   }
@@ -584,8 +584,8 @@ class _DataView extends StatelessWidget {
         headingRowHeight: 36,
         dataRowMinHeight: 32,
         dataRowMaxHeight: 40,
-        headingTextStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText),
-        dataTextStyle: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurface),
+        headingTextStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText),
+        dataTextStyle: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.onSurface),
         columns: headers.map((h) => DataColumn(label: Text(h.toString()))).toList(),
         rows: rows.map((r) => DataRow(
           cells: headers.map((h) => DataCell(Text('${r[h] ?? '—'}'))).toList(),
@@ -608,11 +608,11 @@ class _ReportDrop extends StatelessWidget {
     return SizedBox(
       width: 200,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label.toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
+        Text(label.toUpperCase(), style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: value, onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             filled: true, fillColor: AppColors.surfaceContainerHighest,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -641,10 +641,11 @@ class _StatCard extends StatelessWidget {
         Icon(icon, size: 20, color: AppColors.primary),
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+          Text(value, style: TextStyle(fontFamily: 'Public Sans', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
         ]),
       ]),
     );
   }
 }
+

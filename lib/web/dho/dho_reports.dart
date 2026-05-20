@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../shared/widgets/status_badge.dart';
 import '../shared/utils/report_actions.dart';
@@ -97,11 +97,11 @@ class _DhoReportsState extends State<DhoReports> {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // ── Page header ───────────────────────────────────────────────────
         Text('Reports',
-            style: GoogleFonts.publicSans(
+            style: TextStyle(fontFamily: 'Public Sans', 
                 fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
         const SizedBox(height: 4),
         Text('Generate and manage reports for your district',
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
         const SizedBox(height: 24),
 
         // ── Generate + stats row ──────────────────────────────────────────
@@ -117,7 +117,7 @@ class _DhoReportsState extends State<DhoReports> {
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Generate New Report',
-                    style: GoogleFonts.publicSans(
+                    style: TextStyle(fontFamily: 'Public Sans', 
                         fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const SizedBox(height: 6),
                 // District badge — locked to DHO's district
@@ -125,9 +125,9 @@ class _DhoReportsState extends State<DhoReports> {
                   const Icon(Icons.location_on_rounded, size: 14, color: AppColors.primary),
                   const SizedBox(width: 4),
                   Text('District: ',
-                      style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+                      style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
                   Text(_myDistrict,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                           fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
                   const SizedBox(width: 6),
                   Container(
@@ -137,7 +137,7 @@ class _DhoReportsState extends State<DhoReports> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text('Your district',
-                        style: GoogleFonts.inter(fontSize: 10, color: AppColors.infoText)),
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.infoText)),
                   ),
                 ]),
                 const SizedBox(height: 20),
@@ -175,7 +175,7 @@ class _DhoReportsState extends State<DhoReports> {
                       const SizedBox(width: 10),
                       Text(
                         _generating ? 'Generating...' : 'Generate Report',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Roboto', 
                           fontSize: 14, fontWeight: FontWeight.w600,
                           color: _generating ? AppColors.mutedText : Colors.white,
                         ),
@@ -218,7 +218,7 @@ class _DhoReportsState extends State<DhoReports> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
               Text('My Report History',
-                  style: GoogleFonts.publicSans(
+                  style: TextStyle(fontFamily: 'Public Sans', 
                       fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
               const Spacer(),
             ]),
@@ -233,7 +233,7 @@ class _DhoReportsState extends State<DhoReports> {
                     const Icon(Icons.description_outlined, size: 40, color: AppColors.mutedText),
                     const SizedBox(height: 8),
                     Text('No reports yet. Generate your first report above.',
-                        style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
                   ]),
                 ),
               )
@@ -328,11 +328,11 @@ class _ReportRowState extends State<_ReportRow> {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(widget.report['name']?.toString() ?? '—',
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Roboto', 
                     fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
             Text(
               '${widget.report['type']} · ${widget.report['createdAt']?.toString().substring(0, 10) ?? ''}',
-              style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText),
             ),
           ]),
         ),
@@ -401,7 +401,7 @@ class _ReportDrop extends StatelessWidget {
   Widget build(BuildContext context) =>
       SizedBox(width: 200, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Roboto', 
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: AppColors.mutedText,
@@ -410,7 +410,7 @@ class _ReportDrop extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: value,
           onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.surfaceContainerHighest,
@@ -441,11 +441,12 @@ class _StatCard extends StatelessWidget {
           const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(value,
-                style: GoogleFonts.publicSans(
+                style: TextStyle(fontFamily: 'Public Sans', 
                     fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
             Text(label,
-                style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
           ]),
         ]),
       );
 }
+

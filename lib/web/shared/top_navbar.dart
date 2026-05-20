@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../state/notification_store.dart';
 import '../../screens/clinician/pages/profile_page.dart';
@@ -128,7 +128,7 @@ class _TopNavbarState extends State<TopNavbar> {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(children: [
         Text(widget.pageTitle,
-            style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.headings)),
+            style: TextStyle(fontFamily: 'Public Sans', fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.headings)),
         const Spacer(),
 
         // Search
@@ -136,10 +136,10 @@ class _TopNavbarState extends State<TopNavbar> {
           width: 240, height: 38,
           decoration: BoxDecoration(color: AppColors.surfaceContainerLow, borderRadius: BorderRadius.circular(10)),
           child: TextField(
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
             decoration: InputDecoration(
               hintText: 'Search...',
-              hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+              hintStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
               prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
               border: InputBorder.none,
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -165,15 +165,15 @@ class _TopNavbarState extends State<TopNavbar> {
               backgroundColor: AppColors.primaryContainer,
               child: Text(
                 widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
             const SizedBox(width: 8),
             Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text(widget.userName,
-                  style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
               Text(_roleLabel,
-                  style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)),
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
             ]),
             const SizedBox(width: 4),
           ]),
@@ -327,8 +327,9 @@ class _IconBtn extends StatelessWidget {
           width: 16, height: 16,
           decoration: const BoxDecoration(color: AppColors.criticalText, shape: BoxShape.circle),
           child: Center(child: Text(badge!,
-              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white))),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 9, fontWeight: FontWeight.w700, color: Colors.white))),
         )),
     ]);
   }
 }
+

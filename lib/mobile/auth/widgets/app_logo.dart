@@ -77,3 +77,4 @@ class _TextLogo extends StatelessWidget {
     );
   }
 }
+

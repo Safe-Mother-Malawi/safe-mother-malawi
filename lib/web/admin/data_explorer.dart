@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
@@ -39,11 +39,11 @@ class _DataExplorerState extends State<DataExplorer>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Data Source',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 4),
           Text('Direct access to system data tables',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 20),
 
           // Filters bar
@@ -61,10 +61,10 @@ class _DataExplorerState extends State<DataExplorer>
                   child: TextField(
                     controller: _searchCtrl,
                     onChanged: (_) => setState(() {}),
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
                     decoration: InputDecoration(
                       hintText: 'Search records...',
-                      hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+                      hintStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
                       prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                       filled: true,
                       fillColor: AppColors.surfaceContainerLow,
@@ -95,8 +95,8 @@ class _DataExplorerState extends State<DataExplorer>
                       color: AppColors.surfaceContainerLowest,
                       child: TabBar(
                         controller: _tabCtrl,
-                        labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-                        unselectedLabelStyle: GoogleFonts.inter(fontSize: 13),
+                        labelStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600),
+                        unselectedLabelStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13),
                         labelColor: AppColors.primary,
                         unselectedLabelColor: AppColors.mutedText,
                         indicatorColor: AppColors.primary,
@@ -165,7 +165,7 @@ class _FullTable extends StatelessWidget {
                 Expanded(
                   flex: flexes[i],
                   child: Text(columns[i],
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: AppColors.mutedText,
@@ -182,7 +182,7 @@ class _FullTable extends StatelessWidget {
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 36),
                         const SizedBox(height: 8),
-                        Text(error!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.criticalText)),
+                        Text(error!, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.criticalText)),
                         if (onRetry != null) ...[
                           const SizedBox(height: 12),
                           ElevatedButton(onPressed: onRetry, child: const Text('Retry')),
@@ -192,7 +192,7 @@ class _FullTable extends StatelessWidget {
                   : rows.isEmpty
                       ? Center(
                           child: Text('No records found',
-                              style: GoogleFonts.inter(fontSize: 14, color: AppColors.mutedText)))
+                              style: TextStyle(fontFamily: 'Roboto', fontSize: 14, color: AppColors.mutedText)))
                       : ListView.builder(
                           itemCount: rows.length,
                           itemBuilder: (context, index) {
@@ -479,9 +479,10 @@ class _TaskTabState extends State<_TaskTab> {
 
 Widget _cell(String text, {bool bold = false, bool muted = false}) {
   return Text(text,
-      style: GoogleFonts.inter(
+      style: TextStyle(fontFamily: 'Roboto', 
         fontSize: 13,
         fontWeight: bold ? FontWeight.w500 : FontWeight.w400,
         color: muted ? AppColors.mutedText : AppColors.onSurface,
       ));
 }
+

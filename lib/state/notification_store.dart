@@ -172,3 +172,4 @@ class NotificationStore extends ChangeNotifier {
     super.dispose();
   }
 }
+

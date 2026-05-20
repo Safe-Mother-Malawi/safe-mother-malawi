@@ -135,3 +135,4 @@ class ClinicianConsultPage extends StatelessWidget {
 
 // Silently ignore missing background image
 void _ignoreError(Object e, StackTrace? s) {}
+

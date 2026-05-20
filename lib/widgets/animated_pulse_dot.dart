@@ -43,3 +43,4 @@ class _AnimatedPulseDotState extends State<AnimatedPulseDot>
     );
   }
 }
+

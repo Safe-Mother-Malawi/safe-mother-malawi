@@ -19,3 +19,4 @@ class ApiConfig {
     ? 'wss://backend-gsgb.onrender.com'
     : 'ws://localhost:3001';
 }
+

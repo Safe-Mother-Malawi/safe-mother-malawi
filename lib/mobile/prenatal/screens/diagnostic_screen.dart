@@ -517,3 +517,4 @@ class _ScoreStat extends StatelessWidget {
     Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
   ]);
 }
+

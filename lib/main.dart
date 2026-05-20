@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:provider/provider.dart';
 import 'theme/app_colors.dart';
 import 'screens/splash_screen.dart';
@@ -36,3 +36,4 @@ class SafeMotherApp extends StatelessWidget {
     );
   }
 }
+

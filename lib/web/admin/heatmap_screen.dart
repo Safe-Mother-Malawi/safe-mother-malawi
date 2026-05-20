@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import '../../theme/app_colors.dart';
@@ -104,11 +104,11 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Heatmaps',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 6),
           Text('Health facility hotspots across Malawi — real geographic positions',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(
@@ -206,7 +206,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Map Layer',
-                              style: GoogleFonts.publicSans(
+                              style: TextStyle(fontFamily: 'Public Sans', 
                                   fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.headings)),
                           const SizedBox(height: 12),
                           ...['High-Risk Areas', 'IVR Usage', 'Low Clinician Activity']
@@ -226,13 +226,13 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                           Row(children: [
                             const Icon(Icons.local_hospital_rounded, size: 12, color: AppColors.secondary),
                             const SizedBox(width: 4),
-                            Text('Central Hospital', style: GoogleFonts.inter(fontSize: 10, color: AppColors.bodyText)),
+                            Text('Central Hospital', style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.bodyText)),
                           ]),
                           const SizedBox(height: 3),
                           Row(children: [
                             Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.secondary, shape: BoxShape.circle)),
                             const SizedBox(width: 4),
-                            Text('District Hospital', style: GoogleFonts.inter(fontSize: 10, color: AppColors.bodyText)),
+                            Text('District Hospital', style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.bodyText)),
                           ]),
                         ],
                       ),
@@ -251,10 +251,10 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text('Top Facilities',
-                              style: GoogleFonts.publicSans(
+                              style: TextStyle(fontFamily: 'Public Sans', 
                                   fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.headings)),
                           Text('by $_activeLayer',
-                              style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                              style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                           const SizedBox(height: 12),
                           ..._sorted.take(8).map((f) {
                             final val = _layerValue(f);
@@ -270,12 +270,12 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                                       Expanded(
                                         child: Text(
                                           f['name'].toString().replaceAll('\n', ' '),
-                                          style: GoogleFonts.inter(fontSize: 11, color: AppColors.onSurface),
+                                          style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.onSurface),
                                           overflow: TextOverflow.ellipsis,
                                         ),
                                       ),
                                       Text('${(val * 100).toStringAsFixed(0)}%',
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(fontFamily: 'Roboto', 
                                               fontSize: 11, fontWeight: FontWeight.w600, color: color)),
                                     ],
                                   ),
@@ -317,7 +317,7 @@ class _LegendItem extends StatelessWidget {
     return Row(children: [
       Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
       const SizedBox(width: 6),
-      Text(label, style: GoogleFonts.inter(fontSize: 10, color: AppColors.bodyText)),
+      Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.bodyText)),
     ]);
   }
 }
@@ -345,7 +345,7 @@ class _LayerTile extends StatelessWidget {
             Icon(Icons.layers_rounded, size: 16, color: selected ? AppColors.primary : AppColors.mutedText),
             const SizedBox(width: 8),
             Text(label,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Roboto', 
                     fontSize: 12,
                     fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
                     color: selected ? AppColors.primary : AppColors.bodyText)),
@@ -355,3 +355,4 @@ class _LayerTile extends StatelessWidget {
     );
   }
 }
+

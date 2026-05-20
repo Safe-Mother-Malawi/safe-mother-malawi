@@ -69,3 +69,4 @@ class InactivityService {
     stopMonitoring();
   }
 }
+

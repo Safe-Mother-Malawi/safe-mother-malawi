@@ -1,7 +1,7 @@
 // ignore: avoid_web_libraries_in_flutter
 import 'dart:html' as html;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../shared/widgets/status_badge.dart';
@@ -127,11 +127,11 @@ class _AuditExportState extends State<AuditExport> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Audit Export',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 4),
           Text('Export system data for auditing and compliance purposes',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           Row(
@@ -150,7 +150,7 @@ class _AuditExportState extends State<AuditExport> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Configure Export',
-                          style: GoogleFonts.publicSans(
+                          style: TextStyle(fontFamily: 'Public Sans', 
                               fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       const SizedBox(height: 20),
                       Wrap(
@@ -191,7 +191,7 @@ class _AuditExportState extends State<AuditExport> {
                             Expanded(
                               child: Text(
                                 'Exports are logged for compliance. All data exports are traceable to your admin account.',
-                                style: GoogleFonts.inter(fontSize: 12, color: AppColors.infoText),
+                                style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.infoText),
                               ),
                             ),
                           ],
@@ -219,7 +219,7 @@ class _AuditExportState extends State<AuditExport> {
                               const SizedBox(width: 10),
                               Text(
                                 _exporting ? 'Exporting...' : 'Export Data',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 14, fontWeight: FontWeight.w600,
                                     color: _exporting ? AppColors.mutedText : Colors.white),
                               ),
@@ -267,11 +267,11 @@ class _AuditExportState extends State<AuditExport> {
                 Row(
                   children: [
                     Text('Export History',
-                        style: GoogleFonts.publicSans(
+                        style: TextStyle(fontFamily: 'Public Sans', 
                             fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                     const Spacer(),
                     Text('${_exports.length} records',
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -282,7 +282,7 @@ class _AuditExportState extends State<AuditExport> {
                   Center(child: Column(children: [
                     const Icon(Icons.error_outline, color: AppColors.criticalText, size: 36),
                     const SizedBox(height: 8),
-                    Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+                    Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
                     const SizedBox(height: 12),
                     ElevatedButton(onPressed: _load, child: const Text('Retry')),
                   ]))
@@ -293,7 +293,7 @@ class _AuditExportState extends State<AuditExport> {
                       const Icon(Icons.folder_open_rounded, size: 40, color: AppColors.mutedText),
                       const SizedBox(height: 8),
                       Text('No exports yet. Generate your first export above.',
-                          style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+                          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
                     ])),
                   )
                 else ...[
@@ -342,13 +342,13 @@ class _AuditExportState extends State<AuditExport> {
                           ),
                           const SizedBox(width: 8),
                           Expanded(child: Text(name,
-                              style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface),
+                              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface),
                               overflow: TextOverflow.ellipsis)),
                         ])),
-                        Expanded(flex: 2, child: Text(type, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
-                        Expanded(flex: 2, child: Text(district, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
+                        Expanded(flex: 2, child: Text(type, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText))),
+                        Expanded(flex: 2, child: Text(district, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText))),
                         Expanded(flex: 2, child: Text(date.length > 10 ? date.substring(0, 10) : date,
-                            style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
+                            style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
                         Expanded(flex: 1, child: StatusBadge(label: format, type: BadgeType.info)),
                         Expanded(flex: 2, child: StatusBadge(
                           label: status,
@@ -404,7 +404,7 @@ Widget _headerCell(String label, int flex) => Expanded(
       child: Padding(
         padding: const EdgeInsets.only(left: 4),
         child: Text(label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Roboto', 
                 fontSize: 11, fontWeight: FontWeight.w600,
                 color: AppColors.mutedText, letterSpacing: 0.5)),
       ),
@@ -428,8 +428,8 @@ class _StatCard extends StatelessWidget {
         Icon(icon, size: 20, color: AppColors.primary),
         const SizedBox(width: 12),
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
-          Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+          Text(value, style: TextStyle(fontFamily: 'Public Sans', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
         ]),
       ]),
     );
@@ -448,13 +448,13 @@ class _DropField extends StatelessWidget {
       width: 200,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600,
                 color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: value,
           onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             filled: true,
             fillColor: AppColors.surfaceContainerHighest,
@@ -468,3 +468,4 @@ class _DropField extends StatelessWidget {
     );
   }
 }
+

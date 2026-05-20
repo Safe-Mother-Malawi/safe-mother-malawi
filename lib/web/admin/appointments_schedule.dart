@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
@@ -125,7 +125,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(title,
-            style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.primary)),
+            style: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.w700, color: AppColors.primary)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -158,7 +158,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Roboto', 
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.mutedText,
@@ -167,7 +167,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
           const SizedBox(height: 4),
           Text(
             value,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Roboto', 
               fontSize: 13,
               color: AppColors.onSurface,
             ),
@@ -191,7 +191,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
         children: [
           Text(
             "Today's Appointments",
-            style: GoogleFonts.publicSans(
+            style: TextStyle(fontFamily: 'Public Sans', 
               fontSize: 22,
               fontWeight: FontWeight.w700,
               color: AppColors.headings,
@@ -200,7 +200,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
           const SizedBox(height: 4),
           Text(
             'View and manage appointments scheduled for today',
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -218,7 +218,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                             Text(
                               _error!,
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(fontSize: 13, color: AppColors.criticalText),
+                              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.criticalText),
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
@@ -241,7 +241,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                                 const SizedBox(height: 16),
                                 Text(
                                   'No Appointments Today',
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.headings,
@@ -251,7 +251,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                                 Text(
                                   'You have no appointments scheduled for today.',
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.inter(
+                                  style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 13,
                                     color: AppColors.mutedText,
                                     height: 1.4,
@@ -311,7 +311,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                                             children: [
                                               Text(
                                                 title,
-                                                style: GoogleFonts.inter(
+                                                style: TextStyle(fontFamily: 'Roboto', 
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w600,
                                                   color: AppColors.onSurface,
@@ -328,7 +328,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                                                   const SizedBox(width: 4),
                                                   Text(
                                                     time,
-                                                    style: GoogleFonts.inter(
+                                                    style: TextStyle(fontFamily: 'Roboto', 
                                                       fontSize: 12,
                                                       color: AppColors.mutedText,
                                                     ),
@@ -366,3 +366,4 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
     );
   }
 }
+

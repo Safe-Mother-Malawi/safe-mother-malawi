@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
@@ -199,7 +199,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(children: [
-            Text('Analytics Dashboard', style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+            Text('Analytics Dashboard', style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const Spacer(),
             _ExportBtn(label: 'Export PDF', riskDist: _riskDist, highRisk: _highRisk, completionRate: _completionRate),
             const SizedBox(width: 10),
@@ -207,7 +207,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
           ]),
           const SizedBox(height: 24),
 
-          Text('Key Indicators', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Key Indicators', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 12),
           GridView.count(
             crossAxisCount: 4, shrinkWrap: true,
@@ -226,7 +226,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
           ),
           const SizedBox(height: 28),
 
-          Text('Performance Metrics', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Performance Metrics', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 12),
           GridView.count(
             crossAxisCount: 3, shrinkWrap: true,
@@ -243,7 +243,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
           ),
           const SizedBox(height: 28),
 
-          Text('Neonatal Analytics', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Neonatal Analytics', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 12),
           GridView.count(
             crossAxisCount: 3, shrinkWrap: true,
@@ -266,7 +266,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
           ),
           const SizedBox(height: 28),
 
-          Text('Geographic Insights', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Geographic Insights', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 12),
 
           Row(children: [
@@ -296,7 +296,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                       tooltipRoundedRadius: 10,
                       getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
                         s.y.toStringAsFixed(0),
-                        GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                        TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                       )).toList(),
                     ),
                   ),
@@ -304,7 +304,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                     leftTitles: AxisTitles(sideTitles: SideTitles(
                       showTitles: true, reservedSize: 36,
                       getTitlesWidget: (v, _) => Text(v.toInt().toString(),
-                          style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)),
+                          style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
                     )),
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -316,7 +316,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                         if (i < 0 || i >= m.length) return const SizedBox();
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                          child: Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                         );
                       },
                     )),
@@ -369,7 +369,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
               title: 'District Comparison',
               subtitle: 'Registrations by district',
               chart: SizedBox(height: 220, child: topDistricts.isEmpty
-                  ? Center(child: Text('No district data yet', style: GoogleFonts.inter(color: AppColors.mutedText)))
+                  ? Center(child: Text('No district data yet', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText)))
                   : BarChart(
                       BarChartData(
                         gridData: FlGridData(
@@ -387,7 +387,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                               final d = topDistricts[group.x]['district']?.toString() ?? '';
                               return BarTooltipItem(
                                 '$d\n${rod.toY.toInt()}',
-                                GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                               );
                             },
                           ),
@@ -406,7 +406,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                                 padding: const EdgeInsets.only(top: 6),
                                 child: Text(
                                   d.length > 5 ? d.substring(0, 5) : d,
-                                  style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
+                                  style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText),
                                 ),
                               );
                             },
@@ -437,7 +437,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
               title: 'Risk Distribution',
               subtitle: 'Current breakdown by level',
               chart: SizedBox(height: 220, child: _riskDist.isEmpty
-                  ? Center(child: Text('No data yet', style: GoogleFonts.inter(color: AppColors.mutedText)))
+                  ? Center(child: Text('No data yet', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText)))
                   : Row(children: [
                       Expanded(child: PieChart(
                         PieChartData(
@@ -466,9 +466,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                               Container(width: 10, height: 10,
                                   decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(3))),
                               const SizedBox(width: 8),
-                              Text(short, style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText)),
+                              Text(short, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText)),
                               const SizedBox(width: 8),
-                              Text(count, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: color)),
+                              Text(count, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w700, color: color)),
                             ]),
                           );
                         }).toList(),
@@ -488,7 +488,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text('Risk Level Summary',
-                    style: GoogleFonts.publicSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.headings)),
+                    style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.headings)),
                 const SizedBox(height: 16),
                 ..._riskDist.map((r) {
                   final level = r['riskLevel'] as String? ?? '';
@@ -506,9 +506,9 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                             decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
                         const SizedBox(width: 8),
                         Expanded(child: Text(level,
-                            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
+                            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
                         Text(count.toString(),
-                            style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
+                            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w700, color: color)),
                       ]),
                       const SizedBox(height: 6),
                       ClipRRect(
@@ -534,7 +534,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
               title: 'Maternal Complications',
               subtitle: 'Top reported complications during ANC',
               chart: SizedBox(height: 220, child: _maternalComplications.isEmpty 
-                  ? Center(child: Text('No complications reported yet', style: GoogleFonts.inter(color: AppColors.mutedText)))
+                  ? Center(child: Text('No complications reported yet', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText)))
                   : BarChart(
                 BarChartData(
                   gridData: FlGridData(
@@ -549,7 +549,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                       getTooltipItem: (group, _, rod, __) {
                         return BarTooltipItem(
                           '${_maternalComplications[group.x]['type']}\n${rod.toY.toInt()} cases',
-                          GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                          TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                         );
                       },
                     ),
@@ -566,7 +566,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                         final d = _maternalComplications[i]['type'] as String;
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text(d.split(' ')[0], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                          child: Text(d.split(' ')[0], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                         );
                       },
                     )),
@@ -604,14 +604,14 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                       tooltipRoundedRadius: 8,
                       getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
                         '${s.y.toInt()} referrals',
-                        GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                        TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                       )).toList(),
                     ),
                   ),
                   titlesData: FlTitlesData(
                     leftTitles: AxisTitles(sideTitles: SideTitles(
                       showTitles: true, reservedSize: 30,
-                      getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText)),
+                      getTitlesWidget: (v, _) => Text(v.toInt().toString(), style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
                     )),
                     rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
                     topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
@@ -620,7 +620,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
                       getTitlesWidget: (v, _) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 6),
-                          child: Text('M\${v.toInt() + 1}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                          child: Text('M\${v.toInt() + 1}', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                         );
                       },
                     )),
@@ -672,7 +672,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         value: count,
         color: colorMap[label] ?? AppColors.mutedText,
         title: '$pct%',
-        titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+        titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
         radius: 56,
         badgeWidget: count / total > 0.08 ? null : const SizedBox(),
       );
@@ -701,7 +701,7 @@ class _ExportBtnState extends State<_ExportBtn> {
       icon: _exporting
           ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary))
           : const Icon(Icons.download_rounded, size: 16, color: AppColors.primary),
-      label: Text(widget.label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
+      label: Text(widget.label, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.primary)),
       style: OutlinedButton.styleFrom(
         side: const BorderSide(color: AppColors.primary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -794,3 +794,4 @@ class _ExportBtnState extends State<_ExportBtn> {
     }
   }
 }
+

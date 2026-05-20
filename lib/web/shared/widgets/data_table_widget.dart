@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../theme/app_colors.dart';
 
 class AppDataTable extends StatelessWidget {
@@ -40,13 +40,13 @@ class AppDataTable extends StatelessWidget {
               }
               return AppColors.surfaceContainerLowest;
             }),
-            headingTextStyle: GoogleFonts.inter(
+            headingTextStyle: TextStyle(fontFamily: 'Roboto', 
               fontSize: 12,
               fontWeight: FontWeight.w600,
               color: AppColors.mutedText,
               letterSpacing: 0.5,
             ),
-            dataTextStyle: GoogleFonts.inter(
+            dataTextStyle: TextStyle(fontFamily: 'Roboto', 
               fontSize: 13,
               color: AppColors.onSurface,
             ),
@@ -57,7 +57,7 @@ class AppDataTable extends StatelessWidget {
               if (showIndex)
                 DataColumn(
                   label: Text('#',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: AppColors.mutedText)),
@@ -69,7 +69,7 @@ class AppDataTable extends StatelessWidget {
                 cells: [
                   if (showIndex)
                     DataCell(Text('${entry.key + 1}',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(fontFamily: 'Roboto', 
                             fontSize: 12, color: AppColors.mutedText))),
                   ...entry.value.map((cell) => DataCell(cell)),
                 ],
@@ -81,3 +81,4 @@ class AppDataTable extends StatelessWidget {
     );
   }
 }
+

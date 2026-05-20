@@ -1,5 +1,5 @@
-﻿import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/material.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -8,7 +8,7 @@ import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
 import '../../../utils/live_data_mixin.dart';
 
-/// Question Insights screen — health assessment patterns
+/// Question Insights screen � health assessment patterns
 class InsightsScreen extends StatefulWidget {
   const InsightsScreen({super.key});
 
@@ -73,16 +73,16 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
         const SizedBox(height: 8),
-        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
         const SizedBox(height: 12),
         ElevatedButton(onPressed: _load, child: const Text('Retry')),
       ]));
     }
 
     final total      = (_dist['total'] ?? _assessments.length).toString();
-    final completion = (_dist['completionRate'] ?? '—').toString();
+    final completion = (_dist['completionRate'] ?? '�').toString();
     final highRisk   = (_dist['high'] ?? _dist['highRisk'] ?? 0).toString();
-    final avgScore   = (_dist['avgScore'] ?? '—').toString();
+    final avgScore   = (_dist['avgScore'] ?? '�').toString();
 
     final low    = (_dist['low'] ?? 0) as num;
     final medium = (_dist['medium'] ?? 0) as num;
@@ -103,11 +103,11 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Question Insights',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 4),
           Text('Health assessment patterns and symptom analysis',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
           Expanded(
             child: SingleChildScrollView(
@@ -141,10 +141,10 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Common Symptoms',
-                                  style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                                  style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                               const SizedBox(height: 16),
                               if (symptoms.isEmpty)
-                                Text('No symptom data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                                Text('No symptom data available', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText))
                               else
                                 ...symptoms.take(6).map((s) => _SymptomRow(
                                       symptom: s.key,
@@ -176,7 +176,7 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
                                     const labels = ['Low', 'Medium', 'High'];
                                     return BarTooltipItem(
                                       '${labels[group.x]}\n${rod.toY.toInt()}',
-                                      GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                      TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                                     );
                                   },
                                 ),
@@ -193,7 +193,7 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
                                     if (i < 0 || i >= l.length) return const SizedBox();
                                     return Padding(
                                       padding: const EdgeInsets.only(top: 6),
-                                      child: Text(l[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                                      child: Text(l[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                                     );
                                   },
                                 )),
@@ -231,7 +231,7 @@ class _InsightsScreenState extends State<InsightsScreen> with LiveDataMixin {
   }
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+// -- Shared helpers ------------------------------------------------------------
 
 class _SymptomRow extends StatelessWidget {
   final String symptom, count, risk;
@@ -245,11 +245,12 @@ class _SymptomRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(children: [
-        Expanded(child: Text(symptom, style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-        Text(count, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.bodyText)),
+        Expanded(child: Text(symptom, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+        Text(count, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.bodyText)),
         const SizedBox(width: 12),
         StatusBadge(label: risk, type: type),
       ]),
     );
   }
 }
+

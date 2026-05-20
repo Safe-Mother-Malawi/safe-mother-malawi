@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 
@@ -56,9 +56,9 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('SMS Management', style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text('SMS Management', style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 6),
-          Text('Manage SMS gateway configurations and view message logs.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+          Text('Manage SMS gateway configurations and view message logs.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           // Gateway Status Card
@@ -81,13 +81,13 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Gateway: ${_gatewayConfig['provider']}', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.headings)),
+                      Text('Gateway: ${_gatewayConfig['provider']}', style: TextStyle(fontFamily: 'Roboto', fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.headings)),
                       const SizedBox(height: 4),
                       Row(
                         children: [
                           Container(width: 8, height: 8, decoration: const BoxDecoration(color: AppColors.successText, shape: BoxShape.circle)),
                           const SizedBox(width: 6),
-                          Text('${_gatewayConfig['status']}  •  Balance: ${_gatewayConfig['balance']} Credits', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+                          Text('${_gatewayConfig['status']}  •  Balance: ${_gatewayConfig['balance']} Credits', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
                         ],
                       ),
                     ],
@@ -108,7 +108,7 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
           ),
           const SizedBox(height: 28),
 
-          Text('Recent Messages', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Recent Messages', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 12),
 
           Container(
@@ -127,10 +127,10 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
                   ),
                   child: Row(
                     children: [
-                      Expanded(flex: 2, child: Text('Recipient', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
-                      Expanded(flex: 2, child: Text('Type', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
-                      Expanded(flex: 2, child: Text('Date', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
-                      Expanded(flex: 2, child: Text('Status', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
+                      Expanded(flex: 2, child: Text('Recipient', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
+                      Expanded(flex: 2, child: Text('Type', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
+                      Expanded(flex: 2, child: Text('Date', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
+                      Expanded(flex: 2, child: Text('Status', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedText))),
                     ],
                   ),
                 ),
@@ -143,14 +143,14 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
                     decoration: const BoxDecoration(border: Border(top: BorderSide(color: AppColors.g200))),
                     child: Row(
                       children: [
-                        Expanded(flex: 2, child: Text(log['to'], style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-                        Expanded(flex: 2, child: Text(log['type'], style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-                        Expanded(flex: 2, child: Text(log['date'], style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))),
+                        Expanded(flex: 2, child: Text(log['to'], style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+                        Expanded(flex: 2, child: Text(log['type'], style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+                        Expanded(flex: 2, child: Text(log['date'], style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))),
                         Expanded(flex: 2, child: Row(
                           children: [
                             Icon(status == 'Delivered' ? Icons.check_circle : Icons.error, size: 14, color: color),
                             const SizedBox(width: 6),
-                            Text(status, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+                            Text(status, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: color)),
                           ],
                         )),
                       ],
@@ -165,3 +165,4 @@ class _SMSManagementScreenState extends State<SMSManagementScreen> {
     );
   }
 }
+

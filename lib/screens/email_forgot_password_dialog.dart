@@ -578,3 +578,4 @@ class _EmailForgotPasswordDialogState extends State<EmailForgotPasswordDialog> {
     );
   }
 }
+

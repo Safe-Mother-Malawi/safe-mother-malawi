@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../screens/splash_screen.dart';
 import '../../services/auth_service_web.dart';
@@ -108,12 +108,12 @@ class _AppSidebarState extends State<AppSidebar> {
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text('Safe Mother',
-                          style: GoogleFonts.publicSans(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                          style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text('Malawi', style: GoogleFonts.inter(fontSize: 11, color: AppColors.sidebarMuted, letterSpacing: 1.5)),
+                Text('Malawi', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.sidebarMuted, letterSpacing: 1.5)),
               ],
             ),
           ),
@@ -128,7 +128,7 @@ class _AppSidebarState extends State<AppSidebar> {
                   borderRadius: BorderRadius.circular(20)),
               child: Text(
                 widget.role == UserRole.admin ? 'System Admin' : 'District Health Officer',
-                style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.sidebarMuted),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.sidebarMuted),
               ),
             ),
           ),
@@ -198,7 +198,7 @@ class _AppSidebarState extends State<AppSidebar> {
                   child: Row(children: [
                     const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
                     const SizedBox(width: 12),
-                    Text('Log Out', style: GoogleFonts.inter(fontSize: 13, color: Colors.white54)),
+                    Text('Log Out', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Colors.white54)),
                   ]),
                 ),
               ),
@@ -209,7 +209,7 @@ class _AppSidebarState extends State<AppSidebar> {
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
             child: Text('Ministry of Health\nMalawi',
-                style: GoogleFonts.inter(fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
           ),
         ],
       ),
@@ -255,7 +255,7 @@ class _GroupHeader extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                         fontSize: 13,
                         fontWeight: FontWeight.w500,
                         color: isActive ? Colors.white : AppColors.sidebarText,
@@ -310,7 +310,7 @@ class _NavTile extends StatelessWidget {
                 SizedBox(width: isChild ? 0 : 12),
                 Expanded(
                   child: Text(item.label,
-                      style: GoogleFonts.inter(
+                      style: TextStyle(fontFamily: 'Roboto', 
                         fontSize: isChild ? 12 : 13,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
                         color: isActive ? Colors.white : AppColors.sidebarText,
@@ -365,3 +365,4 @@ void _confirmLogout(BuildContext context) {
     ),
   );
 }
+

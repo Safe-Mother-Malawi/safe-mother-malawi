@@ -378,3 +378,4 @@ class _VaccineTile extends StatelessWidget {
     );
   }
 }
+

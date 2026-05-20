@@ -269,3 +269,4 @@ class _InfoSection extends StatelessWidget {
     );
   }
 }
+

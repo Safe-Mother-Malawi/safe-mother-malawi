@@ -21,3 +21,4 @@ class UserStore extends ChangeNotifier {
   /// Call after updating the session cache to push a rebuild to all listeners.
   void refresh() => notifyListeners();
 }
+

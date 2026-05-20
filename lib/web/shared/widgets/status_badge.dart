@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../theme/app_colors.dart';
 
 enum BadgeType { success, warning, critical, info, neutral }
@@ -21,7 +21,7 @@ class StatusBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: GoogleFonts.inter(
+        style: TextStyle(fontFamily: 'Roboto', 
           fontSize: 11,
           fontWeight: FontWeight.w600,
           color: colors.$1,
@@ -46,3 +46,4 @@ class StatusBadge extends StatelessWidget {
     }
   }
 }
+

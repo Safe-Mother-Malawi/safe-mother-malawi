@@ -488,3 +488,4 @@ class _HealthCheckStartScreenState extends State<HealthCheckStartScreen> {
     );
   }
 }
+

@@ -52,3 +52,4 @@ Future<void> confirmAndLogout(BuildContext context) async {
   if (confirmed != true) return;
   await performLogout();
 }
+

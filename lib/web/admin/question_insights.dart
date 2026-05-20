@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -63,7 +63,7 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
         const SizedBox(height: 8),
-        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
         const SizedBox(height: 12),
         ElevatedButton(onPressed: _load, child: const Text('Retry')),
       ]));
@@ -96,13 +96,13 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
         children: [
           Row(children: [
             Text('Question Insights',
-                style: GoogleFonts.publicSans(
+                style: TextStyle(fontFamily: 'Public Sans', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const Spacer(),
           ]),
           const SizedBox(height: 6),
           Text('Health assessment responses and symptom patterns',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           GridView.count(
@@ -136,17 +136,17 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('Common Symptoms',
-                          style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                          style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                       const SizedBox(height: 16),
                       if (symptoms.isEmpty)
-                        Text('No symptom data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                        Text('No symptom data available', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText))
                       else
                         ...symptoms.take(8).map((s) => Padding(
                               padding: const EdgeInsets.only(bottom: 12),
                               child: Row(
                                 children: [
-                                  Expanded(child: Text(s.key, style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-                                  Text('${s.value}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.bodyText)),
+                                  Expanded(child: Text(s.key, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+                                  Text('${s.value}', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.bodyText)),
                                   const SizedBox(width: 12),
                                   StatusBadge(label: 'Reported', type: BadgeType.info),
                                 ],
@@ -178,7 +178,7 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
                             const labels = ['Low', 'Medium', 'High'];
                             return BarTooltipItem(
                               '${labels[group.x]}\n${rod.toY.toInt()}',
-                              GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                              TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                             );
                           },
                         ),
@@ -196,7 +196,7 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
                               if (i < 0 || i >= labels.length) return const SizedBox();
                               return Padding(
                                 padding: const EdgeInsets.only(top: 6),
-                                child: Text(labels[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                                child: Text(labels[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                               );
                             },
                           ),
@@ -230,3 +230,4 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
     );
   }
 }
+

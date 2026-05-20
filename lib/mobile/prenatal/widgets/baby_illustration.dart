@@ -165,3 +165,4 @@ class _BabyPainter extends CustomPainter {
   @override
   bool shouldRepaint(_BabyPainter old) => old.week != week;
 }
+

@@ -244,3 +244,4 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return const Color(0xFF2E7D32);
   }
 }
+

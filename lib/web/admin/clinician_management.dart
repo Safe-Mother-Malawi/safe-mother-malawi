@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../shared/widgets/status_badge.dart';
 import '../../../services/api_service.dart';
@@ -138,7 +138,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
         const SizedBox(height: 12),
-        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
         const SizedBox(height: 12),
         ElevatedButton(onPressed: _load, child: const Text('Retry')),
       ]));
@@ -152,7 +152,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
         children: [
           Row(children: [
             Text('Clinician Management',
-                style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+                style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const SizedBox(width: 12),
             Builder(builder: (ctx) {
               final d = UserStore.instance.district;
@@ -160,7 +160,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(20)),
-                child: Text(d, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
+                child: Text(d, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
               );
             }),
             const Spacer(),
@@ -223,10 +223,10 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               child: TextField(
                 controller: _searchCtrl,
                 onChanged: (_) => setState(() {}),
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Search by name, district or email...',
-                  hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+                  hintStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                   filled: true, fillColor: AppColors.surfaceContainerLowest,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
@@ -240,7 +240,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                   child: _Chip(label: s, selected: _filterStatus == s, onTap: () => setState(() => _filterStatus = s)),
                 )),
             const Spacer(),
-            Text('${filtered.length} users', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+            Text('${filtered.length} users', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
           ]),
           const SizedBox(height: 16),
 
@@ -265,7 +265,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                   ),
                   Expanded(
                     child: filtered.isEmpty
-                        ? Center(child: Text('No users found', style: GoogleFonts.inter(fontSize: 14, color: AppColors.mutedText)))
+                        ? Center(child: Text('No users found', style: TextStyle(fontFamily: 'Roboto', fontSize: 14, color: AppColors.mutedText)))
                         : ListView.builder(
                             itemCount: filtered.length,
                             itemBuilder: (context, index) {
@@ -276,11 +276,11 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                                 color: index.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                                 child: Row(children: [
-                                  Expanded(flex: 1, child: Text('${index + 1}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
-                                  Expanded(flex: 4, child: Text(u['fullName'] ?? '—', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
-                                  Expanded(flex: 3, child: Text(u['phone'] ?? '—', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
-                                  Expanded(flex: 3, child: Text(district, style: GoogleFonts.inter(fontSize: 13, color: AppColors.bodyText))),
-                                  Expanded(flex: 4, child: Text(u['facilityName'] ?? u['facility'] ?? '—', style: GoogleFonts.inter(fontSize: 13, color: AppColors.bodyText))),
+                                  Expanded(flex: 1, child: Text('${index + 1}', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
+                                  Expanded(flex: 4, child: Text(u['fullName'] ?? '—', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
+                                  Expanded(flex: 3, child: Text(u['phone'] ?? '—', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))),
+                                  Expanded(flex: 3, child: Text(district, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.bodyText))),
+                                  Expanded(flex: 4, child: Text(u['facilityName'] ?? u['facility'] ?? '—', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.bodyText))),
                                   Expanded(flex: 2, child: StatusBadge(label: isActive ? 'Active' : 'Inactive', type: isActive ? BadgeType.success : BadgeType.neutral)),
                                   Expanded(flex: 3, child: Row(children: [
                                     _ActionBtn(
@@ -322,7 +322,7 @@ const _roleFilters = ['All', 'Active', 'Inactive'];
 
 Widget _hCell(String label, int flex) => Expanded(
       flex: flex,
-      child: Text(label, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.5)),
+      child: Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.5)),
     );
 
 class _RoleBadge extends StatelessWidget {
@@ -340,7 +340,7 @@ class _RoleBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(color: c.$2, borderRadius: BorderRadius.circular(20)),
-      child: Text(role, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: c.$1)),
+      child: Text(role, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: c.$1)),
     );
   }
 }
@@ -364,7 +364,7 @@ class _Chip extends StatelessWidget {
           color: selected ? activeColor : AppColors.surfaceContainerLowest,
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppColors.mutedText)),
+        child: Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w500, color: selected ? Colors.white : AppColors.mutedText)),
       ),
     );
   }
@@ -409,7 +409,7 @@ class _GradientBtn extends StatelessWidget {
         child: Row(children: [
           Icon(icon, color: onTap != null ? Colors.white : AppColors.mutedText, size: 18),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
+          Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600,
               color: onTap != null ? Colors.white : AppColors.mutedText)),
         ]),
       ),
@@ -496,15 +496,15 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
           const Icon(Icons.person_add_rounded, size: 18, color: AppColors.primary),
           const SizedBox(width: 8),
           Text('Add New Clinician',
-              style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+              style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
         ]),
         const SizedBox(height: 6),
         Row(children: [
           const Icon(Icons.location_on_rounded, size: 13, color: AppColors.primary),
           const SizedBox(width: 4),
-          Text('District: ', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
+          Text('District: ', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
           Text(_district.isNotEmpty ? _district : 'Not assigned',
-              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
         ]),
         const SizedBox(height: 20),
 
@@ -554,11 +554,11 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
               const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warningText),
               const SizedBox(width: 8),
               Text('No facilities found for $_district district.',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.warningText)),
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.warningText)),
               const SizedBox(width: 8),
               TextButton(
                 onPressed: _loadFacilities,
-                child: Text('Retry', style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary)),
+                child: Text('Retry', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.primary)),
               ),
             ]),
           )
@@ -567,15 +567,15 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
             width: 460,
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('SELECT FACILITY *',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600,
                       color: AppColors.mutedText, letterSpacing: 0.8)),
               const SizedBox(height: 6),
               DropdownButtonFormField<Map<String, dynamic>>(
                 value: _selectedFacility,
                 hint: Text('Choose a facility in $_district',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
                 onChanged: (v) => setState(() => _selectedFacility = v),
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
                 decoration: InputDecoration(
                   filled: true, fillColor: AppColors.surfaceContainerHighest,
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -590,7 +590,7 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
                   return DropdownMenuItem<Map<String, dynamic>>(
                     value: f,
                     child: Text('$name${type.isNotEmpty ? ' ($type)' : ''}${ur.isNotEmpty ? ' · $ur' : ''}',
-                        style: GoogleFonts.inter(fontSize: 13)),
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 13)),
                   );
                 }).toList(),
               ),
@@ -626,7 +626,7 @@ class _AddClinicianFormState extends State<_AddClinicianForm> {
           ),
           const SizedBox(width: 12),
           TextButton(onPressed: widget.onCancel,
-              child: Text('Cancel', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))),
+              child: Text('Cancel', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))),
         ]),
       ]),
     );
@@ -716,7 +716,7 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
           const Icon(Icons.edit_rounded, size: 16, color: AppColors.accent),
           const SizedBox(width: 8),
           Text('Edit ${role.toUpperCase()} User',
-              style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+              style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
         ]),
         const SizedBox(height: 20),
 
@@ -761,7 +761,7 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
           ),
           const SizedBox(width: 12),
           TextButton(onPressed: widget.onCancel,
-              child: Text('Cancel', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))),
+              child: Text('Cancel', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))),
         ]),
       ]),
     );
@@ -776,7 +776,7 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(children: [
     Container(width: 3, height: 14, color: AppColors.primary, margin: const EdgeInsets.only(right: 8)),
-    Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.headings, letterSpacing: 0.3)),
+    Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.headings, letterSpacing: 0.3)),
   ]);
 }
 
@@ -802,7 +802,7 @@ class _RoleToggle extends StatelessWidget {
         child: Row(mainAxisSize: MainAxisSize.min, children: [
           Icon(icon, size: 16, color: isSelected ? Colors.white : AppColors.mutedText),
           const SizedBox(width: 8),
-          Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600,
+          Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : AppColors.bodyText)),
         ]),
       ),
@@ -827,17 +827,17 @@ class _TF extends StatelessWidget {
       width: 220,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         TextField(
           controller: ctrl,
           keyboardType: keyboard,
           obscureText: obscure,
           onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
+            hintStyle: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
             filled: true, fillColor: AppColors.surfaceContainerHighest,
             suffixIcon: suffix,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -854,7 +854,7 @@ class _TF extends StatelessWidget {
                 final error = validator!(ctrl.text);
                 if (error == null) return const SizedBox();
                 return Text(error,
-                    style: GoogleFonts.inter(fontSize: 10, color: AppColors.red, fontWeight: FontWeight.w500));
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.red, fontWeight: FontWeight.w500));
               },
             ),
           ),
@@ -875,12 +875,12 @@ class _DD extends StatelessWidget {
       width: 220,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         DropdownButtonFormField<String>(
           value: items.contains(value) ? value : items.first,
           onChanged: onChanged,
-          style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
           decoration: InputDecoration(
             filled: true, fillColor: AppColors.surfaceContainerHighest,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
@@ -905,7 +905,7 @@ class _ReadOnly extends StatelessWidget {
       width: 220,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(),
-            style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600,
                 color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
         Container(
@@ -921,7 +921,7 @@ class _ReadOnly extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(child: Text(
               value.isNotEmpty ? value : '—',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.primary,
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.primary,
                   fontWeight: FontWeight.w500),
             )),
           ]),
@@ -937,3 +937,4 @@ String? _validateFullName(String? value) {
 String? _validatePhone(String? value) {
   return Validators.validatePhone(value);
 }
+

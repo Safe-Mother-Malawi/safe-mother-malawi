@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -52,7 +52,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
         const SizedBox(height: 8),
-        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
         const SizedBox(height: 12),
         ElevatedButton(onPressed: _load, child: const Text('Retry')),
       ]));
@@ -73,21 +73,21 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
           Row(
             children: [
               Text('District Analytics',
-                  style: GoogleFonts.publicSans(
+                  style: TextStyle(fontFamily: 'Public Sans', 
                       fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
               const SizedBox(width: 12),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(color: AppColors.infoBg, borderRadius: BorderRadius.circular(20)),
                 child: Text('Read-only',
-                    style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
               ),
               const Spacer(),
             ],
           ),
           const SizedBox(height: 6),
           Text('Pre-generated insights${_district.isNotEmpty ? ' for $_district District' : ''}',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           GridView.count(
@@ -129,7 +129,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                               const m = ['Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
                               final i = v.toInt();
                               if (i < 0 || i >= m.length) return const SizedBox();
-                              return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                              return Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
                             },
                           ),
                         ),
@@ -169,7 +169,7 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
                               const labels = ['ANC', 'PNC', 'IVR', 'Tasks'];
                               final i = v.toInt();
                               if (i < 0 || i >= labels.length) return const SizedBox();
-                              return Text(labels[i], style: GoogleFonts.inter(fontSize: 10, color: AppColors.mutedText));
+                              return Text(labels[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText));
                             },
                           ),
                         ),
@@ -205,3 +205,4 @@ class _DistrictAnalyticsState extends State<DistrictAnalytics> {
     );
   }
 }
+

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../theme/app_colors.dart';
 
 class KpiCard extends StatelessWidget {
@@ -63,7 +63,7 @@ class KpiCard extends StatelessWidget {
               const SizedBox(height: 16),
               Text(
                 value,
-                style: GoogleFonts.publicSans(
+                style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 28,
                   fontWeight: FontWeight.w700,
                   color: AppColors.headings,
@@ -73,7 +73,7 @@ class KpiCard extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Roboto', 
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: AppColors.mutedText,
@@ -83,7 +83,7 @@ class KpiCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   subtitle!,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(fontFamily: 'Roboto', 
                     fontSize: 11,
                     color: AppColors.mutedText,
                   ),
@@ -96,3 +96,4 @@ class KpiCard extends StatelessWidget {
     );
   }
 }
+

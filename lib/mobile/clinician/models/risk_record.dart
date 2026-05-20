@@ -59,3 +59,4 @@ class RiskRecord {
     submittedAt:  DateTime.parse(m['submittedAt'] as String),
   );
 }
+

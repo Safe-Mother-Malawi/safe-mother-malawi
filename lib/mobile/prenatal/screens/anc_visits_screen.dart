@@ -251,3 +251,4 @@ class _VisitCard extends StatelessWidget {
     );
   }
 }
+

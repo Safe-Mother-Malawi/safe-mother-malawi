@@ -1174,3 +1174,4 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
     return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }
+

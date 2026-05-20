@@ -190,3 +190,4 @@ class AuthService {
   /// No-op: demo accounts are no longer needed with real backend.
   Future<void> seedDemoAccounts() async {}
 }
+

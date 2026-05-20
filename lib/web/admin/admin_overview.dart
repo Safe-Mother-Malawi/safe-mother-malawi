@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../shared/app_shell.dart';
@@ -265,7 +265,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.error_outline, color: Colors.red, size: 40),
         const SizedBox(height: 12),
-        Text('Failed to load data', style: GoogleFonts.inter(fontSize: 14, color: AppColors.onSurface)),
+        Text('Failed to load data', style: TextStyle(fontFamily: 'Roboto', fontSize: 14, color: AppColors.onSurface)),
         const SizedBox(height: 8),
         TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
             child: const Text('Retry')),
@@ -346,7 +346,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                                   final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                                   final idx = val.toInt();
                                   if (idx < 0 || idx >= months.length) return const SizedBox();
-                                  return Text(months[idx], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                                  return Text(months[idx], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
                                 },
                               )),
                             ),
@@ -383,7 +383,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                                   final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                                   final idx = val.toInt();
                                   if (idx < 0 || idx >= months.length) return const SizedBox();
-                                  return Text(months[idx], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                                  return Text(months[idx], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
                                 },
                               )),
                             ),
@@ -479,7 +479,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         value: count,
         color: colorMap[label] ?? AppColors.mutedText,
         title: '$shortLabel\n$pct%',
-        titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+        titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
         radius: 55,
       );
     }).toList();
@@ -496,10 +496,10 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('System Alerts', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('System Alerts', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 16),
           if (_systemAlerts.isEmpty)
-            Text('No active system alerts.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))
+            Text('No active system alerts.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))
           else
             ..._systemAlerts.map((a) {
               final type = a['type'] as String? ?? 'info';
@@ -517,7 +517,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                       child: Icon(icon, color: color, size: 18)),
                   const SizedBox(width: 12),
                   Expanded(child: Text(a['message'] as String? ?? '',
-                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
+                      style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
                 ]),
               );
             }),
@@ -537,10 +537,10 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Recent Activity', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+          Text('Recent Activity', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
           const SizedBox(height: 16),
           if (_activityLogs.isEmpty)
-            Text('No recent activity.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))
+            Text('No recent activity.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))
           else
             ..._activityLogs.map((a) {
               final action = a['action'] as String? ?? '';
@@ -554,8 +554,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                       decoration: const BoxDecoration(color: AppColors.primary, shape: BoxShape.circle)),
                   const SizedBox(width: 12),
                   Expanded(child: Text(desc,
-                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-                  Text(timeAgo, style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)),
+                      style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+                  Text(timeAgo, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)),
                 ]),
               );
             }),
@@ -582,3 +582,4 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
     }
   }
 }
+

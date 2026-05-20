@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -59,7 +59,7 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
       return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         const Icon(Icons.error_outline, color: AppColors.criticalText, size: 40),
         const SizedBox(height: 8),
-        Text(_error!, style: GoogleFonts.inter(color: AppColors.criticalText)),
+        Text(_error!, style: TextStyle(fontFamily: 'Roboto', color: AppColors.criticalText)),
         const SizedBox(height: 12),
         ElevatedButton(onPressed: _load, child: const Text('Retry')),
       ]));
@@ -82,13 +82,13 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
         children: [
           Row(children: [
             Text('Task Performance',
-                style: GoogleFonts.publicSans(
+                style: TextStyle(fontFamily: 'Public Sans', 
                     fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const Spacer(),
           ]),
           const SizedBox(height: 6),
           Text('Clinician task completion${_district.isNotEmpty ? ' for $_district District' : ''}',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           GridView.count(
@@ -128,7 +128,7 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                           tooltipRoundedRadius: 8,
                           getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
                             '${s.y.toStringAsFixed(0)}%',
-                            GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                            TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
                           )).toList(),
                         ),
                       ),
@@ -143,7 +143,7 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                             final i = v.toInt();
                             if (i < 0 || i >= m.length) return const SizedBox();
                             return Padding(padding: const EdgeInsets.only(top: 6),
-                              child: Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText)));
+                              child: Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText)));
                           },
                         )),
                       ),
@@ -183,10 +183,10 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                       sectionsSpace: 4,
                       centerSpaceRadius: 44,
                       sections: [
-                        PieChartSectionData(value: 38, color: AppColors.primary, title: '38%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
-                        PieChartSectionData(value: 30, color: AppColors.accent, title: '30%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
-                        PieChartSectionData(value: 20, color: AppColors.warningText, title: '20%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
-                        PieChartSectionData(value: 12, color: AppColors.secondary, title: '12%', titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 38, color: AppColors.primary, title: '38%', titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 30, color: AppColors.accent, title: '30%', titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 20, color: AppColors.warningText, title: '20%', titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
+                        PieChartSectionData(value: 12, color: AppColors.secondary, title: '12%', titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white), radius: 56),
                       ],
                     )),
                   ),
@@ -207,10 +207,10 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Missed Tasks',
-                    style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                    style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const SizedBox(height: 16),
                 if (missedList.isEmpty)
-                  Text('No missed tasks data available', style: GoogleFonts.inter(color: AppColors.mutedText))
+                  Text('No missed tasks data available', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText))
                 else
                   ...missedList.take(5).map((t) {
                     final task = t as Map<String, dynamic>;
@@ -221,11 +221,11 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                         children: [
                           const Icon(Icons.cancel_outlined, size: 16, color: AppColors.criticalText),
                           const SizedBox(width: 12),
-                          Expanded(flex: 2, child: Text((task['title'] ?? '—').toString(), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
-                          Expanded(child: Text((task['clinician']?['fullName'] ?? '—').toString(), style: GoogleFonts.inter(fontSize: 12, color: AppColors.bodyText))),
+                          Expanded(flex: 2, child: Text((task['title'] ?? '—').toString(), style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface))),
+                          Expanded(child: Text((task['clinician']?['fullName'] ?? '—').toString(), style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.bodyText))),
                           StatusBadge(label: risk, type: risk == 'High' ? BadgeType.critical : risk == 'Medium' ? BadgeType.warning : BadgeType.success),
                           const SizedBox(width: 12),
-                          Text(task['overdueDays'] != null ? '${task['overdueDays']} days' : '—', style: GoogleFonts.inter(fontSize: 12, color: AppColors.criticalText)),
+                          Text(task['overdueDays'] != null ? '${task['overdueDays']} days' : '—', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.criticalText)),
                         ],
                       ),
                     );
@@ -248,3 +248,4 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
     return const [FlSpot(0, 70), FlSpot(1, 72), FlSpot(2, 69), FlSpot(3, 74), FlSpot(4, 76), FlSpot(5, 77)];
   }
 }
+

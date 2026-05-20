@@ -114,3 +114,4 @@ class _LogoDiagnosticsState extends State<LogoDiagnostics> {
     );
   }
 }
+

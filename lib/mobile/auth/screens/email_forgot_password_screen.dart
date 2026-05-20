@@ -334,3 +334,4 @@ class _StepBar extends StatelessWidget {
     );
   }
 }
+

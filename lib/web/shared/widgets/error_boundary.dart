@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../theme/app_colors.dart';
 
 /// Wraps a child widget and catches any errors during build,
@@ -80,13 +80,13 @@ class _ErrorCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Text('Something went wrong',
-              style: GoogleFonts.publicSans(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
+              style: TextStyle(fontFamily: 'Public Sans', fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 8),
           Text(
             'An unexpected error occurred${this.context != null ? ' in ${this.context}' : ''}. '
             'Your data is safe — this is a display issue only.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText, height: 1.5),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText, height: 1.5),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -105,3 +105,4 @@ class _ErrorCard extends StatelessWidget {
     );
   }
 }
+

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../../../theme/app_colors.dart';
 import '../models/pregnancy_data.dart';
 import '../../auth/services/auth_service.dart';
@@ -63,7 +63,7 @@ class _EducationScreenState extends State<EducationScreen> {
         leading: widget.onOpenDrawer != null 
             ? IconButton(icon: const Icon(Icons.menu, color: Colors.white), onPressed: widget.onOpenDrawer)
             : null,
-        title: Text('Health Education', style: GoogleFonts.publicSans(color: Colors.white, fontWeight: FontWeight.w600)),
+        title: Text('Health Education', style: TextStyle(fontFamily: 'Public Sans', color: Colors.white, fontWeight: FontWeight.w600)),
       ),
       body: _data == null
           ? Center(child: Text('No data available', style: TextStyle(color: Colors.grey)))
@@ -88,10 +88,10 @@ class _EducationScreenState extends State<EducationScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('Week ${_data!.currentWeek} Topics', 
-                                style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.mobileNavy)),
+                                style: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.mobileNavy)),
                               const SizedBox(height: 4),
                               Text('Personalized education based on your current pregnancy stage.',
-                                style: GoogleFonts.inter(fontSize: 13, color: Colors.black54)),
+                                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Colors.black54)),
                             ],
                           ),
                         ),
@@ -178,7 +178,7 @@ class _EducationScreenState extends State<EducationScreen> {
               const SizedBox(width: 12),
               Text(
                 title,
-                style: GoogleFonts.inter(
+                style: TextStyle(fontFamily: 'Roboto', 
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.black87,
@@ -189,7 +189,7 @@ class _EducationScreenState extends State<EducationScreen> {
           const SizedBox(height: 12),
           Text(
             content,
-            style: GoogleFonts.inter(
+            style: TextStyle(fontFamily: 'Roboto', 
               fontSize: 14,
               color: Colors.black87,
               height: 1.4,
@@ -200,3 +200,4 @@ class _EducationScreenState extends State<EducationScreen> {
     );
   }
 }
+

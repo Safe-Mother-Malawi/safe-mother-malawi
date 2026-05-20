@@ -120,3 +120,4 @@ class SafeMotherLogoPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
+

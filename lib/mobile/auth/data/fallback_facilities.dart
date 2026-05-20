@@ -1174,3 +1174,4 @@ class FallbackFacilities {
     return facilitiesByDistrict.keys.toList()..sort();
   }
 }
+

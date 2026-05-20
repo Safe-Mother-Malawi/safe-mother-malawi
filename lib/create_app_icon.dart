@@ -96,3 +96,4 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await AppIconCreator.createIcon();
 }
+

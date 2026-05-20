@@ -118,3 +118,4 @@ class AppColors {
   // Outline
   static const outlineVariant = Color(0x26455F87);
 }
+

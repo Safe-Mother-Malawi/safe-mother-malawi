@@ -4,3 +4,4 @@ class EventsStore {
   EventsStore._();
   static final EventsStore instance = EventsStore._();
 }
+

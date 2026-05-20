@@ -81,3 +81,4 @@ class UserModel {
     return (m * 4) + w;
   }
 }
+

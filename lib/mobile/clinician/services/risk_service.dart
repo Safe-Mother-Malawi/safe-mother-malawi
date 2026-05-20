@@ -36,3 +36,4 @@ class RiskService {
     await prefs.remove(_key);
   }
 }
+

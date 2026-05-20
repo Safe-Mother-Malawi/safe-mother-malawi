@@ -264,3 +264,4 @@ class Validators {
     return _emailRegex.hasMatch(value.trim());
   }
 }
+

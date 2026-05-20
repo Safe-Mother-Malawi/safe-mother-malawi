@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -87,9 +87,9 @@ class _TaskAnalyticsState extends State<TaskAnalytics> with LiveDataMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Task Analytics', style: GoogleFonts.publicSans(fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
+          Text('Task Analytics', style: TextStyle(fontFamily: 'Public Sans', fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
           const SizedBox(height: 6),
-          Text('Appointment task performance and completion tracking', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+          Text('Appointment task performance and completion tracking', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 24),
 
           GridView.count(
@@ -123,7 +123,7 @@ class _TaskAnalyticsState extends State<TaskAnalytics> with LiveDataMixin {
                 const LegendItem(color: AppColors.warningText, label: 'Pending'),
               ]),
               chart: SizedBox(height: 220, child: _total == 0
-                  ? Center(child: Text('No appointment data yet', style: GoogleFonts.inter(color: AppColors.mutedText)))
+                  ? Center(child: Text('No appointment data yet', style: TextStyle(fontFamily: 'Roboto', color: AppColors.mutedText)))
                   : Row(children: [
                       Expanded(child: PieChart(PieChartData(
                         sectionsSpace: 4, centerSpaceRadius: 52,
@@ -134,17 +134,17 @@ class _TaskAnalyticsState extends State<TaskAnalytics> with LiveDataMixin {
                           if (_completed > 0) PieChartSectionData(
                             value: _completed.toDouble(), color: AppColors.successText,
                             title: '$_completionRate%',
-                            titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                            titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                             radius: 58),
                           if (_cancelled > 0) PieChartSectionData(
                             value: _cancelled.toDouble(), color: AppColors.criticalText,
                             title: '$_missedRate%',
-                            titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                            titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                             radius: 58),
                           if (_pending > 0) PieChartSectionData(
                             value: _pending.toDouble(), color: AppColors.warningText,
                             title: '${_total > 0 ? (_pending * 100 ~/ _total) : 0}%',
-                            titleStyle: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
+                            titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white),
                             radius: 58),
                         ],
                       ))),
@@ -168,7 +168,7 @@ class _TaskAnalyticsState extends State<TaskAnalytics> with LiveDataMixin {
                 boxShadow: [BoxShadow(color: AppColors.primary.withOpacity(0.06), blurRadius: 32, offset: const Offset(0, 8))],
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Summary', style: GoogleFonts.publicSans(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.headings)),
+                Text('Summary', style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.headings)),
                 const SizedBox(height: 16),
                 _SummaryRow(label: 'Total', value: _total.toString(), color: AppColors.primary),
                 _SummaryRow(label: 'Completed', value: _completed.toString(), color: AppColors.successText),
@@ -197,8 +197,8 @@ class _SummaryRow extends StatelessWidget {
       child: Row(children: [
         Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         const SizedBox(width: 10),
-        Expanded(child: Text(label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
-        Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+        Expanded(child: Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+        Text(value, style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: color)),
       ]),
     );
   }
@@ -219,10 +219,11 @@ class _StatPill extends StatelessWidget {
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(value, style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: color)),
+        Text(value, style: TextStyle(fontFamily: 'Roboto', fontSize: 16, fontWeight: FontWeight.w700, color: color)),
         const SizedBox(width: 6),
-        Text(label, style: GoogleFonts.inter(fontSize: 11, color: color)),
+        Text(label, style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: color)),
       ]),
     );
   }
 }
+

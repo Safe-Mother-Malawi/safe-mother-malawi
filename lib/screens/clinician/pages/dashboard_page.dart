@@ -437,3 +437,4 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
   String _weekday(int d) => const ['','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][d];
   String _month(int m) => const ['','January','February','March','April','May','June','July','August','September','October','November','December'][m];
 }
+

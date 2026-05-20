@@ -512,3 +512,4 @@ class ExerciseDetailScreen extends StatelessWidget {
     );
   }
 }
+

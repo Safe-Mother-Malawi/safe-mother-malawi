@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../shared/app_shell.dart';
@@ -232,7 +232,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.error_outline, color: Colors.red, size: 40),
         const SizedBox(height: 12),
-        Text('Failed to load data', style: GoogleFonts.inter(fontSize: 14)),
+        Text('Failed to load data', style: TextStyle(fontFamily: 'Roboto', fontSize: 14)),
         TextButton(onPressed: () { setState(() { _loading = true; _error = null; }); _load(); },
             child: const Text('Retry')),
       ]));
@@ -252,7 +252,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               const Icon(Icons.location_on_rounded, color: Colors.white, size: 14),
               const SizedBox(width: 6),
-              Text(_district, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+              Text(_district, style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
             ]),
           ),
           const SizedBox(height: 20),
@@ -295,7 +295,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
                             const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
                             final i = v.toInt();
                             if (i < 0 || i >= m.length) return const SizedBox();
-                            return Text(m[i], style: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText));
+                            return Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
                           })),
                       ),
                       lineBarsData: [
@@ -340,10 +340,10 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('District Alerts', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                Text('District Alerts', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const SizedBox(height: 16),
                 if (_districtAlerts.isEmpty)
-                  Text('No active alerts.', style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText))
+                  Text('No active alerts.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))
                 else
                   ..._districtAlerts.map((a) {
                     final type = a['type'] as String? ?? 'info';
@@ -361,7 +361,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
                             child: Icon(Icons.warning_amber_rounded, color: color, size: 18)),
                         const SizedBox(width: 12),
                         Expanded(child: Text(a['message'] as String? ?? '',
-                            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface))),
+                            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
                         StatusBadge(label: type, type: badge),
                       ]),
                     );
@@ -392,7 +392,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
         value: count,
         color: colorMap[label] ?? AppColors.mutedText,
         title: '$shortLabel\n$pct%',
-        titleStyle: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+        titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
         radius: 50,
       );
     }).toList();
@@ -404,3 +404,4 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
     return n.toString();
   }
 }
+

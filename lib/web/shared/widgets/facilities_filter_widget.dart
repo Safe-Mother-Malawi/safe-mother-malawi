@@ -171,3 +171,4 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
     );
   }
 }
+

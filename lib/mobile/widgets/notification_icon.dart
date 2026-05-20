@@ -124,3 +124,4 @@ class _NotificationIconState extends State<NotificationIcon> {
     );
   }
 }
+

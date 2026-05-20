@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 
@@ -57,13 +57,13 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Generate Analytics',
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 22,
                   fontWeight: FontWeight.w700,
                   color: AppColors.headings)),
           const SizedBox(height: 6),
           Text('Select data sources and filters, then fetch insights',
-              style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
           const SizedBox(height: 28),
 
           Row(
@@ -155,7 +155,7 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                                           color: AppColors.successText),
                                       const SizedBox(width: 8),
                                       Text(e.key,
-                                          style: GoogleFonts.inter(
+                                          style: TextStyle(fontFamily: 'Roboto', 
                                               fontSize: 13,
                                               color: AppColors.onSurface)),
                                     ],
@@ -201,7 +201,7 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                                 _loading
                                     ? 'Generating...'
                                     : 'Fetch & Generate Insights',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
                                   color: _loading
@@ -234,7 +234,7 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                             ),
                             const SizedBox(height: 8),
                             Text('$_progress% — Fetching data...',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 12,
                                     color: AppColors.mutedText)),
                           ],
@@ -258,7 +258,7 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                             Expanded(
                               child: Text(
                                 'Insights generated. View in Analytics Dashboard.',
-                                style: GoogleFonts.inter(
+                                style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 13,
                                     color: AppColors.successText),
                               ),
@@ -303,7 +303,7 @@ class _Section extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
-              style: GoogleFonts.publicSans(
+              style: TextStyle(fontFamily: 'Public Sans', 
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.headings)),
@@ -342,7 +342,7 @@ class _CheckTile extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Text(label,
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Roboto', 
                   fontSize: 13, color: AppColors.onSurface)),
         ],
       ),
@@ -370,7 +370,7 @@ class _FilterDrop extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label.toUpperCase(),
-              style: GoogleFonts.inter(
+              style: TextStyle(fontFamily: 'Roboto', 
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: AppColors.mutedText,
@@ -379,7 +379,7 @@ class _FilterDrop extends StatelessWidget {
           DropdownButtonFormField<String>(
             value: value,
             onChanged: onChanged,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
             decoration: InputDecoration(
               filled: true,
               fillColor: AppColors.surfaceContainerHighest,
@@ -399,3 +399,4 @@ class _FilterDrop extends StatelessWidget {
     );
   }
 }
+

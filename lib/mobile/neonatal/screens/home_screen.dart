@@ -934,3 +934,4 @@ class _TodayAppointmentsCard extends StatelessWidget {
     return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }
+
