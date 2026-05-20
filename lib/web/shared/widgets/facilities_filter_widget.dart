@@ -16,17 +16,38 @@ class FacilitiesFilterWidget extends StatefulWidget {
 class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
   final store = FacilitiesStore.instance;
   late TextEditingController _searchController;
+  
+  // Cache for async data
+  List<String> _facilityTypes = [];
+  List<String> _managedBy = [];
 
   @override
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: store.searchQuery ?? '');
+    _loadFilterOptions();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadFilterOptions() async {
+    try {
+      final types = await store.getAvailableFacilityTypes();
+      final authorities = await store.getAvailableManagedBy();
+      
+      if (mounted) {
+        setState(() {
+          _facilityTypes = types;
+          _managedBy = authorities;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading filter options: $e');
+    }
   }
 
   @override
@@ -58,6 +79,7 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
                   onPressed: () {
                     store.clearFilters();
                     _searchController.clear();
+                    _loadFilterOptions();
                     widget.onFilterChanged();
                   },
                   child: const Text('Clear All'),
@@ -93,31 +115,39 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
                 items: store.regions,
                 onChanged: (value) async {
                   await store.setRegion(value);
+                  await _loadFilterOptions();
+                  setState(() {});
                   widget.onFilterChanged();
                 },
               ),
               _buildDropdown(
                 label: 'Zone',
                 value: store.selectedZone,
-                items: store.zones,
+                items: store.selectedRegion != null ? store.zones : [],
+                enabled: store.selectedRegion != null,
                 onChanged: (value) async {
                   await store.setZone(value);
+                  await _loadFilterOptions();
+                  setState(() {});
                   widget.onFilterChanged();
                 },
               ),
               _buildDropdown(
                 label: 'District',
                 value: store.selectedDistrict,
-                items: store.districts,
+                items: store.selectedZone != null ? store.districts : [],
+                enabled: store.selectedZone != null,
                 onChanged: (value) {
                   store.setDistrict(value);
+                  _loadFilterOptions();
+                  setState(() {});
                   widget.onFilterChanged();
                 },
               ),
               _buildDropdown(
                 label: 'Facility Type',
                 value: store.selectedFacilityType,
-                items: store.getUniqueFacilityTypes(),
+                items: _facilityTypes,
                 onChanged: (value) {
                   store.setFacilityType(value);
                   widget.onFilterChanged();
@@ -126,7 +156,7 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
               _buildDropdown(
                 label: 'Managed By',
                 value: store.selectedManagedBy,
-                items: store.getUniqueManagedBy(),
+                items: _managedBy,
                 onChanged: (value) {
                   store.setManagedBy(value);
                   widget.onFilterChanged();
@@ -144,7 +174,29 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
     required String? value,
     required List<String> items,
     required Function(String?) onChanged,
+    bool enabled = true,
   }) {
+    if (!enabled) {
+      return SizedBox(
+        width: 180,
+        child: InputDecorator(
+          decoration: InputDecoration(
+            labelText: label,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            filled: true,
+            fillColor: Colors.grey[200],
+          ),
+          child: Text(
+            value ?? 'All $label',
+            style: const TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
     return SizedBox(
       width: 180,
       child: DropdownButtonFormField<String>(

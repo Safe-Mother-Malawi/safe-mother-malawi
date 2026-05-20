@@ -340,6 +340,30 @@ class ApiService {
       instance.get('/health-facilities/managing-authorities').then((data) => 
           (data as List<dynamic>).cast<String>());
 
+  static Future<List<String>> getFacilityTypesByRegion(String region) =>
+      instance.get('/health-facilities/facility-types-by-region?region=${Uri.encodeComponent(region)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getManagingAuthoritiesByRegion(String region) =>
+      instance.get('/health-facilities/managing-authorities-by-region?region=${Uri.encodeComponent(region)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getFacilityTypesByZone(String zone) =>
+      instance.get('/health-facilities/facility-types-by-zone?zone=${Uri.encodeComponent(zone)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getManagingAuthoritiesByZone(String zone) =>
+      instance.get('/health-facilities/managing-authorities-by-zone?zone=${Uri.encodeComponent(zone)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getFacilityTypesByDistrict(String district) =>
+      instance.get('/health-facilities/facility-types-by-district?district=${Uri.encodeComponent(district)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getManagingAuthoritiesByDistrict(String district) =>
+      instance.get('/health-facilities/managing-authorities-by-district?district=${Uri.encodeComponent(district)}').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
   // ── Patients ──────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> registerPrenatalPatient(

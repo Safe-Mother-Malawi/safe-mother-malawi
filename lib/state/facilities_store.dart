@@ -258,7 +258,79 @@ class FacilitiesStore {
     _notify();
   }
 
-  /// Get unique facility types from all facilities
+  /// Get unique facility types from filtered facilities (based on region/zone/district)
+  Future<List<String>> getAvailableFacilityTypes() async {
+    try {
+      if (_selectedDistrict != null) {
+        return await ApiService.getFacilityTypesByDistrict(_selectedDistrict!);
+      } else if (_selectedZone != null) {
+        return await ApiService.getFacilityTypesByZone(_selectedZone!);
+      } else if (_selectedRegion != null) {
+        return await ApiService.getFacilityTypesByRegion(_selectedRegion!);
+      } else {
+        return await ApiService.getFacilityTypes();
+      }
+    } catch (e) {
+      // Fallback to local filtering
+      var facilities = _allFacilities;
+      
+      if (_selectedRegion != null) {
+        facilities = facilities.where((f) => f.region == _selectedRegion).toList();
+      }
+      
+      if (_selectedZone != null) {
+        facilities = facilities.where((f) => f.zone == _selectedZone).toList();
+      }
+      
+      if (_selectedDistrict != null) {
+        facilities = facilities.where((f) => f.district == _selectedDistrict).toList();
+      }
+      
+      final types = <String>{};
+      for (final f in facilities) {
+        types.add(f.facilityType);
+      }
+      return types.toList()..sort();
+    }
+  }
+
+  /// Get unique managing authorities from filtered facilities (based on region/zone/district)
+  Future<List<String>> getAvailableManagedBy() async {
+    try {
+      if (_selectedDistrict != null) {
+        return await ApiService.getManagingAuthoritiesByDistrict(_selectedDistrict!);
+      } else if (_selectedZone != null) {
+        return await ApiService.getManagingAuthoritiesByZone(_selectedZone!);
+      } else if (_selectedRegion != null) {
+        return await ApiService.getManagingAuthoritiesByRegion(_selectedRegion!);
+      } else {
+        return await ApiService.getManagingAuthorities();
+      }
+    } catch (e) {
+      // Fallback to local filtering
+      var facilities = _allFacilities;
+      
+      if (_selectedRegion != null) {
+        facilities = facilities.where((f) => f.region == _selectedRegion).toList();
+      }
+      
+      if (_selectedZone != null) {
+        facilities = facilities.where((f) => f.zone == _selectedZone).toList();
+      }
+      
+      if (_selectedDistrict != null) {
+        facilities = facilities.where((f) => f.district == _selectedDistrict).toList();
+      }
+      
+      final authorities = <String>{};
+      for (final f in facilities) {
+        authorities.add(f.managingAuthority);
+      }
+      return authorities.toList()..sort();
+    }
+  }
+
+  /// Get unique facility types from all facilities (legacy method)
   List<String> getUniqueFacilityTypes() {
     final types = <String>{};
     for (final f in _allFacilities) {
@@ -267,7 +339,7 @@ class FacilitiesStore {
     return types.toList()..sort();
   }
 
-  /// Get unique managing authorities from all facilities
+  /// Get unique managing authorities from all facilities (legacy method)
   List<String> getUniqueManagedBy() {
     final authorities = <String>{};
     for (final f in _allFacilities) {
