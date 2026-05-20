@@ -39,6 +39,24 @@ class AppNotification {
       read: isRead,
     );
   }
+
+  /// Returns a human-readable time ago string (e.g., "2 minutes ago", "1 hour ago")
+  String get timeAgo {
+    final now = DateTime.now();
+    final diff = now.difference(timestamp);
+
+    if (diff.inSeconds < 60) {
+      return 'just now';
+    } else if (diff.inMinutes < 60) {
+      return '${diff.inMinutes}m ago';
+    } else if (diff.inHours < 24) {
+      return '${diff.inHours}h ago';
+    } else if (diff.inDays < 7) {
+      return '${diff.inDays}d ago';
+    } else {
+      return '${(diff.inDays / 7).floor()}w ago';
+    }
+  }
 }
 
 class NotificationStore {

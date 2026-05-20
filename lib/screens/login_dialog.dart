@@ -64,9 +64,6 @@ class _LoginDialogState extends State<LoginDialog> {
         return;
       }
 
-      // Start real-time notifications
-      NotificationStore.instance.start();
-
       Widget dest;
       if (role == 'admin') {
         dest = const AdminOverview();

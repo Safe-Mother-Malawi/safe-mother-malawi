@@ -618,4 +618,31 @@ class ApiService {
       throw ApiException(response.statusCode, 'Failed to submit contact form');
     }
   }
+
+  /// Upload or remove a profile photo
+  /// Pass a base64 data URL (e.g., 'data:image/jpeg;base64,...') to upload
+  /// Pass null to remove the photo
+  /// Returns the new photo URL or null if removed
+  static Future<String?> uploadProfilePhoto(String? photoDataUrl) async {
+    final token = await instance.getToken();
+    if (token == null) throw ApiException(401, 'Not authenticated');
+
+    final response = await http.post(
+      Uri.parse('$_base/auth/profile-photo'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: jsonEncode({
+        'photoDataUrl': photoDataUrl,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      throw ApiException(response.statusCode, 'Failed to upload profile photo');
+    }
+
+    final data = jsonDecode(response.body) as Map<String, dynamic>?;
+    return data?['profilePhotoUrl'] as String?;
+  }
 }

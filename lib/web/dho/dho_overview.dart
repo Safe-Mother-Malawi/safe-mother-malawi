@@ -101,6 +101,11 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
   int _ivrCalls      = 0;
   String _district   = '';
 
+  int _ancAttendanceRate = 0;
+  int _ancComplianceRate = 0;
+  int _poorCompliancePatients = 0;
+  List<Map<String, dynamic>> _ancTrends = [];
+
   List<FlSpot> _trendSpots = [];
   List<Map<String, dynamic>> _riskDist = [];
   List<Map<String, dynamic>> _districtAlerts = [];
