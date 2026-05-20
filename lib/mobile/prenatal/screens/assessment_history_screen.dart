@@ -23,8 +23,9 @@ class _PrenatalAssessmentHistoryScreenState extends State<PrenatalAssessmentHist
 
   Future<void> _loadHistory() async {
     try {
-      final result = await ApiService.getAssessmentHistory();
-      final assessments = result
+      await ApiService.instance.loadToken();
+      final result = await ApiService.getMyHealthCheckHistory();
+      final assessments = ((result['data'] as List<dynamic>?) ?? [])
           .cast<Map<String, dynamic>>()
           .toList();
       
@@ -145,7 +146,7 @@ class _PrenatalAssessmentHistoryScreenState extends State<PrenatalAssessmentHist
                         final assessment = _assessments[index];
                         final riskLevel = assessment['riskLevel'] as String? ?? 'Unknown';
                         final score = assessment['score'] as num? ?? 0;
-                        final submittedAt = assessment['submittedAt'] as String?;
+                        final submittedAt = (assessment['createdAt'] ?? assessment['submittedAt']) as String?;
                         final date = submittedAt != null
                             ? DateTime.tryParse(submittedAt)
                             : null;

@@ -14,7 +14,7 @@ class _HelpScreenState extends State<HelpScreen> {
     {'q': 'How is my pregnancy week calculated?', 'a': 'Your pregnancy week is automatically calculated from your Last Menstrual Period (LMP) date entered during registration.'},
     {'q': 'Can I use the app without internet?', 'a': 'Yes. Core features like the pregnancy tracker, nutrition tips, and health information are available offline. Data syncs when you reconnect.'},
     {'q': 'How do I update my LMP date?', 'a': 'On the home screen, tap the "Edit" button next to your due date to update your LMP date.'},
-    {'q': 'What is the call feature?', 'a': 'The call feature lets you quickly contact hospitals, midwives, or emergency services directly from the app.'},
+    {'q': 'What is the IVR call feature?', 'a': 'The IVR (Interactive Voice Response) feature lets you quickly call hospitals, midwives, or emergency services directly from the app.'},
     {'q': 'How does the health diagnostic work?', 'a': 'The diagnostic asks you a series of questions about your symptoms. Each answer has a weight, and the system calculates a risk score to suggest possible health concerns.'},
     {'q': 'How do I add an appointment?', 'a': 'Go to the Schedule tab and tap "+ New" to add a new appointment with date, time, location, and doctor details.'},
   ];
@@ -23,14 +23,14 @@ class _HelpScreenState extends State<HelpScreen> {
   bool _isSubmitting = false;
 
   Future<void> _callHelpline() async {
-    const phoneNumber = 'tel:+265800000111';
+    const phoneNumber = 'tel:700';
     try {
       if (await canLaunchUrl(Uri.parse(phoneNumber))) {
         await launchUrl(Uri.parse(phoneNumber));
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to make call. Please dial +265 800 000 111 manually.')),
+            const SnackBar(content: Text('Unable to make call. Please dial 700 manually.')),
           );
         }
       }
@@ -44,7 +44,7 @@ class _HelpScreenState extends State<HelpScreen> {
   }
 
   Future<void> _sendEmail() async {
-    const email = 'support@safemothermalawi.org';
+    const email = 'safemothermalawi@gmail.com';
     final emailUri = Uri(
       scheme: 'mailto',
       path: email,
@@ -224,9 +224,9 @@ class _HelpScreenState extends State<HelpScreen> {
             decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
               boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
             child: Column(children: [
-              _LinkTile(icon: Icons.phone_outlined, label: 'SafeMother Helpline', subtitle: '+265 800 000 111', color: AppColors.statusRed, onTap: _callHelpline),
+              _LinkTile(icon: Icons.phone_outlined, label: 'SafeMother Helpline', subtitle: '700', color: AppColors.statusRed, onTap: _callHelpline),
               const Divider(height: 1, indent: 56),
-              _LinkTile(icon: Icons.email_outlined, label: 'Email Support', subtitle: 'support@safemothermalawi.org', color: AppColors.mobileNavy, onTap: _sendEmail),
+              _LinkTile(icon: Icons.email_outlined, label: 'Email Support', subtitle: 'safemothermalawi@gmail.com', color: AppColors.mobileNavy, onTap: _sendEmail),
               const Divider(height: 1, indent: 56),
               _LinkTile(icon: Icons.local_hospital_outlined, label: 'Nearest Health Centre', subtitle: 'Find a clinic near you', color: AppColors.statusGreen, onTap: _findNearestHealthCentre),
             ]),

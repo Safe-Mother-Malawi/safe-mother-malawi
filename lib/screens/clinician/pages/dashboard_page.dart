@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
@@ -16,77 +17,133 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
   String? _error;
 
   int _prenatalCount  = 0;
-  int _highRiskCount  = 0;
-  int _missedVisits   = 0;
-  int _dueDeliveries  = 0;
+  int _neonatalCount  = 0;
+  int _alertCount     = 0;
   String _userName    = '';
 
-  List<Map<String, dynamic>> _alerts = [];
   List<Map<String, dynamic>> _recentPrenatal = [];
   List<Map<String, dynamic>> _todayAppts     = [];
+  bool _loadingAppointments = true;
+  late Timer _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _userName = AuthServiceWeb.instance.userName;
     _load();
+    // Refresh appointments every 10 seconds to catch updates/deletions
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _loadTodayAppointments();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer.cancel();
+    super.dispose();
   }
 
   Future<void> _load() async {
     try {
       final results = await Future.wait([
         ApiService.instance.get('/patients/prenatal').catchError((_) => <dynamic>[]),
+        ApiService.instance.get('/patients/neonatal').catchError((_) => <dynamic>[]),
         ApiService.instance.get('/alerts/active').catchError((_) => <dynamic>[]),
-        ApiService.instance.get('/appointments?upcoming=true').catchError((_) => <dynamic>[]),
-        ApiService.instance.get('/appointments').catchError((_) => <dynamic>[]), // All appts to check missed
       ]);
 
-      final prenatal = (results[0] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final alerts   = (results[1] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final appts    = (results[2] as List?)?.cast<Map<String, dynamic>>() ?? [];
-      final allAppts = (results[3] as List?)?.cast<Map<String, dynamic>>() ?? [];
-
-      final today = DateTime.now().toIso8601String().substring(0, 10);
-      final todayAppts = appts.where((a) => (a['date'] as String?)?.startsWith(today) == true).toList();
-
-      int highRisk = 0;
-      int dueDeliv = 0;
-      for (final p in prenatal) {
-        if (p['pregnancyMonths'] != null && int.tryParse(p['pregnancyMonths'].toString()) == 9) {
-          dueDeliv++;
-        }
-      }
-      
-      // Calculate missed visits (appointments in the past that are not completed)
-      int missed = allAppts.where((a) {
-        if (a['status'] == 'completed' || a['status'] == 'cancelled') return false;
-        final dateStr = a['date'] as String?;
-        if (dateStr == null) return false;
-        final date = DateTime.tryParse(dateStr);
-        if (date == null) return false;
-        return date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
-      }).length;
-
-      // Filter alerts to match clinician priorities
-      final highPriorityAlerts = alerts.where((a) {
-        final title = (a['title'] as String?)?.toLowerCase() ?? '';
-        return title.contains('hypertension') || title.contains('danger') || title.contains('risk') || title.contains('missed');
-      }).toList();
+      final prenatal = (results[0] is List ? results[0] as List : [])
+          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final neonatal = (results[1] is List ? results[1] as List : [])
+          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final alerts   = (results[2] is List ? results[2] as List : [])
+          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
 
       if (!mounted) return;
       setState(() {
         _prenatalCount  = prenatal.length;
-        _highRiskCount  = highPriorityAlerts.length; // Approximation for demo
-        _missedVisits   = missed;
-        _dueDeliveries  = dueDeliv;
-        _alerts         = alerts;
+        _neonatalCount  = neonatal.length;
+        _alertCount     = alerts.length;
         _recentPrenatal = prenatal.take(5).toList();
-        _todayAppts     = todayAppts.take(5).toList();
         _loading        = false;
       });
+      
+      // Load today's appointments separately
+      await _loadTodayAppointments();
     } catch (e) {
       if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _loadTodayAppointments() async {
+    try {
+      // Get current clinician to filter appointments by their ID
+      final user = await ApiService.instance.currentUser();
+      if (user == null) {
+        if (mounted) {
+          setState(() => _loadingAppointments = false);
+        }
+        return;
+      }
+
+      final clinicianId = user['id'] as String?;
+      if (clinicianId == null) {
+        if (mounted) {
+          setState(() => _loadingAppointments = false);
+        }
+        return;
+      }
+
+      // Fetch appointments for this clinician
+      final allAppointments = await ApiService.getAppointments(patientId: clinicianId);
+      final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      
+      final todayAppointments = (allAppointments as List)
+          .cast<Map<String, dynamic>>()
+          .where((a) {
+            // Try multiple date field names
+            final dateStr = (a['date'] ?? a['appointmentDate'] ?? a['appointment_date'] ?? '').toString().trim();
+            if (dateStr.isEmpty) return false;
+            
+            DateTime? date;
+            
+            // Try parsing as ISO format (2024-05-19 or 2024-05-19T10:30:00)
+            if (dateStr.contains('-')) {
+              date = DateTime.tryParse(dateStr);
+            }
+            
+            // If parsing failed, try other formats
+            if (date == null) {
+              // Try DD/MM/YYYY format
+              try {
+                final parts = dateStr.split('/');
+                if (parts.length == 3) {
+                  date = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                }
+              } catch (e) {
+                // Ignore parsing errors
+              }
+            }
+            
+            if (date == null) return false;
+            
+            // Compare only year, month, and day (ignore time)
+            final appointmentDate = DateTime(date.year, date.month, date.day);
+            return appointmentDate == todayDate;
+          })
+          .toList();
+      
+      if (mounted) {
+        setState(() {
+          _todayAppts = todayAppointments.take(5).toList();
+          _loadingAppointments = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingAppointments = false);
+      }
     }
   }
 
@@ -149,26 +206,20 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
         ),
         const SizedBox(height: 20),
 
-        // Patient Overview Metric cards
+        // Metric cards
         Row(children: [
-          Expanded(child: _metricCard(Icons.pregnant_woman, '$_prenatalCount', 'Active Pregnancies', 'Total enrolled', AppColors.navy, AppColors.navyL)),
+          Expanded(child: _metricCard(Icons.people_outline, '${_prenatalCount + _neonatalCount}', 'Active Patients', 'Total', AppColors.navy, AppColors.navyL)),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.warning_amber_rounded, '$_highRiskCount', 'High-Risk', 'Requires attention', AppColors.orange, AppColors.orangeL)),
+          Expanded(child: _metricCard(Icons.pregnant_woman, '$_prenatalCount', 'Pregnant', 'ANC active', AppColors.navy, AppColors.navyL)),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.event_busy, '$_missedVisits', 'Missed Visits', 'Overdue ANC', AppColors.red, const Color(0xFFFFEBEE))),
+          Expanded(child: _metricCard(Icons.child_friendly_outlined, '$_neonatalCount', 'Neonatal', 'PNC active', AppColors.navy, AppColors.navyL)),
           const SizedBox(width: 12),
-          Expanded(child: _metricCard(Icons.child_care, '$_dueDeliveries', 'Due Deliveries', 'Near-term', AppColors.green, const Color(0xFFE8F5E9))),
+          Expanded(child: _metricCard(Icons.notifications_active_outlined, '$_alertCount', 'Alerts', 'Active alerts', AppColors.orange, AppColors.orangeL)),
         ]),
         const SizedBox(height: 20),
 
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Expanded(flex: 3, child: Column(
-            children: [
-              _buildRecentPatients(),
-              const SizedBox(height: 20),
-              _buildAlertsPanel(),
-            ],
-          )),
+          Expanded(flex: 3, child: _buildRecentPatients()),
           const SizedBox(width: 16),
           Expanded(flex: 2, child: _buildTodayAppointments()),
         ]),
@@ -182,11 +233,8 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.g200)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: 20),
-          ),
+          Icon(icon, color: color, size: 20),
+          Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
         ]),
         const SizedBox(height: 12),
         Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color, height: 1)),
@@ -244,59 +292,6 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
     );
   }
 
-  Widget _buildAlertsPanel() {
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.orange.withOpacity(0.5))),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.orangeL, borderRadius: const BorderRadius.vertical(top: Radius.circular(11))),
-          child: const Row(children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.orange, size: 18),
-            SizedBox(width: 8),
-            Text('Action Required Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.g800)),
-          ]),
-        ),
-        if (_alerts.isEmpty)
-          const Padding(
-            padding: EdgeInsets.all(24),
-            child: Center(child: Text('No active alerts.', style: TextStyle(color: AppColors.g400))),
-          )
-        else
-          ..._alerts.map((a) {
-            final title = a['title'] as String? ?? 'Alert';
-            final desc  = a['description'] as String? ?? '';
-            final level = a['level'] as String? ?? 'info';
-            
-            Color iconColor = AppColors.orange;
-            IconData icon = Icons.info_outline;
-            
-            if (level == 'critical' || title.toLowerCase().contains('danger') || title.toLowerCase().contains('severe')) {
-              iconColor = AppColors.red;
-              icon = Icons.dangerous_outlined;
-            } else if (title.toLowerCase().contains('missed')) {
-              iconColor = AppColors.red;
-              icon = Icons.event_busy;
-            }
-
-            return Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.g200, width: 0.5))),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(icon, color: iconColor, size: 20),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: iconColor)),
-                  const SizedBox(height: 4),
-                  Text(desc, style: const TextStyle(fontSize: 11, color: AppColors.g600)),
-                ])),
-              ]),
-            );
-          }),
-      ]),
-    );
-  }
-
   Widget _buildTodayAppointments() {
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.g200)),
@@ -310,15 +305,53 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
           ]),
         ),
         const Divider(height: 1, color: AppColors.g200),
-        if (_todayAppts.isEmpty)
+        if (_loadingAppointments)
           const Padding(
             padding: EdgeInsets.all(24),
-            child: Center(child: Text('No appointments today.', style: TextStyle(color: AppColors.g400))),
+            child: Center(child: CircularProgressIndicator(color: AppColors.navy)),
+          )
+        else if (_todayAppts.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 40,
+                    color: AppColors.navy.withOpacity(0.3),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'No Appointments Today',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.g800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'You have no appointments scheduled for today.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.g400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           )
         else
           ..._todayAppts.map((a) {
             final time  = a['time'] as String? ?? '--:--';
             final title = a['title'] as String? ?? a['patientName'] as String? ?? 'Appointment';
+            final location = (a['location'] ?? a['facility'] ?? 'TBD').toString();
+            final doctor = (a['doctor'] ?? a['clinician']?['fullName'] ?? 'TBD').toString();
+            final dateStr = (a['date'] ?? a['appointmentDate'] ?? a['appointment_date'] ?? '').toString();
+            
             return Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.g200, width: 0.5))),
@@ -328,11 +361,77 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
                 Container(width: 3, height: 32, color: AppColors.navy),
                 const SizedBox(width: 10),
                 Expanded(child: Text(title, style: const TextStyle(fontSize: 12, color: AppColors.g800))),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () {
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        title: const Text('Appointment Details',
+                            style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.navy)),
+                        content: SingleChildScrollView(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildDetailRow('Title', title),
+                              _buildDetailRow('Date', _fmtFull(DateTime.tryParse(dateStr) ?? DateTime.now())),
+                              _buildDetailRow('Time', time),
+                              _buildDetailRow('Location', location),
+                              _buildDetailRow('Doctor', doctor),
+                            ],
+                          ),
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('Close'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.navy,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
+                  ),
+                ),
               ]),
             );
           }),
       ]),
     );
+  }
+
+  static Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.g600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, color: AppColors.g800),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtFull(DateTime d) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 
   String _weekday(int d) => const ['','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'][d];

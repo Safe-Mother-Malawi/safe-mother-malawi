@@ -37,6 +37,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
   @override
   void dispose() {
     NotificationStore.instance.removeListener(_onNotif);
+    NotificationStore.instance.stopAutoRefresh();
     UserStore.instance.removeListener(_onUserChanged);
     super.dispose();
   }

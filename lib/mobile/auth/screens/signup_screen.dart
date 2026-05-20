@@ -6,7 +6,6 @@ import '../widgets/auth_button.dart';
 import 'login_screen.dart';
 import '../../../../services/api_service.dart';
 import '../../../../utils/validators.dart';
-import '../data/fallback_facilities.dart';
 
 const _kDistricts = [
   'Balaka','Blantyre','Chikwawa','Chiradzulu','Chitipa','Dedza',
@@ -41,8 +40,6 @@ class _SignupScreenState extends State<SignupScreen> {
   final _ageCtrl          = TextEditingController();
   final _nationalityCtrl  = TextEditingController();
   final _emailCtrl        = TextEditingController();
-  final _villageCtrl      = TextEditingController();
-  final _emergencyContactCtrl = TextEditingController();
   String? _district;
   String? _facilityName;
   List<Map<String, dynamic>> _facilityObjects = [];
@@ -56,21 +53,6 @@ class _SignupScreenState extends State<SignupScreen> {
   DateTime? _dueDate;
   final _babyNameCtrl = TextEditingController();
   final _babyDobCtrl  = TextEditingController();
-  
-  final _gravidaCtrl  = TextEditingController();
-  final _parityCtrl   = TextEditingController();
-  final _lmpCtrl      = TextEditingController();
-  DateTime? _lmpDate;
-  final List<String> _existingConditions = [];
-
-  static const _kConditions = [
-    'Hypertension',
-    'Diabetes',
-    'HIV',
-    'Asthma',
-    'Previous C-section',
-    'Previous miscarriage',
-  ];
 
   // ── Step 3: Account Security ──
   final _passwordCtrl = TextEditingController();
@@ -88,8 +70,7 @@ class _SignupScreenState extends State<SignupScreen> {
   void dispose() {
     for (final c in [
       _nameCtrl, _phoneCtrl, _ageCtrl, _nationalityCtrl,
-      _emailCtrl, _villageCtrl, _emergencyContactCtrl, 
-      _dueDateCtrl, _gravidaCtrl, _parityCtrl, _lmpCtrl,
+      _emailCtrl, _dueDateCtrl,
       _babyNameCtrl, _babyDobCtrl, _passwordCtrl, _confirmCtrl, _secAnswerCtrl,
     ]) { c.dispose(); }
     super.dispose();
@@ -101,13 +82,7 @@ class _SignupScreenState extends State<SignupScreen> {
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: c));
 
   Future<void> _loadFacilities(String district) async {
-    setState(() { 
-      _loadingFacilities = true; 
-      _facilities = []; 
-      _facilityObjects = []; 
-      _facilityName = null; 
-    });
-    
+    setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
     try {
       final data = await ApiService.getFacilitiesByDistrict(district);
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
@@ -137,47 +112,8 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-    } catch (e) {
-      // Fall back to local data when API fails
-      _loadFallbackFacilities(district);
-    }
-  }
-
-  void _loadFallbackFacilities(String district) {
-    try {
-      final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
-      
-      if (fallbackData.isEmpty) {
-        setState(() {
-          _facilityObjects = [];
-          _facilities = [];
-          _loadingFacilities = false;
-        });
-        return;
-      }
-      
-      // Sort fallback data the same way
-      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
-      fallbackData.sort((a, b) {
-        final ta = (a['facilityType'] ?? '').toString();
-        final tb = (b['facilityType'] ?? '').toString();
-        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
-        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
-        if (ia != ib) return ia.compareTo(ib);
-        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
-      });
-      
-      setState(() {
-        _facilityObjects = fallbackData;
-        _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
-        _loadingFacilities = false;
-      });
-    } catch (e) {
-      setState(() {
-        _facilityObjects = [];
-        _facilities = [];
-        _loadingFacilities = false;
-      });
+    } catch (_) {
+      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
     }
   }
 
@@ -221,40 +157,6 @@ class _SignupScreenState extends State<SignupScreen> {
     }
   }
 
-  Future<void> _pickLmpDate() async {
-    final now = DateTime.now();
-    final p = await showDatePicker(
-      context: context,
-      initialDate: _lmpDate ?? now.subtract(const Duration(days: 90)),
-      firstDate: now.subtract(const Duration(days: 280)),
-      lastDate: now,
-      helpText: 'Select Last Menstrual Period (LMP)',
-      builder: (ctx, child) => Theme(
-        data: Theme.of(ctx).copyWith(
-            colorScheme: const ColorScheme.light(primary: Color(0xFF1A237E))),
-        child: child!),
-    );
-    if (p != null) {
-      setState(() {
-        _lmpDate = p;
-        _lmpCtrl.text = '${p.year}-${p.month.toString().padLeft(2, '0')}-${p.day.toString().padLeft(2, '0')}';
-        
-        // Auto-calculate EDD
-        final edd = p.add(const Duration(days: 280));
-        _dueDate = edd;
-        _dueDateCtrl.text = '${edd.year}-${edd.month.toString().padLeft(2, '0')}-${edd.day.toString().padLeft(2, '0')}';
-        
-        // Auto-calculate pregnancy weeks and months
-        final daysDiff = now.difference(p).inDays;
-        final totalWeeks = daysDiff ~/ 7;
-        if (totalWeeks >= 0 && totalWeeks <= 40) {
-          _pregMonth = totalWeeks ~/ 4;
-          _pregWeek = totalWeeks % 4;
-        }
-      });
-    }
-  }
-
   Future<void> _pickBabyDob() async {
     final now = DateTime.now();
     final p = await showDatePicker(
@@ -284,32 +186,26 @@ class _SignupScreenState extends State<SignupScreen> {
       age: _ageCtrl.text.trim(),
       nationality: _nationalityCtrl.text.trim(),
       district: _district ?? '',
-      village: _villageCtrl.text.trim(),
       facilityName: _facilityName ?? '',
-      lmpDate: _isPrenatal ? _lmpCtrl.text : '',
       pregnancyMonths: _isPrenatal ? _pregMonth.toString() : '',
       pregnancyWeeks:  _isPrenatal ? _pregWeek.toString()  : '',
       expectedDeliveryDate: _isPrenatal ? _dueDateCtrl.text : '',
-      gravida: _isPrenatal ? _gravidaCtrl.text.trim() : '',
-      parity: _isPrenatal ? _parityCtrl.text.trim() : '',
-      existingConditions: _isPrenatal ? _existingConditions : [],
-      emergencyContact: _emergencyContactCtrl.text.trim(),
       babyName: !_isPrenatal ? _babyNameCtrl.text.trim() : '',
       babyDob:  !_isPrenatal ? _babyDobCtrl.text.trim()  : '',
       securityQuestion: _secQuestion,
       securityAnswer: _secAnswerCtrl.text.trim().toLowerCase(),
     );
-    final result = await AuthService().register(user);
+    final ok = await AuthService().register(user);
     setState(() => _loading = false);
     if (!mounted) return;
-    if (result['success']) {
+    if (ok) {
       _snack('Account created successfully!', const Color(0xFF1A237E));
       Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
           (_) => false);
     } else {
-      _snack(result['error'] ?? 'Registration failed. Please try again.', Colors.red);
+      _snack('Account already exists. Try logging in.', Colors.red);
     }
   }
 
@@ -480,14 +376,8 @@ class _SignupScreenState extends State<SignupScreen> {
             validator: (v) => v!.trim().isEmpty ? 'Nationality is required' : null,
           ),
           const SizedBox(height: 12),
-          AuthTextField(
-            hint: 'Village *',
-            controller: _villageCtrl,
-            validator: (v) => v!.trim().isEmpty ? 'Village is required' : null,
-          ),
-          const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: _district,
+            initialValue: _district,
             decoration: _dd('District *'),
             style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
             hint: const Text('District *',
@@ -514,22 +404,12 @@ class _SignupScreenState extends State<SignupScreen> {
           else if (_facilityObjects.isEmpty && _district != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Unable to load facilities for this district.',
-                    style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Please check your internet connection or try again later.',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
-                  ),
-                ],
+              child: Text(
+                'No health facilities found for this district',
+                style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
               ),
             )
-          else if (_facilityObjects.isNotEmpty)
+          else
           DropdownButtonFormField<String>(
             key: ValueKey(_district),
             value: _facilities.contains(_facilityName) ? _facilityName : null,
@@ -539,15 +419,14 @@ class _SignupScreenState extends State<SignupScreen> {
             hint: Text(
               _district == null ? 'Select district first' : 'Select health facility',
               style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
-            items: _facilityObjects.map((f) {
+            items: _facilityObjects.isEmpty ? [] : _facilityObjects.map((f) {
               final name = f['facilityName']?.toString() ?? '';
-              final type = f['facilityType']?.toString() ?? '';
               return DropdownMenuItem<String>(
                 value: name,
                 child: SizedBox(
                   width: double.infinity,
                   child: Text(
-                    '$name${type.isNotEmpty ? ' ($type)' : ''}',
+                    name,
                     style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
@@ -555,21 +434,10 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               );
             }).toList(),
-            onChanged: (v) => setState(() => _facilityName = v),
+            onChanged: _district == null || _facilityObjects.isEmpty
+                ? null
+                : (v) => setState(() => _facilityName = v),
             validator: (v) => v == null ? 'Please select a health facility' : null,
-          ),
-          const SizedBox(height: 12),
-          AuthTextField(
-            hint: 'Emergency Contact Phone *',
-            controller: _emergencyContactCtrl,
-            keyboardType: TextInputType.phone,
-            validator: (v) {
-              if (v!.trim().isEmpty) return 'Emergency contact is required';
-              if (v.trim().length != 10) return 'Phone must be exactly 10 digits';
-              if (!v.trim().startsWith('0')) return 'Phone must start with 0';
-              if (!RegExp(r'^[0-9]+$').hasMatch(v.trim())) return 'Phone must contain only digits';
-              return null;
-            },
           ),
           const SizedBox(height: 12),
           AuthTextField(
@@ -594,48 +462,38 @@ class _SignupScreenState extends State<SignupScreen> {
           children: [
             const _SL(n: '2', t: 'Pregnancy Details'),
             const SizedBox(height: 14),
+            const Text('Pregnancy Duration *',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
+            const SizedBox(height: 8),
             Row(children: [
               Expanded(
-                child: AuthTextField(
-                  hint: 'Gravida *',
-                  controller: _gravidaCtrl,
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v!.trim().isEmpty ? 'Required' : null,
+                child: DropdownButtonFormField<int>(
+                  initialValue: _pregMonth,
+                  decoration: _dd('Month'),
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
+                  items: List.generate(9, (i) => i + 1)
+                      .map((m) => DropdownMenuItem(value: m, child: Text('$m months')))
+                      .toList(),
+                  onChanged: (v) { if (v != null) setState(() => _pregMonth = v); },
+                  validator: (_) => null,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: AuthTextField(
-                  hint: 'Parity *',
-                  controller: _parityCtrl,
-                  keyboardType: TextInputType.number,
-                  validator: (v) => v!.trim().isEmpty ? 'Required' : null,
+                child: DropdownButtonFormField<int>(
+                  initialValue: _pregWeek,
+                  decoration: _dd('Week'),
+                  style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
+                  items: List.generate(5, (i) => i)
+                      .map((w) => DropdownMenuItem(value: w, child: Text('$w weeks')))
+                      .toList(),
+                  onChanged: (v) { if (v != null) setState(() => _pregWeek = v); },
+                  validator: (v) => (v ?? 0) > 4 ? 'Max 4 weeks' : null,
                 ),
               ),
             ]),
             const SizedBox(height: 20),
-            const Text('Last Menstrual Period (LMP) *',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: _pickLmpDate,
-              child: AbsorbPointer(
-                child: TextFormField(
-                  controller: _lmpCtrl,
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
-                  decoration: _dd('Tap to select LMP date').copyWith(
-                    suffixIcon: const Icon(Icons.calendar_today,
-                        color: Color(0xFF1A237E), size: 20),
-                  ),
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'LMP is required';
-                    return null;
-                  },
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text('Expected Delivery Date (Auto-calculated) *',
+            const Text('Expected Delivery Date *',
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
             const SizedBox(height: 8),
             GestureDetector(
@@ -644,68 +502,17 @@ class _SignupScreenState extends State<SignupScreen> {
                 child: TextFormField(
                   controller: _dueDateCtrl,
                   style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
-                  decoration: _dd('Tap to override date').copyWith(
+                  decoration: _dd('Tap to select date').copyWith(
                     suffixIcon: const Icon(Icons.calendar_today,
                         color: Color(0xFF1A237E), size: 20),
                   ),
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Expected delivery date is required';
-                    if (_totalWeeks > 45) return 'Total weeks cannot exceed 45';
+                    if (_totalWeeks > 40) return 'Fix duration first (max 40 weeks)';
                     return null;
                   },
                 ),
               ),
-            ),
-            if (_lmpDate != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8EAF6),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFC5CAE9)),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.info_outline, color: Color(0xFF3F51B5), size: 20),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Gestational Age: $_pregMonth month(s), $_pregWeek week(s)\nTrimester: ${(_pregMonth ~/ 3) + 1}',
-                          style: const TextStyle(fontSize: 13, color: Color(0xFF3F51B5), fontWeight: FontWeight.w500),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            const SizedBox(height: 20),
-            const Text('Existing Conditions',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _kConditions.map((c) {
-                final selected = _existingConditions.contains(c);
-                return ChoiceChip(
-                  label: Text(c, style: TextStyle(
-                    fontSize: 12,
-                    color: selected ? Colors.white : const Color(0xFF424242),
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                  )),
-                  selected: selected,
-                  selectedColor: const Color(0xFF1A237E),
-                  backgroundColor: const Color(0xFFF5F5F5),
-                  onSelected: (s) {
-                    setState(() {
-                      if (s) _existingConditions.add(c);
-                      else _existingConditions.remove(c);
-                    });
-                  },
-                );
-              }).toList(),
             ),
           ],
         ),
@@ -769,7 +576,7 @@ class _SignupScreenState extends State<SignupScreen> {
               style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
-            value: _secQuestion,
+            initialValue: _secQuestion,
             decoration: _dd('Select a question'),
             style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
             items: _kQuestions

@@ -45,6 +45,8 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
   final _secAnswerCtrl = TextEditingController();
 
   bool _loading = false;
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   static const _districts = [
     'Balaka','Blantyre','Chikwawa','Chiradzulu','Chitipa','Dedza','Dowa',
@@ -203,7 +205,7 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
     final result = await AuthService().register(user);
     setState(() => _loading = false);
     if (!mounted) return;
-    if (result['success']) {
+    if (result) {
       _snack('Account created successfully!', const Color(0xFF1A3A6B));
       Navigator.pushAndRemoveUntil(
         context,
@@ -211,16 +213,17 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
         (_) => false,
       );
     } else {
-      _snack(result['error'] ?? 'Registration failed. Please try again.', Colors.red);
+      _snack('Registration failed. Please try again.', Colors.red);
     }
   }
 
-  InputDecoration _dec(String hint) => InputDecoration(
+  InputDecoration _dec(String hint, {Widget? suffixIcon}) => InputDecoration(
     hintText: hint,
     hintStyle: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 13),
     filled: true,
     fillColor: const Color(0xFFF5F5F5),
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    suffixIcon: suffixIcon,
     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
     enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFE0E0E0))),
     focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1A3A6B), width: 1.5)),
@@ -647,15 +650,35 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
           const SizedBox(height: 20),
           _Field(label: 'Password *', child: TextFormField(
             controller: _passwordCtrl,
-            obscureText: true,
-            decoration: _dec('Min. 8 chars with uppercase, lowercase, number, special char'),
+            obscureText: _obscurePassword,
+            decoration: _dec(
+              'Min. 8 chars with uppercase, lowercase, number, special char',
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                  color: const Color(0xFF9E9E9E),
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+              ),
+            ),
             validator: Validators.validatePassword,
           )),
           const SizedBox(height: 14),
           _Field(label: 'Confirm Password *', child: TextFormField(
             controller: _confirmCtrl,
-            obscureText: true,
-            decoration: _dec('Re-enter your password'),
+            obscureText: _obscureConfirmPassword,
+            decoration: _dec(
+              'Re-enter your password',
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                  color: const Color(0xFF9E9E9E),
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+              ),
+            ),
             validator: (v) => Validators.validatePasswordConfirmation(v, _passwordCtrl.text),
           )),
           const SizedBox(height: 28),

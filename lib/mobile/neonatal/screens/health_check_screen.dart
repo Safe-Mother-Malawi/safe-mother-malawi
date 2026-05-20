@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../utils/app_colors.dart';
 import 'health_check_result_screen.dart';
 
 class NeonatalHealthCheckScreen extends StatefulWidget {
@@ -30,6 +30,14 @@ class _NeonatalHealthCheckScreenState extends State<NeonatalHealthCheckScreen> {
       final questions = (result['questions'] as List<dynamic>?)
           ?.cast<Map<String, dynamic>>()
           .toList() ?? [];
+      
+      debugPrint('=== NEONATAL QUESTIONS LOADED ===');
+      debugPrint('Total questions: ${questions.length}');
+      for (int i = 0; i < questions.length && i < 5; i++) {
+        final q = questions[i];
+        debugPrint('Q${i}: ID=${q['id']}, Text=${q['questionText']}, Weight=${q['weight']}');
+      }
+      debugPrint('=== END QUESTIONS ===');
       
       if (mounted) {
         setState(() {
@@ -61,6 +69,14 @@ class _NeonatalHealthCheckScreenState extends State<NeonatalHealthCheckScreen> {
     setState(() => _submitting = true);
 
     try {
+      debugPrint('=== NEONATAL SUBMITTING ASSESSMENT ===');
+      debugPrint('Total answers: ${_answers.length}');
+      debugPrint('YES answers: ${_answers.entries.where((e) => e.value == 1).length}');
+      for (final entry in _answers.entries.where((e) => e.value == 1)) {
+        debugPrint('  YES: Question ID ${entry.key}');
+      }
+      debugPrint('=== END SUBMIT ===');
+      
       final answers = _questions.map((q) {
         final id = q['id'] as int;
         return {
@@ -70,6 +86,9 @@ class _NeonatalHealthCheckScreenState extends State<NeonatalHealthCheckScreen> {
       }).toList();
 
       final result = await ApiService.submitHealthAssessment(answers);
+
+      // Save to health check history
+      await _saveToHistory(result);
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -103,6 +122,19 @@ class _NeonatalHealthCheckScreenState extends State<NeonatalHealthCheckScreen> {
   void _previousQuestion() {
     if (_currentQuestionIndex > 0) {
       setState(() => _currentQuestionIndex--);
+    }
+  }
+
+  Future<void> _saveToHistory(Map<String, dynamic> result) async {
+    try {
+      await ApiService.saveHealthCheckResultToHistory(
+        type: 'neonatal',
+        result: result,
+        questions: _questions,
+        answers: _answers,
+      );
+    } catch (e) {
+      debugPrint('Failed to save health check history: $e');
     }
   }
 

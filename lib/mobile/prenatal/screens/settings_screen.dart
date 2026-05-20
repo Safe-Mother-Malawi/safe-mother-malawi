@@ -5,6 +5,7 @@ import '../../widgets/notification_icon.dart';
 import 'notifications_screen.dart';
 import '../../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
+import '../../auth/screens/splash_screen.dart';
 import '../../../providers/theme_provider.dart';
 import '../../../utils/validators.dart';
 
@@ -27,7 +28,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _healthAlerts = true;
 
   // App preferences
-  bool _darkMode = false;
   bool _offlineMode = true;
   String _selectedLanguage = 'English';
 
@@ -51,7 +51,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         _healthAlerts = prefs.getBool('healthAlerts') ?? true;
         
         // Load app preferences
-        _darkMode = prefs.getBool('darkMode') ?? false;
         _offlineMode = prefs.getBool('offlineMode') ?? true;
         _selectedLanguage = prefs.getString('appLanguage') ?? 'English';
       });
@@ -66,7 +65,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             apiPrefs['dailyTips'] != _dailyTips ||
             apiPrefs['babyMilestones'] != _babyMilestones ||
             apiPrefs['healthAlerts'] != _healthAlerts ||
-            apiPrefs['darkMode'] != _darkMode ||
             apiPrefs['offlineMode'] != _offlineMode ||
             apiPrefs['appLanguage'] != _selectedLanguage;
           
@@ -76,7 +74,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _dailyTips = apiPrefs['dailyTips'] ?? _dailyTips;
               _babyMilestones = apiPrefs['babyMilestones'] ?? _babyMilestones;
               _healthAlerts = apiPrefs['healthAlerts'] ?? _healthAlerts;
-              _darkMode = apiPrefs['darkMode'] ?? _darkMode;
               _offlineMode = apiPrefs['offlineMode'] ?? _offlineMode;
               _selectedLanguage = apiPrefs['appLanguage'] ?? _selectedLanguage;
             });
@@ -100,7 +97,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await prefs.setBool('dailyTips', _dailyTips);
       await prefs.setBool('babyMilestones', _babyMilestones);
       await prefs.setBool('healthAlerts', _healthAlerts);
-      await prefs.setBool('darkMode', _darkMode);
       await prefs.setBool('offlineMode', _offlineMode);
       await prefs.setString('appLanguage', _selectedLanguage);
       
@@ -111,7 +107,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           'dailyTips': _dailyTips,
           'babyMilestones': _babyMilestones,
           'healthAlerts': _healthAlerts,
-          'darkMode': _darkMode,
           'offlineMode': _offlineMode,
           'appLanguage': _selectedLanguage,
         });
@@ -226,7 +221,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               try {
                 await _authService.logout();
                 if (mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (_) => const SplashScreen()),
+                    (route) => false,
+                  );
                 }
               } catch (e) {
                 if (mounted) {
@@ -323,17 +321,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // APP PREFERENCES SECTION
             _buildSectionHeader('APP PREFERENCES'),
             _buildToggleSetting(
-              icon: Icons.dark_mode,
-              title: 'Dark Mode',
-              subtitle: 'Switch to dark theme',
-              value: _darkMode,
-              onChanged: (value) {
-                setState(() => _darkMode = value);
-                context.read<ThemeProvider>().setDarkMode(value);
-                _savePreferences();
-              },
-            ),
-            _buildToggleSetting(
               icon: Icons.cloud_off,
               title: 'Offline Mode',
               subtitle: 'Cache data for offline access',
@@ -343,7 +330,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _savePreferences();
               },
             ),
-            _buildLanguageSetting(),
             const SizedBox(height: 24),
 
             // PRIVACY & SECURITY SECTION
@@ -491,11 +477,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 4),
                 DropdownButton<String>(
-                  value: _selectedLanguage,
+                  value: _selectedLanguage.isEmpty ? 'English' : _selectedLanguage,
                   underline: const SizedBox(),
                   items: const [
                     DropdownMenuItem(value: 'English', child: Text('English')),
-                    DropdownMenuItem(value: 'Chichewa', child: Text('Chichewa')),
                   ],
                   onChanged: (value) {
                     if (value != null) {

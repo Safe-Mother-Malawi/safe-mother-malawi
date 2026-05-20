@@ -158,7 +158,7 @@ class _AuditExportState extends State<AuditExport> {
                         children: [
                           _DropField(
                             label: 'Data Type', value: _dataType,
-                            items: const ['All Data', 'User Activity', 'Clinician Data', 'Health Assessments', 'System Events', 'Login History'],
+                            items: const ['All Data', 'User Activity', 'Clinician Data', 'IVR Interactions', 'Health Assessments', 'System Events', 'Login History'],
                             onChanged: (v) => setState(() => _dataType = v!),
                           ),
                           _DropField(
@@ -270,11 +270,6 @@ class _AuditExportState extends State<AuditExport> {
                         style: GoogleFonts.publicSans(
                             fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                     const Spacer(),
-                    IconButton(
-                      onPressed: _load,
-                      icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.primary),
-                      tooltip: 'Refresh',
-                    ),
                     Text('${_exports.length} records',
                         style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
                   ],

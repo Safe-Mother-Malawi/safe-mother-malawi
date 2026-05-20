@@ -124,7 +124,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     const Spacer(),
                     Switch(
                       value: remindersEnabled,
-                      onChanged: (value) async {
+                      onChanged: (value) {
                         setDialogState(() {
                           remindersEnabled = value;
                         });
@@ -132,29 +132,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         setState(() {
                           appointment['remindersEnabled'] = value;
                         });
-                        
-                        // Save reminder preference to backend
-                        try {
-                          await ApiService.instance.savePreferences({
-                            'appointmentReminders': value,
-                          });
-                        } catch (e) {
-                          // Revert on error
-                          setDialogState(() {
-                            remindersEnabled = !value;
-                          });
-                          setState(() {
-                            appointment['remindersEnabled'] = !value;
-                          });
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Failed to save reminder setting: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
+                        // TODO: Send update to backend when API supports it
                       },
                       activeTrackColor: const Color(0xFF1A237E),
                     ),
@@ -471,11 +449,51 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                                         color: Color(0xFF9E9E9E), letterSpacing: 1.2)),
                               ),
                               if (_appointments.isEmpty)
-                                const Padding(
-                                  padding: EdgeInsets.all(24),
-                                  child: Center(child: Text('No appointments yet. Tap + New to add one.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 13, color: Color(0xFF9E9E9E)))),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(16),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.05),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.calendar_today_outlined,
+                                          size: 48,
+                                          color: const Color(0xFF1A237E).withValues(alpha: 0.3),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        const Text(
+                                          'No Appointments',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: Color(0xFF212121),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        const Text(
+                                          'You have no appointments scheduled.',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Color(0xFF757575),
+                                            height: 1.4,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 )
                               else
                                 ..._appointments
@@ -503,7 +521,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   String _fmtFull(DateTime d) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }
 
@@ -923,52 +941,6 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
             const SizedBox(height: 10),
             _DialogField(hint: 'Location', controller: locationCtrl),
             const SizedBox(height: 10),
-            // Clinician/Provider Dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFFE0E0E0)),
-                borderRadius: BorderRadius.circular(8),
-                color: const Color(0xFFF5F5F5),
-              ),
-              child: loadingClinicians
-                  ? const SizedBox(
-                      height: 40,
-                      child: Center(
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    )
-                  : DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        hint: const Text('Select Nurse / Provider',
-                            style: TextStyle(fontSize: 13, color: Color(0xFFBDBDBD))),
-                        value: selectedClinicianId,
-                        items: clinicians
-                            .map((c) => DropdownMenuItem(
-                                  value: c['id'] as String,
-                                  child: Text(c['fullName'] as String,
-                                      style: const TextStyle(fontSize: 13)),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          if (value != null) {
-                            final clinician =
-                                clinicians.firstWhere((c) => c['id'] == value);
-                            setState(() {
-                              selectedClinicianId = value;
-                              selectedClinicianName = clinician['fullName'] as String;
-                            });
-                          }
-                        },
-                      ),
-                    ),
-            ),
-            const SizedBox(height: 10),
             GestureDetector(
               onTap: () async {
                 final d = await showDatePicker(
@@ -1061,6 +1033,6 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
   String _fmtFull(DateTime d) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return '${months[d.month - 1]} ${d.day}, ${d.year}';
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
   }
 }

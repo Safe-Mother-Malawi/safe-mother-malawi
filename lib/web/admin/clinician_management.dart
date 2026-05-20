@@ -34,20 +34,17 @@ class ClinicianManagement extends StatefulWidget {
 class _ClinicianManagementState extends State<ClinicianManagement> {
   final _searchCtrl = TextEditingController();
   String _filterStatus = 'All';
-  String _filterFacility = 'All';
   bool _showForm   = false;
   bool _loading    = true;
   String? _error;
 
   List<Map<String, dynamic>> _users = [];
-  List<Map<String, dynamic>> _facilities = [];
   Map<String, dynamic>? _editingUser;
 
   @override
   void initState() {
     super.initState();
     _load();
-    _loadFacilities();
   }
 
   @override
@@ -66,58 +63,16 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
     }
   }
 
-  Future<void> _loadFacilities() async {
-    try {
-      // Get facilities for the DHO's district only
-      final dhoDistrict = UserStore.instance.district;
-      if (dhoDistrict.isNotEmpty) {
-        final data = await ApiService.getFacilitiesByDistrict(dhoDistrict);
-        setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
-      } else {
-        // Fallback to all facilities if no district is set
-        final data = await ApiService.getHealthFacilities();
-        setState(() { _facilities = data.cast<Map<String, dynamic>>(); });
-      }
-    } catch (e) {
-      // Silently fail - facilities filter will just show "All" option
-    }
-  }
-
-  List<String> get _facilityOptions {
-    // Get facilities from health facilities API (primary source)
-    final apiFacilities = _facilities
-        .map((f) => f['facilityName']?.toString() ?? '')
-        .where((f) => f.isNotEmpty)
-        .toSet();
-    
-    // Get facilities from existing users (secondary source for any missing ones)
-    final userFacilities = _users
-        .map((u) => u['facilityName']?.toString() ?? u['facility']?.toString() ?? '')
-        .where((f) => f.isNotEmpty)
-        .toSet();
-    
-    // Combine both sources, prioritizing API facilities
-    final allFacilities = <String>{...apiFacilities, ...userFacilities}.toList();
-    allFacilities.sort();
-    
-    return ['All', ...allFacilities];
-  }
-
   List<Map<String, dynamic>> get _filtered => _users.where((u) {
         final name     = (u['fullName'] ?? '').toString().toLowerCase();
         final district = (u['district'] ?? '').toString().toLowerCase();
-        final facility = (u['facilityName'] ?? u['facility'] ?? '').toString();
-        final facilityLower = facility.toLowerCase();
         final active   = u['isActive'] == true;
         final q        = _searchCtrl.text.toLowerCase();
-        
-        final matchSearch = q.isEmpty || name.contains(q) || district.contains(q) || facilityLower.contains(q);
+        final matchSearch = q.isEmpty || name.contains(q) || district.contains(q);
         final matchStatus = _filterStatus == 'All'
             || (_filterStatus == 'Active' && active)
             || (_filterStatus == 'Inactive' && !active);
-        final matchFacility = _filterFacility == 'All' || facility == _filterFacility;
-        
-        return matchSearch && matchStatus && matchFacility;
+        return matchSearch && matchStatus;
       }).toList();
 
   Future<void> _toggleStatus(Map<String, dynamic> u) async {
@@ -209,8 +164,6 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               );
             }),
             const Spacer(),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary), tooltip: 'Refresh'),
-            const SizedBox(width: 8),
             _GradientBtn(
               label: 'Add Clinician',
               icon: Icons.person_add_rounded,
@@ -225,12 +178,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                 try {
                   final res = await ApiService.instance.post('/auth/register', {...data, 'role': 'clinician'}) as Map<String, dynamic>;
                   final newUser = (res['user'] ?? res) as Map<String, dynamic>;
-                  setState(() { 
-                    _users.insert(0, newUser); 
-                    _showForm = false; 
-                  });
-                  // Refresh facilities list to include any new facilities
-                  _loadFacilities();
+                  setState(() { _users.insert(0, newUser); _showForm = false; });
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('User created successfully'),
@@ -252,12 +200,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
               onSubmit: (data) async {
                 try {
                   await ApiService.instance.patch('/users/${_editingUser!['id']}', data);
-                  setState(() { 
-                    _editingUser!.addAll(data); 
-                    _editingUser = null; 
-                  });
-                  // Refresh facilities list in case facility assignments changed
-                  _loadFacilities();
+                  setState(() { _editingUser!.addAll(data); _editingUser = null; });
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
                       content: Text('User updated'),
@@ -282,7 +225,7 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                 onChanged: (_) => setState(() {}),
                 style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
                 decoration: InputDecoration(
-                  hintText: 'Search by name, district, facility or email...',
+                  hintText: 'Search by name, district or email...',
                   hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
                   prefixIcon: const Icon(Icons.search_rounded, size: 18, color: AppColors.mutedText),
                   filled: true, fillColor: AppColors.surfaceContainerLowest,
@@ -296,32 +239,6 @@ class _ClinicianManagementState extends State<ClinicianManagement> {
                   padding: const EdgeInsets.only(right: 8),
                   child: _Chip(label: s, selected: _filterStatus == s, onTap: () => setState(() => _filterStatus = s)),
                 )),
-            const SizedBox(width: 12),
-            // Health Facility Filter
-            SizedBox(
-              width: 200,
-              child: DropdownButtonFormField<String>(
-                value: _filterFacility,
-                onChanged: (value) => setState(() => _filterFacility = value ?? 'All'),
-                style: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurface),
-                decoration: InputDecoration(
-                  labelText: 'Filter by Facility',
-                  labelStyle: GoogleFonts.inter(fontSize: 11, color: AppColors.mutedText),
-                  filled: true,
-                  fillColor: AppColors.surfaceContainerLowest,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                items: _facilityOptions.map((facility) => DropdownMenuItem<String>(
-                  value: facility,
-                  child: Text(
-                    facility == 'All' ? 'All Facilities' : facility,
-                    style: GoogleFonts.inter(fontSize: 12),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                )).toList(),
-              ),
-            ),
             const Spacer(),
             Text('${filtered.length} users', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
           ]),
@@ -732,42 +649,9 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
   late final TextEditingController _name;
   late final TextEditingController _email;
   late final TextEditingController _phone;
-
-  // Location is locked to DHO's district
-  String get _district => UserStore.instance.district.isNotEmpty ? UserStore.instance.district : 'Blantyre';
-  
-  // Hardcoded region and zone based on common Malawi district mappings
-  String get _region {
-    final district = _district.toLowerCase();
-    if (['karonga', 'chitipa', 'rumphi', 'nkhata bay', 'mzimba', 'likoma'].contains(district)) {
-      return 'Northern';
-    } else if (['kasungu', 'nkhotakota', 'ntchisi', 'dowa', 'salima', 'lilongwe', 'mchinji', 'dedza', 'ntcheu'].contains(district)) {
-      return 'Central';
-    } else {
-      return 'Southern'; // Default for Blantyre, Chiradzulu, Nsanje, Chikwawa, etc.
-    }
-  }
-  
-  String get _zone {
-    final district = _district.toLowerCase();
-    // Northern zones
-    if (['karonga'].contains(district)) return 'Karonga Zone';
-    if (['chitipa', 'rumphi'].contains(district)) return 'Rumphi Zone';
-    if (['mzimba', 'nkhata bay', 'likoma'].contains(district)) return 'Mzuzu Zone';
-    // Central zones
-    if (['kasungu', 'nkhotakota'].contains(district)) return 'Kasungu Zone';
-    if (['ntchisi', 'dowa'].contains(district)) return 'Dowa Zone';
-    if (['salima'].contains(district)) return 'Salima Zone';
-    if (['lilongwe', 'mchinji'].contains(district)) return 'Lilongwe Zone';
-    if (['dedza', 'ntcheu'].contains(district)) return 'Dedza Zone';
-    // Southern zones (default)
-    if (['blantyre', 'chiradzulu'].contains(district)) return 'Blantyre Zone';
-    if (['zomba', 'machinga'].contains(district)) return 'Zomba Zone';
-    if (['mangochi'].contains(district)) return 'Mangochi Zone';
-    if (['thyolo', 'mulanje'].contains(district)) return 'Thyolo Zone';
-    if (['nsanje', 'chikwawa'].contains(district)) return 'Nsanje Zone';
-    return 'Blantyre Zone'; // Default
-  }
+  late String _region;
+  late String _zone;
+  late String _district;
 
   List<Map<String, dynamic>> _facilities = [];
   Map<String, dynamic>? _selectedFacility;
@@ -779,6 +663,9 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
     _name     = TextEditingController(text: widget.user['fullName'] ?? '');
     _email    = TextEditingController(text: widget.user['email'] ?? '');
     _phone    = TextEditingController(text: widget.user['phone'] ?? '');
+    _region   = widget.user['region'] ?? 'Southern';
+    _zone     = widget.user['zone'] ?? (_kZones[_region]?.first ?? 'Blantyre Zone');
+    _district = widget.user['district'] ?? 'Blantyre';
     _loadFacilities(_district, preselect: widget.user['facilityName']?.toString() ?? widget.user['facility']?.toString());
   }
 
@@ -816,10 +703,6 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
   @override
   Widget build(BuildContext context) {
     final role = (widget.user['role'] ?? 'dho').toString();
-    final facilityName  = _selectedFacility?['facilityName']?.toString() ?? '';
-    final urbanRural    = _selectedFacility?['urbanRural']?.toString() ?? '';
-    final facilityType  = _selectedFacility?['facilityType']?.toString() ?? '';
-
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -835,13 +718,6 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
           Text('Edit ${role.toUpperCase()} User',
               style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
         ]),
-        const SizedBox(height: 6),
-        Row(children: [
-          const Icon(Icons.location_on_rounded, size: 13, color: AppColors.primary),
-          const SizedBox(width: 4),
-          Text('District: ', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText)),
-          Text(_district, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.primary)),
-        ]),
         const SizedBox(height: 20),
 
         _SectionLabel('Identity'),
@@ -855,90 +731,19 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
         ]),
         const SizedBox(height: 20),
 
-        _SectionLabel('Location Assignment (Read-only)'),
+        _SectionLabel('Location Assignment'),
         const SizedBox(height: 10),
-        Wrap(spacing: 16, runSpacing: 12, children: [
-          _ReadOnly(label: 'Region', value: _region),
-          _ReadOnly(label: 'Zone', value: _zone),
-          _ReadOnly(label: 'District', value: _district),
+        Wrap(spacing: 16, runSpacing: 16, children: [
+          _DD(label: 'Region', value: _region, items: _kRegions,
+              onChanged: (v) => setState(() {
+                _region = v!;
+                _zone = _kZones[_region]!.first;
+              })),
+          _DD(label: 'Zone', value: _zone, items: _zonesForRegion,
+              onChanged: (v) => setState(() => _zone = v!)),
+          _DD(label: 'District', value: _district, items: _kDistricts,
+              onChanged: (v) => setState(() => _district = v!)),
         ]),
-        const SizedBox(height: 20),
-
-        // ── Facility Assignment ──────────────────────────────────────────────────────
-        _SectionLabel('Health Facility Assignment'),
-        const SizedBox(height: 10),
-        if (_loadingFacilities)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Row(children: [
-              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
-              SizedBox(width: 10),
-              Text('Loading facilities...'),
-            ]),
-          )
-        else if (_facilities.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.warningBg,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(children: [
-              const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warningText),
-              const SizedBox(width: 8),
-              Text('No facilities found for $_district district.',
-                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.warningText)),
-              const SizedBox(width: 8),
-              TextButton(
-                onPressed: () => _loadFacilities(_district),
-                child: Text('Retry', style: GoogleFonts.inter(fontSize: 12, color: AppColors.primary)),
-              ),
-            ]),
-          )
-        else ...[
-          SizedBox(
-            width: 460,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('SELECT FACILITY',
-                  style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600,
-                      color: AppColors.mutedText, letterSpacing: 0.8)),
-              const SizedBox(height: 6),
-              DropdownButtonFormField<Map<String, dynamic>>(
-                value: _selectedFacility,
-                hint: Text('Choose a facility in $_district',
-                    style: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText)),
-                onChanged: (v) => setState(() => _selectedFacility = v),
-                style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
-                decoration: InputDecoration(
-                  filled: true, fillColor: AppColors.surfaceContainerHighest,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                ),
-                items: _facilities.map((f) {
-                  final name = f['facilityName']?.toString() ?? '—';
-                  final type = f['facilityType']?.toString() ?? '';
-                  final ur   = f['urbanRural']?.toString() ?? '';
-                  return DropdownMenuItem<Map<String, dynamic>>(
-                    value: f,
-                    child: Text('$name${type.isNotEmpty ? ' ($type)' : ''}${ur.isNotEmpty ? ' · $ur' : ''}',
-                        style: GoogleFonts.inter(fontSize: 13)),
-                  );
-                }).toList(),
-              ),
-            ]),
-          ),
-          // Auto-filled read-only fields
-          if (_selectedFacility != null) ...[
-            const SizedBox(height: 16),
-            Wrap(spacing: 16, runSpacing: 12, children: [
-              _ReadOnly(label: 'Facility Name', value: facilityName),
-              _ReadOnly(label: 'Urban / Rural', value: urbanRural),
-              _ReadOnly(label: 'Facility Type', value: facilityType),
-            ]),
-          ],
-        ],
         const SizedBox(height: 24),
 
         Row(children: [
@@ -952,9 +757,6 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
               'region':   _region,
               'zone':     _zone,
               'district': _district,
-              'facilityName': facilityName,
-              'urbanRural':  urbanRural,
-              'facilityType': facilityType,
             }),
           ),
           const SizedBox(width: 12),

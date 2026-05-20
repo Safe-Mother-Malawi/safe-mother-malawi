@@ -4,8 +4,7 @@ import '../../../services/api_service.dart';
 /// Mobile auth service — delegates to the real backend API.
 class AuthService {
   /// Register a new user via the backend.
-  /// Returns a Map with 'success' boolean and 'error' message for better error handling.
-  Future<Map<String, dynamic>> register(UserModel user) async {
+  Future<bool> register(UserModel user) async {
     try {
       final payload = <String, dynamic>{
         'email': user.email.isNotEmpty ? user.email : null,
@@ -16,16 +15,11 @@ class AuthService {
         'age': user.age,
         'nationality': user.nationality,
         'district': user.district,
-        'village': user.village.isNotEmpty ? user.village : null,
         'facilityName': user.facilityName,
         'lmpDate': user.lmpDate.isNotEmpty ? user.lmpDate : null,
         'pregnancyMonths': user.pregnancyMonths.isNotEmpty ? user.pregnancyMonths : null,
         'pregnancyWeeks': user.pregnancyWeeks.isNotEmpty ? user.pregnancyWeeks : null,
         'expectedDeliveryDate': user.expectedDeliveryDate.isNotEmpty ? user.expectedDeliveryDate : null,
-        'gravida': user.gravida.isNotEmpty ? user.gravida : null,
-        'parity': user.parity.isNotEmpty ? user.parity : null,
-        'existingConditions': user.existingConditions.isNotEmpty ? user.existingConditions : null,
-        'emergencyContact': user.emergencyContact.isNotEmpty ? user.emergencyContact : null,
         'babyName': user.babyName.isNotEmpty ? user.babyName : null,
         'babyDob': user.babyDob.isNotEmpty ? user.babyDob : null,
         'babyGender': user.babyGender.isNotEmpty ? user.babyGender : null,
@@ -35,7 +29,6 @@ class AuthService {
       }..removeWhere((_, v) => v == null);
 
       final data = await ApiService.instance.register(payload);
-      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so the user is immediately authenticated after registration
       final tokens = data?['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -44,21 +37,9 @@ class AuthService {
           tokens['refreshToken'] as String,
         );
       }
-      return {'success': true, 'error': null};
-    } catch (e) {
-      // Determine error type based on the exception
-      String errorMessage;
-      if (e.toString().contains('Failed to fetch') || e.toString().contains('ClientException')) {
-        errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
-      } else if (e.toString().contains('409') || e.toString().contains('already exists')) {
-        errorMessage = 'Phone number or email already registered. Try logging in instead.';
-      } else if (e.toString().contains('400')) {
-        errorMessage = 'Invalid registration data. Please check your information and try again.';
-      } else {
-        errorMessage = 'Registration failed. Please try again later.';
-      }
-      
-      return {'success': false, 'error': errorMessage};
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -66,7 +47,6 @@ class AuthService {
   Future<UserModel?> login(String emailOrPhone, String password) async {
     try {
       final data = await ApiService.instance.login(emailOrPhone, password);
-      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so subsequent API calls are authenticated
       final tokens = data['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -78,7 +58,7 @@ class AuthService {
       final user = data['user'] as Map<String, dynamic>?;
       if (user == null) return null;
       return _userFromMap(user);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -113,15 +93,10 @@ class AuthService {
       age: (m['age']?.toString()) ?? '',
       nationality: (m['nationality'] as String?) ?? '',
       district: (m['district'] as String?) ?? '',
-      village: (m['village'] as String?) ?? '',
       facilityName: (m['facilityName'] as String?) ?? '',
       pregnancyMonths: (m['pregnancyMonths']?.toString()) ?? '',
       pregnancyWeeks: (m['pregnancyWeeks']?.toString()) ?? '',
       expectedDeliveryDate: (m['expectedDeliveryDate'] as String?) ?? '',
-      gravida: (m['gravida']?.toString()) ?? '',
-      parity: (m['parity']?.toString()) ?? '',
-      existingConditions: (m['existingConditions'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
-      emergencyContact: (m['emergencyContact'] as String?) ?? '',
       babyGender: (m['babyGender'] as String?) ?? '',
       babyBirthWeight: (m['babyBirthWeight']?.toString()) ?? '',
       securityQuestion: (m['securityQuestion'] as String?) ?? '',
@@ -167,37 +142,13 @@ class AuthService {
   /// Returns true if request was successful (neutral response).
   Future<bool> requestPasswordReset(String email) async {
     try {
-      final response = await ApiService.instance.post(
+      await ApiService.instance.post(
         '/auth/forgot-password/request-reset',
         {'email': email},
       );
-      
-      // Check if response contains error information
-      if (response is Map<String, dynamic> && response.containsKey('error')) {
-        final errorMessage = response['error'] as String;
-        final useSecurityQuestion = response['useSecurityQuestion'] as bool? ?? false;
-        
-        if (useSecurityQuestion) {
-          throw Exception('$errorMessage\n\nTip: Try the security question option instead.');
-        } else {
-          throw Exception(errorMessage);
-        }
-      }
-      
       return true;
-    } catch (e) {
-      if (e is Exception) {
-        rethrow;
-      }
-      
-      // Handle other errors
-      if (e.toString().contains('400')) {
-        throw Exception('Please check your email address and try again.');
-      } else if (e.toString().contains('500')) {
-        throw Exception('Email service is temporarily unavailable. Please try the security question option.');
-      } else {
-        throw Exception('Failed to send reset email. Please check your internet connection and try again.');
-      }
+    } catch (_) {
+      return false;
     }
   }
 

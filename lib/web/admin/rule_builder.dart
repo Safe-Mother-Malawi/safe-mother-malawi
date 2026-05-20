@@ -12,6 +12,7 @@ class RuleBuilder extends StatefulWidget {
 class _RuleBuilderState extends State<RuleBuilder> {
   final List<Map<String, String>> _rules = [
     {'if': 'Risk Level = High', 'then': 'Assign ANC Visit within 24h', 'status': 'Active'},
+    {'if': 'IVR Drop-off > 3 times', 'then': 'Flag for clinician callback', 'status': 'Active'},
     {'if': 'Task Missed > 2 days', 'then': 'Send alert to DHO', 'status': 'Inactive'},
   ];
 
@@ -89,7 +90,7 @@ class _RuleBuilderState extends State<RuleBuilder> {
                             _RuleDrop(
                               value: _ifCondition,
                               items: const [
-                                'Risk Level', 'Task Missed',
+                                'Risk Level', 'IVR Drop-off', 'Task Missed',
                                 'Clinician Inactive', 'Assessment Score'
                               ],
                               onChanged: (v) => setState(() => _ifCondition = v!),

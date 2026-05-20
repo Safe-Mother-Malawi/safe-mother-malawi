@@ -30,6 +30,7 @@ class _DhoReportsState extends State<DhoReports> {
   static const _reportTypes = [
     'District Summary',
     'Risk Report',
+    'IVR Report',
     'Clinician Report',
   ];
 
@@ -220,11 +221,6 @@ class _DhoReportsState extends State<DhoReports> {
                   style: GoogleFonts.publicSans(
                       fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
               const Spacer(),
-              IconButton(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.primary),
-                tooltip: 'Refresh',
-              ),
             ]),
             const SizedBox(height: 16),
             if (_loading)

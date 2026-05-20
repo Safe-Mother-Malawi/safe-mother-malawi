@@ -98,17 +98,12 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
 
   int _totalMothers  = 0;
   int _highRiskCases = 0;
+  int _ivrCalls      = 0;
   String _district   = '';
-
-  // ANC data
-  int _ancAttendanceRate = 0;
-  int _ancComplianceRate = 0;
-  int _poorCompliancePatients = 0;
 
   List<FlSpot> _trendSpots = [];
   List<Map<String, dynamic>> _riskDist = [];
   List<Map<String, dynamic>> _districtAlerts = [];
-  List<Map<String, dynamic>> _ancTrends = [];
 
   @override
   void initState() {
@@ -184,16 +179,14 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
         _safeGet('/analytics/registrations'),
         _safeGet('/analytics/risk-distribution'),
         _safeGet('/analytics/system-alerts'),
-        _safeGet('/analytics/anc-analytics?district=$_district'),
-        _safeGet('/analytics/anc-compliance?district=$_district'),
+        _safeGet('/analytics/ivr'),
       ]);
 
       final overview  = _asMap(results[0]);
       final regTrends = _asMap(results[1]);
       final riskDist  = _asList(results[2]);
       final sysAlerts = _asMap(results[3]);
-      final ancAnalytics = _asMap(results[4]);
-      final ancCompliance = _asMap(results[5]);
+      final ivrStats  = _asMap(results[4]);
 
       final prenatalMonths = _asList(regTrends['prenatal']);
       final spots = <FlSpot>[];
@@ -213,21 +206,13 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
 
-      final ancTrendsList = _asList(ancAnalytics['monthlyTrends'])
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-
       setState(() {
         _totalMothers   = (overview['totalMothers']  as num?)?.toInt() ?? 0;
         _highRiskCases  = (overview['highRiskCases'] as num?)?.toInt() ?? 0;
-        _ancAttendanceRate = (ancAnalytics['attendanceRate'] as num?)?.toInt() ?? 0;
-        _ancComplianceRate = (ancAnalytics['complianceRate'] as num?)?.toInt() ?? 0;
-        _poorCompliancePatients = (ancCompliance['patientsWithPoorCompliance'] as num?)?.toInt() ?? 0;
+        _ivrCalls       = (ivrStats['totalCalls']    as num?)?.toInt() ?? 0;
         _trendSpots     = spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
         _riskDist       = riskDistMaps;
         _districtAlerts = alertsList;
-        _ancTrends      = ancTrendsList;
         _loading        = false;
       });
     } catch (e) {
@@ -268,7 +253,7 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
           const SizedBox(height: 20),
 
           GridView.count(
-            crossAxisCount: 3, shrinkWrap: true,
+            crossAxisCount: 4, shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
             children: [
@@ -280,25 +265,9 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
               KpiCard(title: 'Task Completion', value: '${completionRate.toStringAsFixed(1)}%',
                   icon: Icons.task_alt_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg,
                   subtitle: 'This month'),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          // ANC Tracking KPIs
-          GridView.count(
-            crossAxisCount: 3, shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
-            children: [
-              KpiCard(title: 'ANC Attendance', value: '$_ancAttendanceRate%',
-                  icon: Icons.check_circle_rounded, iconColor: AppColors.successText, iconBg: AppColors.successBg,
-                  subtitle: 'Patients attending visits'),
-              KpiCard(title: 'WHO Compliance', value: '$_ancComplianceRate%',
-                  icon: Icons.schedule_rounded, iconColor: AppColors.infoText, iconBg: AppColors.infoBg,
-                  subtitle: 'Following ANC schedule'),
-              KpiCard(title: 'Need Follow-up', value: _fmt(_poorCompliancePatients),
-                  icon: Icons.warning_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg,
-                  subtitle: 'Poor compliance patients'),
+              KpiCard(title: 'IVR Usage', value: _fmt(_ivrCalls),
+                  icon: Icons.phone_in_talk_rounded, iconColor: AppColors.warningText, iconBg: AppColors.warningBg,
+                  subtitle: 'Calls this month'),
             ],
           ),
           const SizedBox(height: 28),

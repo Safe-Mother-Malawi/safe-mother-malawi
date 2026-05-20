@@ -109,115 +109,31 @@ class _SystemUsersState extends State<SystemUsers> {
   }
 
   void _showUserDetails(Map<String, dynamic> u) {
-    final role = (u['role'] ?? '').toString().toLowerCase();
-    final isMobileUser = ['prenatal', 'neonatal'].contains(role);
-    
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Row(
-          children: [
-            Icon(
-              isMobileUser 
-                ? (role == 'prenatal' ? Icons.pregnant_woman : Icons.child_care)
-                : Icons.person,
-              color: AppColors.primary,
-              size: 20,
-            ),
-            const SizedBox(width: 8),
-            Expanded(child: Text('${u['fullName']} Details')),
-          ],
-        ),
+        title: Text('${u['fullName']} Details'),
         content: SizedBox(
-          width: isMobileUser ? 500 : 400,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Basic Information
-                _SectionHeader('Basic Information'),
-                _DetailRow('Full Name', u['fullName'] ?? '—'),
-                _DetailRow('Role', (u['role'] ?? '').toString().toUpperCase()),
-                _DetailRow('Phone', u['phone'] ?? '—'),
-                _DetailRow('Email', u['email'] ?? '—'),
-                _DetailRow('Age', u['age'] ?? '—'),
-                _DetailRow('Nationality', u['nationality'] ?? '—'),
-                
-                const SizedBox(height: 16),
-                
-                // Location Information
-                _SectionHeader('Location'),
-                _DetailRow('Region', u['region'] ?? '—'),
-                _DetailRow('Zone', u['zone'] ?? '—'),
-                _DetailRow('District', u['district'] ?? '—'),
-                _DetailRow('Health Facility', u['facilityName'] ?? u['facility'] ?? '—'),
-                
-                if (isMobileUser) ...[
-                  const SizedBox(height: 16),
-                  
-                  // Prenatal-specific information
-                  if (role == 'prenatal') ...[
-                    _SectionHeader('Pregnancy Information'),
-                    _DetailRow('Pregnancy Months', u['pregnancyMonths'] ?? '—'),
-                    _DetailRow('Pregnancy Weeks', u['pregnancyWeeks'] ?? '—'),
-                    _DetailRow('Expected Delivery Date', u['expectedDeliveryDate'] ?? '—'),
-                    _DetailRow('Last Menstrual Period', u['lmpDate'] ?? '—'),
-                  ],
-                  
-                  // Neonatal-specific information
-                  if (role == 'neonatal') ...[
-                    _SectionHeader('Baby Information'),
-                    _DetailRow('Baby Name', u['babyName'] ?? '—'),
-                    _DetailRow('Baby Date of Birth', u['babyDob'] ?? '—'),
-                    _DetailRow('Baby Gender', u['babyGender'] ?? '—'),
-                    _DetailRow('Birth Weight', u['babyBirthWeight'] ?? '—'),
-                  ],
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Preferences
-                  if (u['preferences'] != null) ...[
-                    _SectionHeader('App Preferences'),
-                    _buildPreferencesSection(u['preferences']),
-                  ],
-                ],
-                
-                const SizedBox(height: 16),
-                
-                // Account Status
-                _SectionHeader('Account Status'),
-                _DetailRow('Status', u['isActive'] == true ? 'Active' : 'Inactive'),
-                _DetailRow('Last Active', u['lastActiveAt'] != null 
-                  ? DateTime.parse(u['lastActiveAt']).toString().split('.')[0]
-                  : 'Never'),
-                _DetailRow('Registered', u['createdAt'] != null 
-                  ? DateTime.parse(u['createdAt']).toString().split('.')[0]
-                  : '—'),
-              ],
-            ),
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _DetailRow('Full Name', u['fullName'] ?? '—'),
+              _DetailRow('Role', (u['role'] ?? '').toString().toUpperCase()),
+              _DetailRow('Contact', u['email'] ?? u['phone'] ?? '—'),
+              _DetailRow('Region', u['region'] ?? '—'),
+              _DetailRow('Zone', u['zone'] ?? '—'),
+              _DetailRow('District', u['district'] ?? '—'),
+              _DetailRow('Status', u['isActive'] == true ? 'Active' : 'Inactive'),
+              _DetailRow('Registered', u['createdAt'] != null 
+                ? DateTime.parse(u['createdAt']).toString().split('.')[0]
+                : '—'),
+            ],
           ),
         ),
         actions: [
-          if (isMobileUser) ...[
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _showEditMobileUserDialog(u);
-              },
-              icon: const Icon(Icons.edit, size: 16),
-              label: const Text('Edit'),
-            ),
-            TextButton.icon(
-              onPressed: () {
-                Navigator.pop(context);
-                _deleteMobileUser(u);
-              },
-              icon: const Icon(Icons.delete, size: 16, color: AppColors.criticalText),
-              label: Text('Delete', style: TextStyle(color: AppColors.criticalText)),
-            ),
-          ],
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
@@ -230,165 +146,6 @@ class _SystemUsersState extends State<SystemUsers> {
   void _showErr(String msg) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: AppColors.criticalText),
-    );
-  }
-
-  Widget _SectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Container(
-            width: 3,
-            height: 14,
-            color: AppColors.primary,
-            margin: const EdgeInsets.only(right: 8),
-          ),
-          Text(
-            title,
-            style: GoogleFonts.inter(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: AppColors.headings,
-              letterSpacing: 0.3,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreferencesSection(Map<String, dynamic> preferences) {
-    final prefs = [
-      ('Appointment Reminders', preferences['appointmentReminders']),
-      ('Daily Tips', preferences['dailyTips']),
-      ('Baby Milestones', preferences['babyMilestones']),
-      ('Health Alerts', preferences['healthAlerts']),
-      ('Dark Mode', preferences['darkMode']),
-      ('Offline Mode', preferences['offlineMode']),
-      ('App Language', preferences['appLanguage']),
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: prefs.map((pref) {
-        final value = pref.$2;
-        String displayValue;
-        if (value is bool) {
-          displayValue = value ? 'Enabled' : 'Disabled';
-        } else if (value is String) {
-          displayValue = value;
-        } else {
-          displayValue = '—';
-        }
-        return _DetailRow(pref.$1, displayValue);
-      }).toList(),
-    );
-  }
-
-  Future<void> _deleteMobileUser(Map<String, dynamic> u) async {
-    final role = (u['role'] ?? '').toString().toLowerCase();
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: Row(
-          children: [
-            Icon(Icons.warning, color: AppColors.criticalText, size: 20),
-            const SizedBox(width: 8),
-            const Text('Delete Mobile User'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Are you sure you want to delete this ${role} user?'),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: AppColors.criticalText.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.criticalText.withOpacity(0.3)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'User: ${u['fullName']}',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  ),
-                  Text('Phone: ${u['phone']}'),
-                  Text('District: ${u['district'] ?? '—'}'),
-                  if (role == 'prenatal' && u['expectedDeliveryDate'] != null)
-                    Text('Expected Delivery: ${u['expectedDeliveryDate']}'),
-                  if (role == 'neonatal' && u['babyName'] != null)
-                    Text('Baby: ${u['babyName']}'),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'This action cannot be undone. All user data, appointments, and preferences will be permanently deleted.',
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: AppColors.criticalText,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.criticalText,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-            child: const Text('Delete User'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmed != true) return;
-    
-    try {
-      await ApiService.instance.delete('/users/${u['id']}');
-      setState(() => _users.removeWhere((x) => x['id'] == u['id']));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${role.toUpperCase()} user deleted successfully'),
-            backgroundColor: AppColors.successText,
-          ),
-        );
-      }
-    } catch (e) {
-      _showErr('Failed to delete user: $e');
-    }
-  }
-
-  void _showEditMobileUserDialog(Map<String, dynamic> user) {
-    showDialog(
-      context: context,
-      builder: (_) => _EditMobileUserDialog(
-        user: user,
-        onUserUpdated: (updatedUser) {
-          setState(() {
-            final index = _users.indexWhere((u) => u['id'] == updatedUser['id']);
-            if (index != -1) {
-              _users[index] = updatedUser;
-            }
-          });
-        },
-      ),
     );
   }
 
@@ -435,8 +192,6 @@ class _SystemUsersState extends State<SystemUsers> {
                   style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
             ),
             const Spacer(),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary), tooltip: 'Refresh'),
-            const SizedBox(width: 8),
             _GradientBtn(
               label: 'Add User',
               icon: Icons.person_add_rounded,
@@ -558,7 +313,7 @@ class _SystemUsersState extends State<SystemUsers> {
                               final zone = (u['zone'] ?? '—').toString();
                               final district = (u['district'] ?? '—').toString();
                               return Container(
-                                color: index.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withOpacity(0.4),
+                                color: index.isEven ? AppColors.surfaceContainerLowest : AppColors.pageBg.withValues(alpha: 0.4),
                                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
                                 child: Row(children: [
                                   Expanded(flex: 1, child: Text('${index + 1}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.mutedText))),
@@ -579,7 +334,7 @@ class _SystemUsersState extends State<SystemUsers> {
                                     ),
                                     const SizedBox(width: 4),
                                     
-                                    // Staff users (admin, dho, clinician) - full management
+                                    // Only staff users (admin, dho, clinician) can have password reset
                                     if (['admin', 'dho', 'clinician'].contains(role.toLowerCase())) ...[
                                       _ActionBtn(
                                         icon: Icons.lock_reset,
@@ -593,32 +348,8 @@ class _SystemUsersState extends State<SystemUsers> {
                                       const SizedBox(width: 4),
                                       _ActionBtn(icon: Icons.delete_outline_rounded, color: AppColors.criticalText, tooltip: 'Delete',
                                           onTap: () => _deleteUser(u)),
-                                    ] 
-                                    // Mobile users (prenatal/neonatal) - enhanced management
-                                    else if (['prenatal', 'neonatal'].contains(role.toLowerCase())) ...[
-                                      _ActionBtn(
-                                        icon: Icons.visibility_outlined,
-                                        color: AppColors.primary,
-                                        tooltip: 'View Details',
-                                        onTap: () => _showUserDetails(u),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      _ActionBtn(
-                                        icon: Icons.edit_outlined,
-                                        color: AppColors.accent,
-                                        tooltip: 'Edit Mobile User',
-                                        onTap: () => _showEditMobileUserDialog(u),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      _ActionBtn(
-                                        icon: Icons.delete_outline_rounded,
-                                        color: AppColors.criticalText,
-                                        tooltip: 'Delete Mobile User',
-                                        onTap: () => _deleteMobileUser(u),
-                                      ),
-                                    ]
-                                    // Other users - view only
-                                    else ...[
+                                    ] else ...[
+                                      // Mobile users (prenatal/neonatal) - view only
                                       _ActionBtn(
                                         icon: Icons.visibility_outlined,
                                         color: AppColors.primary,
@@ -965,7 +696,7 @@ class _AddUserFormState extends State<_AddUserForm> {
             decoration: BoxDecoration(
               color: AppColors.infoBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.infoText.withOpacity(0.3)),
+              border: Border.all(color: AppColors.infoText.withValues(alpha: 0.3)),
             ),
             child: Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.infoText),
@@ -1047,9 +778,9 @@ class _AddUserFormState extends State<_AddUserForm> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.criticalText.withOpacity(0.1),
+                color: AppColors.criticalText.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.criticalText.withOpacity(0.3)),
+                border: Border.all(color: AppColors.criticalText.withValues(alpha: 0.3)),
               ),
               child: Row(children: [
                 Icon(Icons.info_outline, size: 16, color: AppColors.criticalText),
@@ -1246,7 +977,7 @@ class _EditUserFormState extends State<_EditUserForm> {
       decoration: BoxDecoration(
         color: AppColors.surfaceContainerLowest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.accent.withOpacity(0.4), width: 1.5),
+        border: Border.all(color: AppColors.accent.withValues(alpha: 0.4), width: 1.5),
         boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 24, offset: Offset(0, 4))],
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -1277,7 +1008,7 @@ class _EditUserFormState extends State<_EditUserForm> {
             decoration: BoxDecoration(
               color: AppColors.infoBg,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.infoText.withOpacity(0.3)),
+              border: Border.all(color: AppColors.infoText.withValues(alpha: 0.3)),
             ),
             child: Row(children: [
               Icon(Icons.info_outline, size: 16, color: AppColors.infoText),
@@ -1356,9 +1087,9 @@ class _EditUserFormState extends State<_EditUserForm> {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.criticalText.withOpacity(0.1),
+                color: AppColors.criticalText.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.criticalText.withOpacity(0.3)),
+                border: Border.all(color: AppColors.criticalText.withValues(alpha: 0.3)),
               ),
               child: Row(children: [
                 Icon(Icons.info_outline, size: 16, color: AppColors.criticalText),
@@ -1616,7 +1347,7 @@ class _DetailRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               '$label:',
               style: GoogleFonts.inter(
@@ -1633,333 +1364,6 @@ class _DetailRow extends StatelessWidget {
                 fontSize: 12,
                 color: AppColors.onSurface,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Edit Mobile User Dialog ───────────────────────────────────────────────────
-
-class _EditMobileUserDialog extends StatefulWidget {
-  final Map<String, dynamic> user;
-  final ValueChanged<Map<String, dynamic>> onUserUpdated;
-  
-  const _EditMobileUserDialog({
-    required this.user,
-    required this.onUserUpdated,
-  });
-
-  @override
-  State<_EditMobileUserDialog> createState() => _EditMobileUserDialogState();
-}
-
-class _EditMobileUserDialogState extends State<_EditMobileUserDialog> {
-  late final TextEditingController _fullName;
-  late final TextEditingController _phone;
-  late final TextEditingController _email;
-  late final TextEditingController _age;
-  late final TextEditingController _nationality;
-  late final TextEditingController _district;
-  late final TextEditingController _facilityName;
-  
-  // Prenatal fields
-  late final TextEditingController _pregnancyMonths;
-  late final TextEditingController _pregnancyWeeks;
-  late final TextEditingController _expectedDeliveryDate;
-  late final TextEditingController _lmpDate;
-  
-  // Neonatal fields
-  late final TextEditingController _babyName;
-  late final TextEditingController _babyDob;
-  late final TextEditingController _babyGender;
-  late final TextEditingController _babyBirthWeight;
-  
-  bool _loading = false;
-  String? _error;
-  
-  @override
-  void initState() {
-    super.initState();
-    final user = widget.user;
-    
-    // Basic fields
-    _fullName = TextEditingController(text: user['fullName'] ?? '');
-    _phone = TextEditingController(text: user['phone'] ?? '');
-    _email = TextEditingController(text: user['email'] ?? '');
-    _age = TextEditingController(text: user['age'] ?? '');
-    _nationality = TextEditingController(text: user['nationality'] ?? '');
-    _district = TextEditingController(text: user['district'] ?? '');
-    _facilityName = TextEditingController(text: user['facilityName'] ?? user['facility'] ?? '');
-    
-    // Prenatal fields
-    _pregnancyMonths = TextEditingController(text: user['pregnancyMonths'] ?? '');
-    _pregnancyWeeks = TextEditingController(text: user['pregnancyWeeks'] ?? '');
-    _expectedDeliveryDate = TextEditingController(text: user['expectedDeliveryDate'] ?? '');
-    _lmpDate = TextEditingController(text: user['lmpDate'] ?? '');
-    
-    // Neonatal fields
-    _babyName = TextEditingController(text: user['babyName'] ?? '');
-    _babyDob = TextEditingController(text: user['babyDob'] ?? '');
-    _babyGender = TextEditingController(text: user['babyGender'] ?? '');
-    _babyBirthWeight = TextEditingController(text: user['babyBirthWeight'] ?? '');
-  }
-
-  @override
-  void dispose() {
-    _fullName.dispose();
-    _phone.dispose();
-    _email.dispose();
-    _age.dispose();
-    _nationality.dispose();
-    _district.dispose();
-    _facilityName.dispose();
-    _pregnancyMonths.dispose();
-    _pregnancyWeeks.dispose();
-    _expectedDeliveryDate.dispose();
-    _lmpDate.dispose();
-    _babyName.dispose();
-    _babyDob.dispose();
-    _babyGender.dispose();
-    _babyBirthWeight.dispose();
-    super.dispose();
-  }
-
-  Future<void> _saveChanges() async {
-    setState(() { _loading = true; _error = null; });
-    
-    try {
-      final role = (widget.user['role'] ?? '').toString().toLowerCase();
-      final updateData = <String, dynamic>{
-        'fullName': _fullName.text.trim(),
-        'phone': _phone.text.trim(),
-        'email': _email.text.trim().isEmpty ? null : _email.text.trim(),
-        'age': _age.text.trim().isEmpty ? null : _age.text.trim(),
-        'nationality': _nationality.text.trim().isEmpty ? null : _nationality.text.trim(),
-        'district': _district.text.trim().isEmpty ? null : _district.text.trim(),
-        'facilityName': _facilityName.text.trim().isEmpty ? null : _facilityName.text.trim(),
-      };
-      
-      // Add role-specific fields
-      if (role == 'prenatal') {
-        updateData.addAll({
-          'pregnancyMonths': _pregnancyMonths.text.trim().isEmpty ? null : _pregnancyMonths.text.trim(),
-          'pregnancyWeeks': _pregnancyWeeks.text.trim().isEmpty ? null : _pregnancyWeeks.text.trim(),
-          'expectedDeliveryDate': _expectedDeliveryDate.text.trim().isEmpty ? null : _expectedDeliveryDate.text.trim(),
-          'lmpDate': _lmpDate.text.trim().isEmpty ? null : _lmpDate.text.trim(),
-        });
-      } else if (role == 'neonatal') {
-        updateData.addAll({
-          'babyName': _babyName.text.trim().isEmpty ? null : _babyName.text.trim(),
-          'babyDob': _babyDob.text.trim().isEmpty ? null : _babyDob.text.trim(),
-          'babyGender': _babyGender.text.trim().isEmpty ? null : _babyGender.text.trim(),
-          'babyBirthWeight': _babyBirthWeight.text.trim().isEmpty ? null : _babyBirthWeight.text.trim(),
-        });
-      }
-      
-      // Update user via API
-      await ApiService.instance.patch('/users/${widget.user['id']}', updateData);
-      
-      // Update local user object
-      final updatedUser = Map<String, dynamic>.from(widget.user);
-      updatedUser.addAll(updateData);
-      
-      widget.onUserUpdated(updatedUser);
-      
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${role.toUpperCase()} user updated successfully'),
-            backgroundColor: AppColors.successText,
-          ),
-        );
-      }
-    } catch (e) {
-      setState(() { _error = e.toString(); });
-    } finally {
-      setState(() { _loading = false; });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final role = (widget.user['role'] ?? '').toString().toLowerCase();
-    final isPrenatal = role == 'prenatal';
-    final isNeonatal = role == 'neonatal';
-    
-    return AlertDialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      title: Row(
-        children: [
-          Icon(
-            isPrenatal ? Icons.pregnant_woman : Icons.child_care,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text('Edit ${role.toUpperCase()} User'),
-        ],
-      ),
-      content: SizedBox(
-        width: 600,
-        height: 500,
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (_error != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.criticalText.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.criticalText.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline, size: 16, color: AppColors.criticalText),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: GoogleFonts.inter(fontSize: 12, color: AppColors.criticalText),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-              
-              // Basic Information
-              _SectionLabel('Basic Information'),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 16,
-                runSpacing: 16,
-                children: [
-                  _EditField('Full Name *', _fullName, 'Enter full name'),
-                  _EditField('Phone *', _phone, 'Enter phone number', TextInputType.phone),
-                  _EditField('Email', _email, 'Enter email address', TextInputType.emailAddress),
-                  _EditField('Age', _age, 'Enter age', TextInputType.number),
-                  _EditField('Nationality', _nationality, 'Enter nationality'),
-                  _EditField('District', _district, 'Enter district'),
-                  _EditField('Health Facility', _facilityName, 'Enter health facility name'),
-                ],
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Role-specific fields
-              if (isPrenatal) ...[
-                _SectionLabel('Pregnancy Information'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    _EditField('Pregnancy Months', _pregnancyMonths, 'e.g., 7', TextInputType.number),
-                    _EditField('Pregnancy Weeks', _pregnancyWeeks, 'e.g., 28', TextInputType.number),
-                    _EditField('Expected Delivery Date', _expectedDeliveryDate, 'YYYY-MM-DD'),
-                    _EditField('Last Menstrual Period', _lmpDate, 'YYYY-MM-DD'),
-                  ],
-                ),
-              ],
-              
-              if (isNeonatal) ...[
-                _SectionLabel('Baby Information'),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 16,
-                  runSpacing: 16,
-                  children: [
-                    _EditField('Baby Name', _babyName, 'Enter baby name'),
-                    _EditField('Baby Date of Birth', _babyDob, 'YYYY-MM-DD'),
-                    _EditField('Baby Gender', _babyGender, 'Male/Female/Other'),
-                    _EditField('Birth Weight (kg)', _babyBirthWeight, 'e.g., 3.2', TextInputType.numberWithOptions(decimal: true)),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _loading ? null : () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _loading ? null : _saveChanges,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
-          child: _loading
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Text('Save Changes'),
-        ),
-      ],
-    );
-  }
-}
-
-class _EditField extends StatelessWidget {
-  final String label;
-  final TextEditingController controller;
-  final String hint;
-  final TextInputType keyboardType;
-  
-  const _EditField(
-    this.label,
-    this.controller,
-    this.hint, [
-    this.keyboardType = TextInputType.text,
-  ]);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label.toUpperCase(),
-            style: GoogleFonts.inter(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.mutedText,
-              letterSpacing: 0.8,
-            ),
-          ),
-          const SizedBox(height: 6),
-          TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            style: GoogleFonts.inter(fontSize: 13, color: AppColors.onSurface),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.mutedText),
-              filled: true,
-              fillColor: AppColors.surfaceContainerHighest,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-              ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             ),
           ),
         ],

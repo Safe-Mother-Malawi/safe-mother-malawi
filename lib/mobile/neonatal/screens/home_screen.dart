@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../services/api_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../../widgets/notification_icon.dart';
@@ -19,7 +20,6 @@ const _kStage2    = Color(0xFF1A237E);      // active stage → primary blue
 const _kStage3    = Color(0xFFE8EAF6);     // future stage → light blue
 const _kFeedBg    = Color(0xFFE8EAF6);     // feed icon bg → light blue
 const _kFeedAccent = Color(0xFF3949AB);    // feed accent → mid blue
-const _kApptBar   = Color(0xFF1A237E);     // appointment bar → primary blue
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -150,35 +150,85 @@ class _HomeBody extends StatefulWidget {
 class _HomeBodyState extends State<_HomeBody> {
   List<Map<String, dynamic>> _todayAppointments = [];
   bool _loadingAppointments = true;
-  bool _appointmentError = false;
+  late Timer _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _loadTodayAppointments();
+    // Refresh appointments every 10 seconds to catch updates/deletions
+    _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      _loadTodayAppointments();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer.cancel();
+    super.dispose();
   }
 
   Future<void> _loadTodayAppointments() async {
-    setState(() { _loadingAppointments = true; _appointmentError = false; });
     try {
-      final allAppointments = await ApiService.getAppointments();
+      // Get current user to filter appointments by their ID
+      final user = await AuthService().getCurrentUser();
+      if (user == null) {
+        if (mounted) {
+          setState(() => _loadingAppointments = false);
+        }
+        return;
+      }
+
+      // Fetch appointments for this user
+      final allAppointments = await ApiService.getAppointments(patientId: user.id);
       final today = DateTime.now();
+      final todayDate = DateTime(today.year, today.month, today.day);
+      
       final todayAppointments = (allAppointments as List)
           .cast<Map<String, dynamic>>()
           .where((a) {
-            final date = DateTime.tryParse(a['date'] ?? '');
+            // Try multiple date field names
+            final dateStr = (a['date'] ?? a['appointmentDate'] ?? a['appointment_date'] ?? '').toString().trim();
+            if (dateStr.isEmpty) return false;
+            
+            DateTime? date;
+            
+            // Try parsing as ISO format (2024-05-19 or 2024-05-19T10:30:00)
+            if (dateStr.contains('-')) {
+              date = DateTime.tryParse(dateStr);
+            }
+            
+            // If parsing failed, try other formats
+            if (date == null) {
+              // Try DD/MM/YYYY format
+              try {
+                final parts = dateStr.split('/');
+                if (parts.length == 3) {
+                  date = DateTime(int.parse(parts[2]), int.parse(parts[1]), int.parse(parts[0]));
+                }
+              } catch (e) {
+                // Ignore parsing errors
+              }
+            }
+            
             if (date == null) return false;
-            return date.year == today.year && date.month == today.month && date.day == today.day;
+            
+            // Compare only year, month, and day (ignore time)
+            final appointmentDate = DateTime(date.year, date.month, date.day);
+            return appointmentDate == todayDate;
           })
           .toList();
+      
       if (mounted) {
         setState(() {
           _todayAppointments = todayAppointments;
           _loadingAppointments = false;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() { _loadingAppointments = false; _appointmentError = true; });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingAppointments = false);
+      }
     }
   }
 
@@ -213,50 +263,77 @@ class _HomeBodyState extends State<_HomeBody> {
 
         // ── Scrollable content ───────────────────────────────────────────────
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-            child: Column(
-              children: [
-                _WelcomeCard(firstName: widget.firstName, data: widget.data),
-                const SizedBox(height: 14),
-                _BabyInfoCard(data: widget.data),
-                const SizedBox(height: 14),
-                _DailyFeedsCard(data: widget.data),
-                const SizedBox(height: 14),
-                if (_loadingAppointments)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Center(child: SizedBox(width: 20, height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF795548)))),
-                  )
-                else if (_appointmentError)
-                  GestureDetector(
-                    onTap: _loadTodayAppointments,
-                    child: Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEE),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFCDD2)),
-                      ),
-                      child: const Row(children: [
-                        Icon(Icons.warning_amber_rounded, color: Color(0xFFC62828), size: 16),
-                        SizedBox(width: 8),
-                        Expanded(child: Text('Could not load appointments. Tap to retry.',
-                            style: TextStyle(fontSize: 12, color: Color(0xFFC62828)))),
-                      ]),
-                    ),
-                  )
-                else if (_todayAppointments.isNotEmpty)
-                  _TodayAppointmentsCard(appointments: _todayAppointments)
-                else
-                  _TodayAppointmentCard(data: widget.data),
-              ],
+          child: RefreshIndicator(
+            onRefresh: _loadTodayAppointments,
+            color: const Color(0xFF1A237E),
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+              child: Column(
+                children: [
+                  _WelcomeCard(firstName: widget.firstName, data: widget.data),
+                  const SizedBox(height: 14),
+                  _BabyInfoCard(data: widget.data),
+                  const SizedBox(height: 14),
+                  _DailyFeedsCard(data: widget.data),
+                  const SizedBox(height: 14),
+                  if (!_loadingAppointments)
+                    _todayAppointments.isNotEmpty
+                        ? _TodayAppointmentsCard(appointments: _todayAppointments)
+                        : _NoAppointmentsCard(),
+                ],
+              ),
             ),
           ),
         ),
       ],
+    );
+  }
+}
+
+// ── No Appointments Card ──────────────────────────────────────────────────────
+
+class _NoAppointmentsCard extends StatelessWidget {
+  const _NoAppointmentsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFFFF),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.calendar_today_outlined,
+            size: 48,
+            color: const Color(0xFF1A237E).withValues(alpha: 0.3),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'No Appointments Today',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF212121),
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'You have no appointments scheduled for today.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: Color(0xFF757575),
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -272,38 +349,112 @@ class _WelcomeCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: _kGreeting,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(color: const Color(0xFFC5CAE9), width: 1),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Text(
-            'WELCOME BACK',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: _kBrownSoft,
-              letterSpacing: 1.2,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'WELCOME BACK',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: _kOrange,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${NeonatalData.greeting},',
+                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kBrown),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Text(
+                      'Mama $firstName',
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kOrange),
+                    ),
+                    const SizedBox(width: 6),
+                    const Text('👋', style: TextStyle(fontSize: 20)),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            '${NeonatalData.greeting},',
-            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kBrown),
-          ),
-          const SizedBox(height: 2),
-          Row(
+          const SizedBox(width: 16),
+          // Mother and baby image with shadow blending
+          Stack(
             children: [
-              Text(
-                'Mama $firstName',
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: _kOrange),
+              // Shadow gradient behind image
+              Container(
+                width: 140,
+                height: 140,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.08),
+                      Colors.black.withValues(alpha: 0.15),
+                    ],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(width: 6),
-              const Text('👋', style: TextStyle(fontSize: 20)),
+              // Image with rounded corners
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Image.asset(
+                    'assets/images/mother_baby.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+              // Soft overlay shadow for blending
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 140,
+                  height: 140,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: 0.05),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ],
@@ -359,7 +510,7 @@ class _BabyInfoCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +567,7 @@ class _BabyInfoCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8EAF6),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _kOrange.withOpacity(0.4)),
+                  border: Border.all(color: _kOrange.withValues(alpha: 0.4)),
                 ),
                 child: Column(
                   children: [
@@ -525,7 +676,7 @@ class _DailyFeedsCardState extends State<_DailyFeedsCard> {
       decoration: BoxDecoration(
         color: _kCard,
         borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 3))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -603,114 +754,6 @@ class _DailyFeedsCardState extends State<_DailyFeedsCard> {
   }
 }
 
-// ── Today's Appointment Card ──────────────────────────────────────────────────
-
-class _TodayAppointmentCard extends StatelessWidget {
-  final NeonatalData data;
-  const _TodayAppointmentCard({required this.data});
-
-  @override
-  Widget build(BuildContext context) {
-    final today = DateTime.now();
-    final checkDate = data.babyDob.add(Duration(days: data.nextCheckDay));
-    final isToday = checkDate.year == today.year &&
-        checkDate.month == today.month &&
-        checkDate.day == today.day;
-
-    // Format time: e.g. "9:30 AM"
-    final rawHour = today.hour;
-    final timeHour = rawHour == 0 ? 12 : (rawHour > 12 ? rawHour - 12 : rawHour);
-    final timePeriod = rawHour >= 12 ? 'PM' : 'AM';
-    final timeStr = '$timeHour:${today.minute.toString().padLeft(2, '0')}';
-
-    // Format date: e.g. "12 April"
-    const months = [
-      'January','February','March','April','May','June',
-      'July','August','September','October','November','December'
-    ];
-    final apptDate = isToday ? today : checkDate;
-    final dateStr = '${apptDate.day} ${months[apptDate.month - 1]}';
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _kCard,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 3))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header
-          Row(
-            children: [
-              const Icon(Icons.calendar_today_outlined, color: _kOrange, size: 18),
-              const SizedBox(width: 8),
-              const Text("Today's appointment",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _kBrown)),
-            ],
-          ),
-          const SizedBox(height: 14),
-
-          // Appointment bar — dark brown like reference
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: _kApptBar,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Row(
-              children: [
-                // Time + date block
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text('$timeStr $timePeriod',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white)),
-                    const SizedBox(height: 2),
-                    Text(dateStr,
-                        style: TextStyle(fontSize: 11, color: Colors.white.withOpacity(0.75))),
-                  ],
-                ),
-                const SizedBox(width: 16),
-                // Divider
-                Container(width: 1, height: 36, color: Colors.white.withOpacity(0.15)),
-                const SizedBox(width: 16),
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('CLINIC VISIT',
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white70, letterSpacing: 0.8)),
-                      const SizedBox(height: 3),
-                      Text(
-                        isToday ? 'Well-Baby Clinic Visit' : 'Day ${data.nextCheckDay} Check-up',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(Icons.chevron_right, color: Colors.white, size: 18),
-                ),
-              ],
-            ),
-          ),
-
-          // Vaccine row
-          const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-}
-
 
 
 
@@ -754,7 +797,7 @@ class _TodayAppointmentsCard extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFE3E8FF), width: 1),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF1A237E).withOpacity(0.08),
+                    color: const Color(0xFF1A237E).withValues(alpha: 0.08),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -817,14 +860,45 @@ class _TodayAppointmentsCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A237E),
-                      borderRadius: BorderRadius.circular(8),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          title: const Text('Appointment Details',
+                              style: TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF1A237E))),
+                          content: SingleChildScrollView(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildDetailRow('Title', title),
+                                _buildDetailRow('Date', _fmtFull(DateTime.tryParse(appointment['date'] ?? '') ?? DateTime.now())),
+                                _buildDetailRow('Time', time),
+                                _buildDetailRow('Location', location),
+                                _buildDetailRow('Doctor', doctor),
+                              ],
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Close'),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A237E),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
                     ),
-                    child: const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 14),
                   ),
                 ],
               ),
@@ -833,5 +907,30 @@ class _TodayAppointmentsCard extends StatelessWidget {
         }).toList(),
       ],
     );
+  }
+
+  static Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF757575)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _fmtFull(DateTime d) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${months[d.month - 1]} ${d.day}, ${d.year}';
   }
 }

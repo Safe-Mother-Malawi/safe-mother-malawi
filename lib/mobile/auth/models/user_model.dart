@@ -1,4 +1,5 @@
 class UserModel {
+  final String id;
   final String email;
   final String password;
   final String role;
@@ -29,6 +30,7 @@ class UserModel {
   final String securityAnswer;   // stored lowercase-trimmed
 
   UserModel({
+    this.id = '',
     required this.email,
     required this.password,
     required this.role,

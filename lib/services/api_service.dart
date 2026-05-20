@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -15,6 +16,7 @@ class ApiException implements Exception {
 }
 
 /// Central HTTP client for all backend calls.
+/// Base URL: http://41.70.47.173:3000/api/v1
 class ApiService {
   ApiService._();
   static final ApiService instance = ApiService._();
@@ -69,6 +71,43 @@ class ApiService {
 
   // ── HTTP helpers ──────────────────────────────────────────────────────────
 
+  Future<dynamic> get(String path) async {
+    final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
+    return _handle(res);
+  }
+
+  Future<dynamic> post(String path, Map<String, dynamic> body) async {
+    final res = await http.post(
+      Uri.parse('$_base$path'),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+    return _handle(res);
+  }
+
+  Future<dynamic> patch(String path, Map<String, dynamic> body) async {
+    final res = await http.patch(
+      Uri.parse('$_base$path'),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+    return _handle(res);
+  }
+
+  Future<dynamic> put(String path, Map<String, dynamic> body) async {
+    final res = await http.put(
+      Uri.parse('$_base$path'),
+      headers: _headers,
+      body: jsonEncode(body),
+    );
+    return _handle(res);
+  }
+
+  Future<void> delete(String path) async {
+    final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
+    _handle(res);
+  }
+
   dynamic _handle(http.Response res) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
@@ -78,78 +117,6 @@ class ApiService {
     throw ApiException(res.statusCode, msg);
   }
 
-  /// Attempt to refresh the access token using the stored refresh token.
-  /// Returns true if successful, false otherwise.
-  Future<bool> refreshAccessToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final refreshToken = prefs.getString('refresh_token');
-      if (refreshToken == null) return false;
-
-      final res = await http.post(
-        Uri.parse('$_base/auth/refresh'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'refreshToken': refreshToken}),
-      );
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        final newAccess  = data['accessToken']  as String?;
-        final newRefresh = data['refreshToken'] as String?;
-        if (newAccess != null && newRefresh != null) {
-          await saveToken(newAccess, newRefresh);
-          return true;
-        }
-      }
-      return false;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  /// Wraps an API call with automatic token refresh on 401.
-  Future<dynamic> _withRefresh(Future<dynamic> Function() call) async {
-    try {
-      return await call();
-    } on ApiException catch (e) {
-      if (e.statusCode == 401) {
-        final refreshed = await refreshAccessToken();
-        if (refreshed) return await call();
-      }
-      rethrow;
-    }
-  }
-
-  Future<dynamic> get(String path) async =>
-      _withRefresh(() async {
-        final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
-        return _handle(res);
-      });
-
-  Future<dynamic> post(String path, Map<String, dynamic> body) async =>
-      _withRefresh(() async {
-        final res = await http.post(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
-        return _handle(res);
-      });
-
-  Future<dynamic> patch(String path, Map<String, dynamic> body) async =>
-      _withRefresh(() async {
-        final res = await http.patch(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
-        return _handle(res);
-      });
-
-  Future<dynamic> put(String path, Map<String, dynamic> body) async =>
-      _withRefresh(() async {
-        final res = await http.put(Uri.parse('$_base$path'), headers: _headers, body: jsonEncode(body));
-        return _handle(res);
-      });
-
-  Future<void> delete(String path) async =>
-      _withRefresh(() async {
-        final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
-        _handle(res);
-      });
-
   String _tryParseError(String body) {
     try {
       final j = jsonDecode(body);
@@ -157,24 +124,6 @@ class ApiService {
     } catch (_) {
       return body;
     }
-  }
-
-  /// Returns a user-friendly message when the server is unreachable.
-  /// Render free tier spins down after inactivity — first request can take 30–60s.
-  static String friendlyError(Object e) {
-    final s = e.toString();
-    if (s.contains('SocketException') || s.contains('ClientException') ||
-        s.contains('Failed host lookup') || s.contains('Connection refused')) {
-      return 'Cannot reach server. If this is the first request, the server may be waking up — please wait 30 seconds and try again.';
-    }
-    if (s.contains('401') || s.contains('Unauthorized')) {
-      return 'Session expired. Please log in again.';
-    }
-    if (s.contains('403')) return 'You do not have permission to do that.';
-    if (s.contains('404')) return 'Resource not found.';
-    if (s.contains('500')) return 'Server error. Please try again later.';
-    if (s.contains('TimeoutException')) return 'Request timed out. Please check your connection.';
-    return 'Something went wrong. Please try again.';
   }
 
   /// Safely coerce a dynamic API response to a List.
@@ -284,20 +233,10 @@ class ApiService {
 
   static Future<List<dynamic>> getRiskAssessments({int page = 1, int limit = 50}) async {
     final data = await instance.get('/risk-assessments?limit=$limit&offset=${(page - 1) * limit}');
-    List<dynamic> list;
     if (data is Map<String, dynamic>) {
-      list = (data['assessments'] as List<dynamic>?) ?? [];
-    } else {
-      list = _asList(data);
+      return (data['assessments'] as List<dynamic>?) ?? [];
     }
-    // Normalize field names: backend may return riskScore/risk instead of score/riskLevel
-    return list.map((item) {
-      if (item is! Map<String, dynamic>) return item;
-      final normalized = Map<String, dynamic>.from(item);
-      normalized['riskLevel'] ??= normalized['risk'] ?? normalized['riskLevel'] ?? 'Unknown';
-      normalized['score']     ??= normalized['riskScore'] ?? normalized['score'] ?? 0;
-      return normalized;
-    }).toList();
+    return _asList(data);
   }
 
   // ── Appointments ──────────────────────────────────────────────────────────
@@ -345,32 +284,13 @@ class ApiService {
   static Future<void> markNotificationRead(String id) =>
       instance.patch('/notifications/$id/read', {});
 
-  static Future<void> markAllNotificationsRead() =>
-      instance.patch('/notifications/mark-all-read', {});
-
-  // ── Profile photo ─────────────────────────────────────────────────────────
-
-  /// Upload a base64 photo. Pass null to remove.
-  static Future<String?> uploadProfilePhoto(String? base64DataUrl) async {
-    final data = await instance.patch('/users/me/photo', {
-      'photoBase64': base64DataUrl,
-    });
-    return (data as Map<String, dynamic>?)?['profilePhotoUrl'] as String?;
-  }
-
   // ── Health facilities ─────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getHealthFacilities() =>
       instance.get('/health-facilities').then(_asList);
 
-  static Future<List<dynamic>> getFacilitiesByDistrict(String district) async {
-    try {
-      final result = await instance.get('/health-facilities?district=${Uri.encodeComponent(district)}');
-      return _asList(result);
-    } catch (e) {
-      rethrow;
-    }
-  }
+  static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
+      instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
 
   static Future<List<String>> getRegions() =>
       instance.get('/health-facilities/regions').then((data) => 
@@ -424,6 +344,154 @@ class ApiService {
     if (patientId == null) return [];
     final data = await instance.get('/risk-assessments/patient/$patientId');
     return _asList(data);
+  }
+
+  // ── Health Check History ──────────────────────────────────────────────────
+
+  /// Create a new health check history record
+  static Future<Map<String, dynamic>> createHealthCheckHistory(
+    Map<String, dynamic> data,
+  ) async {
+    final result = await instance.post('/health-check-history', data);
+    return (result as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Save the current user's WHO health-check result to backend history.
+  static Future<Map<String, dynamic>> saveHealthCheckResultToHistory({
+    required String type,
+    required Map<String, dynamic> result,
+    required List<Map<String, dynamic>> questions,
+    required Map<int, int> answers,
+  }) async {
+    // Create a map of question IDs to question text for faster lookup
+    final questionMap = <dynamic, String>{};
+    for (final q in questions) {
+      final id = q['id'];
+      final text = q['questionText']?.toString() ?? 
+                   q['question']?.toString() ?? 
+                   q['text']?.toString() ?? '';
+      if (text.isNotEmpty) {
+        questionMap[id] = text;
+      }
+    }
+
+    debugPrint('=== SYMPTOM EXTRACTION DEBUG ===');
+    debugPrint('Total questions: ${questions.length}');
+    debugPrint('Question map size: ${questionMap.length}');
+    debugPrint('Total answers: ${answers.length}');
+    debugPrint('Questions with YES answers: ${answers.entries.where((e) => e.value == 1).length}');
+
+    final symptoms = <String>[];
+    for (final entry in answers.entries) {
+      if (entry.value == 1) {
+        // Try to find the question text - check multiple key formats
+        String? questionText;
+        
+        // Try direct key match
+        if (questionMap.containsKey(entry.key)) {
+          questionText = questionMap[entry.key];
+        }
+        // Try string key match
+        else if (questionMap.containsKey(entry.key.toString())) {
+          questionText = questionMap[entry.key.toString()];
+        }
+        // Try int key match
+        else {
+          final intKey = int.tryParse(entry.key.toString());
+          if (intKey != null && questionMap.containsKey(intKey)) {
+            questionText = questionMap[intKey];
+          }
+        }
+        
+        debugPrint('Answer ID: ${entry.key}, Found: ${questionText != null}, Text: $questionText');
+        
+        if (questionText != null && questionText.isNotEmpty) {
+          symptoms.add(questionText);
+        }
+      }
+    }
+
+    debugPrint('Extracted symptoms: ${symptoms.length}');
+    for (final symptom in symptoms) {
+      debugPrint('  - $symptom');
+    }
+    debugPrint('=== END DEBUG ===');
+
+    final maxScore = _numberValue(result['maxScore']);
+    final fallbackMaxScore = questions.fold<double>(
+      0,
+      (total, question) => total + _numberValue(question['weight']),
+    );
+
+    final payload = {
+      'type': type,
+      'riskLevel': _healthCheckRiskLevel(result['riskLevel']),
+      'score': _numberValue(result['score']),
+      'maxScore': maxScore > 0 ? maxScore : fallbackMaxScore,
+      'percentage': _numberValue(result['percentage']),
+      'message': result['message']?.toString() ?? '',
+      'symptoms': symptoms.isNotEmpty ? symptoms : [],
+      'answers': {
+        for (final entry in answers.entries) entry.key.toString(): entry.value,
+      },
+    };
+
+    debugPrint('Payload symptoms: ${payload['symptoms']}');
+    return createHealthCheckHistory(payload);
+  }
+
+  static double _numberValue(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _healthCheckRiskLevel(dynamic value) {
+    final level = value?.toString().toLowerCase() ?? '';
+    if (level.contains('seek')) return 'Seek Help Immediately';
+    if (level.contains('high')) return 'High Risk';
+    if (level.contains('medium') || level.contains('moderate')) return 'Moderate Risk';
+    return 'Low Risk';
+  }
+
+  /// Get health check history for the current user
+  static Future<Map<String, dynamic>> getMyHealthCheckHistory({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final data = await instance.get(
+      '/health-check-history/my-history?limit=$limit&offset=$offset',
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get health check history for a specific user (clinician/admin only)
+  static Future<Map<String, dynamic>> getUserHealthCheckHistory(
+    String userId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final data = await instance.get(
+      '/health-check-history/user/$userId?limit=$limit&offset=$offset',
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get the latest health check for a user
+  static Future<Map<String, dynamic>> getLatestHealthCheck(String userId) async {
+    final data = await instance.get('/health-check-history/user/$userId/latest');
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get health check statistics for a user
+  static Future<Map<String, dynamic>> getHealthCheckStatistics(String userId) async {
+    final data = await instance.get('/health-check-history/user/$userId/statistics');
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get a single health check record by ID
+  static Future<Map<String, dynamic>> getHealthCheckRecord(String id) async {
+    final data = await instance.get('/health-check-history/$id');
+    return (data as Map<String, dynamic>?) ?? {};
   }
 
   // ── Settings & Account ────────────────────────────────────────────────────
@@ -534,19 +602,6 @@ class ApiService {
 
     if (response.statusCode != 200 && response.statusCode != 201) {
       throw ApiException(response.statusCode, 'Failed to submit contact form');
-    }
-  }
-
-  static Future<Map<String, dynamic>> getClinicianDashboard(String clinicianId) async {
-    try {
-      final res = await ApiService.instance.get('/dashboard/clinician/$clinicianId');
-      return (res as Map<String, dynamic>?) ?? {};
-    } catch (_) {
-      return {
-        'overview': {'activePatients': 0, 'newThisWeek': 0, 'criticalAlerts': 0, 'pendingTasks': 0},
-        'timeline': [],
-        'alerts': [],
-      };
     }
   }
 }

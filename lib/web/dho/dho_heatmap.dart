@@ -90,10 +90,6 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                     style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.infoText)),
               ),
               const Spacer(),
-              if (_loading)
-                const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              else
-                IconButton(onPressed: _loadFacilities, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary)),
             ],
           ),
           const SizedBox(height: 6),

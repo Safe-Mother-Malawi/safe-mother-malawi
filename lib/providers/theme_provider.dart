@@ -6,19 +6,19 @@ import 'package:google_fonts/google_fonts.dart';
 class ThemeProvider extends ChangeNotifier {
   bool _isDarkMode = false;
 
-  bool get isDarkMode => _isDarkMode;
+  bool get isDarkMode => false;
 
   ThemeData get theme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: AppColors.primary,
-        brightness: _isDarkMode ? Brightness.dark : Brightness.light,
+        brightness: Brightness.light,
       ),
       textTheme: GoogleFonts.interTextTheme(
-        _isDarkMode ? ThemeData.dark().textTheme : ThemeData.light().textTheme,
+        ThemeData.light().textTheme,
       ),
-      scaffoldBackgroundColor: _isDarkMode ? const Color(0xFF121212) : AppColors.pageBg,
+      scaffoldBackgroundColor: AppColors.pageBg,
     );
   }
 
@@ -29,7 +29,7 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _loadThemePreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isDarkMode = prefs.getBool('darkMode') ?? false;
+      _isDarkMode = false;
       notifyListeners();
     } catch (e) {
       debugPrint('Error loading theme preference: $e');
@@ -37,16 +37,6 @@ class ThemeProvider extends ChangeNotifier {
   }
 
   Future<void> setDarkMode(bool isDark) async {
-    if (_isDarkMode == isDark) return;
-    
-    _isDarkMode = isDark;
-    notifyListeners();
-    
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('darkMode', isDark);
-    } catch (e) {
-      debugPrint('Error saving theme preference: $e');
-    }
+    // Dark mode disabled
   }
 }

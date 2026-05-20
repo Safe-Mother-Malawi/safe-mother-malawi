@@ -99,7 +99,6 @@ class _QuestionInsightsState extends State<QuestionInsights> with LiveDataMixin 
                 style: GoogleFonts.publicSans(
                     fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const Spacer(),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary)),
           ]),
           const SizedBox(height: 6),
           Text('Health assessment responses and symptom patterns',

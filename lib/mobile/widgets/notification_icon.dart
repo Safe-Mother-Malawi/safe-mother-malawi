@@ -37,7 +37,8 @@ class _NotificationIconState extends State<NotificationIcon> {
     
     try {
       final notifications = await ApiService.getNotifications();
-      final unread = notifications.where((n) => n['read'] != true).length;
+      // Check both 'read' and 'isRead' fields for compatibility
+      final unread = notifications.where((n) => (n['read'] ?? n['isRead']) != true).length;
       if (mounted) {
         setState(() {
           _unreadCount = unread;
@@ -71,8 +72,8 @@ class _NotificationIconState extends State<NotificationIcon> {
         height: 38,
         decoration: BoxDecoration(
           color: widget.iconColor == Colors.white 
-              ? Colors.white.withOpacity(0.25)
-              : widget.iconColor.withOpacity(0.15),
+              ? Colors.white.withValues(alpha: 0.25)
+              : widget.iconColor.withValues(alpha: 0.15),
           shape: BoxShape.circle,
         ),
         child: Stack(
@@ -95,7 +96,7 @@ class _NotificationIconState extends State<NotificationIcon> {
                     shape: BoxShape.circle,
                     border: Border.all(
                       color: widget.iconColor == Colors.white 
-                          ? Colors.white.withOpacity(0.3)
+                          ? Colors.white.withValues(alpha: 0.3)
                           : Colors.white,
                       width: 1.5,
                     ),

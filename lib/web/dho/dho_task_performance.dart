@@ -85,7 +85,6 @@ class _DhoTaskPerformanceState extends State<DhoTaskPerformance> with LiveDataMi
                 style: GoogleFonts.publicSans(
                     fontSize: 22, fontWeight: FontWeight.w700, color: AppColors.headings)),
             const Spacer(),
-            IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, color: AppColors.primary)),
           ]),
           const SizedBox(height: 6),
           Text('Clinician task completion${_district.isNotEmpty ? ' for $_district District' : ''}',
