@@ -1,5 +1,6 @@
 import '../services/api_service.dart';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 
 enum NotifType { alert, appointment, info }
 
@@ -59,7 +60,7 @@ class AppNotification {
   }
 }
 
-class NotificationStore {
+class NotificationStore extends ChangeNotifier {
   NotificationStore._();
   static final NotificationStore instance = NotificationStore._();
 
@@ -81,7 +82,7 @@ class NotificationStore {
         data.cast<Map<String, dynamic>>().map(AppNotification.fromJson),
       );
       _loaded = true;
-      _notify();
+      notifyListeners();
       // Start auto-refresh timer after initial load
       _startAutoRefresh();
     } catch (_) {}
@@ -95,7 +96,7 @@ class NotificationStore {
         orElse: () => _items.first,
       );
       n.read = true;
-      _notify();
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -105,7 +106,7 @@ class NotificationStore {
       for (final n in _items) {
         n.read = true;
       }
-      _notify();
+      notifyListeners();
     } catch (_) {}
   }
 
@@ -113,13 +114,13 @@ class NotificationStore {
     try {
       await ApiService.instance.delete('/notifications/$id');
       _items.removeWhere((n) => n.id == id);
-      _notify();
+      notifyListeners();
     } catch (_) {}
   }
 
   void add(AppNotification n) {
     _items.insert(0, n);
-    _notify();
+    notifyListeners();
   }
 
   void reload() {
@@ -154,7 +155,7 @@ class NotificationStore {
         // Remove notifications that no longer exist
         _items.removeWhere((n) => !newItems.any((ni) => ni.id == n.id));
 
-        _notify();
+        notifyListeners();
       } catch (_) {}
     });
   }
@@ -165,12 +166,9 @@ class NotificationStore {
     _refreshTimer = null;
   }
 
-  final List<void Function()> _listeners = [];
-  void addListener(void Function() l) => _listeners.add(l);
-  void removeListener(void Function() l) => _listeners.remove(l);
-  void _notify() {
-    for (final l in _listeners) {
-      l();
-    }
+  @override
+  void dispose() {
+    stopAutoRefresh();
+    super.dispose();
   }
 }
