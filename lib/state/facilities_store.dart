@@ -277,6 +277,12 @@ class FacilitiesStore {
     load();
   }
 
+  /// Create a new facility
+  Future<void> addFacility(Map<String, dynamic> data) async {
+    await ApiService.createFacility(data);
+    reload();
+  }
+
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);

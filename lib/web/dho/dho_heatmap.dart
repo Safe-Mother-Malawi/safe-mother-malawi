@@ -130,7 +130,7 @@ class _DhoHeatmapState extends State<DhoHeatmap> {
                             return CircleMarker(
                               point: LatLng(f['lat'] as double, f['lon'] as double),
                               radius: isCentral ? 22 : (f['type'] == 'District' ? 16 : 12),
-                              color: color.withValues(alpha: 0.2 + val * 0.3),
+                              color: color.withOpacity(0.25 + val * 0.3),
                               borderColor: color.withOpacity(0.8),
                               borderStrokeWidth: isCentral ? 2.5 : 1.5,
                             );

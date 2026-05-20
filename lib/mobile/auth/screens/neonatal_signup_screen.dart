@@ -37,6 +37,15 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
   DateTime? _babyDob;
   String _babyGender  = '';
   final _weightCtrl   = TextEditingController();
+  final _lengthCtrl   = TextEditingController();
+  final _headCircCtrl = TextEditingController();
+  final _apgarCtrl    = TextEditingController();
+  final _gestAgeCtrl  = TextEditingController();
+  
+  String? _deliveryMethod;
+  String? _placeOfBirth;
+  String? _birthAttendant;
+  final _complicationsCtrl = TextEditingController();
 
   // Step 3 – Password
   final _passwordCtrl = TextEditingController();
@@ -58,7 +67,8 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
   @override
   void dispose() {
     for (final c in [_nameCtrl, _phoneCtrl, _emailCtrl, _ageCtrl,
-        _babyNameCtrl, _weightCtrl, _passwordCtrl, _confirmCtrl, _secAnswerCtrl]) {
+        _babyNameCtrl, _weightCtrl, _lengthCtrl, _headCircCtrl, _apgarCtrl, 
+        _gestAgeCtrl, _complicationsCtrl, _passwordCtrl, _confirmCtrl, _secAnswerCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -199,6 +209,14 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
       babyDob: _babyDob!.toIso8601String(),
       babyGender: _babyGender,
       babyBirthWeight: _weightCtrl.text.trim(),
+      birthLength: _lengthCtrl.text.trim(),
+      headCircumference: _headCircCtrl.text.trim(),
+      apgarScore: _apgarCtrl.text.trim(),
+      gestationalAgeAtBirth: _gestAgeCtrl.text.trim(),
+      deliveryMethod: _deliveryMethod ?? '',
+      placeOfBirth: _placeOfBirth ?? '',
+      birthAttendant: _birthAttendant ?? '',
+      complicationsDuringDelivery: _complicationsCtrl.text.trim(),
       securityQuestion: _secQuestion,
       securityAnswer: _secAnswerCtrl.text.trim().toLowerCase(),
     );
@@ -542,6 +560,57 @@ class _NeonatalSignupScreenState extends State<NeonatalSignupScreen> {
               if (w < 0.5 || w > 6.0) return 'Valid range: 0.5–6.0 kg';
               return null;
             },
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Birth Length (cm) (Optional)', child: TextFormField(
+            controller: _lengthCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: _dec('e.g. 50.5'),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Head Circumference (cm) (Optional)', child: TextFormField(
+            controller: _headCircCtrl,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: _dec('e.g. 34.0'),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'APGAR Score (1-10) (Optional)', child: TextFormField(
+            controller: _apgarCtrl,
+            keyboardType: TextInputType.number,
+            decoration: _dec('e.g. 9'),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Gestational Age at Birth (weeks) (Optional)', child: TextFormField(
+            controller: _gestAgeCtrl,
+            keyboardType: TextInputType.number,
+            decoration: _dec('e.g. 39'),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Delivery Method (Optional)', child: DropdownButtonFormField<String>(
+            value: _deliveryMethod,
+            decoration: _dec('Select method'),
+            items: ['Normal delivery', 'C-section', 'Assisted vaginal'].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+            onChanged: (v) => setState(() => _deliveryMethod = v),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Place of Birth (Optional)', child: DropdownButtonFormField<String>(
+            value: _placeOfBirth,
+            decoration: _dec('Select place'),
+            items: ['Health Facility', 'Home', 'In transit', 'Other'].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+            onChanged: (v) => setState(() => _placeOfBirth = v),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Birth Attendant (Optional)', child: DropdownButtonFormField<String>(
+            value: _birthAttendant,
+            decoration: _dec('Select attendant'),
+            items: ['Doctor/Specialist', 'Nurse/Midwife', 'Traditional Birth Attendant', 'Relative/None'].map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
+            onChanged: (v) => setState(() => _birthAttendant = v),
+          )),
+          const SizedBox(height: 14),
+          _Field(label: 'Complications During Delivery (Optional)', child: TextFormField(
+            controller: _complicationsCtrl,
+            maxLines: 2,
+            decoration: _dec('Briefly describe any complications (if any)'),
           )),
           const SizedBox(height: 28),
           SizedBox(

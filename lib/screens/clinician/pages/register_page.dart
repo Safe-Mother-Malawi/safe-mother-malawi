@@ -689,6 +689,13 @@ class _NeonatalFormState extends State<_NeonatalForm> {
   final _mEmail     = TextEditingController();
   final _mNationality = TextEditingController();
   final _bName      = TextEditingController();
+  final _bBirthWeight = TextEditingController();
+  final _bBirthLength = TextEditingController();
+  final _bHeadCirc = TextEditingController();
+  final _bApgar = TextEditingController();
+  final _bGestAge = TextEditingController();
+  final _bComplications = TextEditingController();
+  
   String? _mDistrict;
   String? _mFacilityName;
   String? _mUrbanRural;
@@ -696,6 +703,10 @@ class _NeonatalFormState extends State<_NeonatalForm> {
   bool _loadingFacilities = false;
   String? _bGender;
   DateTime? _bDob;
+  
+  String? _bDeliveryMethod;
+  String? _bPlaceOfBirth;
+  String? _bBirthAttendant;
 
   bool get _districtLocked     => widget.lockedDistrict.isNotEmpty;
   bool get _facilityNameLocked => widget.lockedFacilityName.isNotEmpty;
@@ -724,7 +735,10 @@ class _NeonatalFormState extends State<_NeonatalForm> {
 
   @override
   void dispose() {
-    for (final c in [_mName, _mAge, _mPhone, _mEmail, _mNationality, _bName]) {
+    for (final c in [
+      _mName, _mAge, _mPhone, _mEmail, _mNationality, _bName,
+      _bBirthWeight, _bBirthLength, _bHeadCirc, _bApgar, _bGestAge, _bComplications
+    ]) {
       c.dispose();
     }
     super.dispose();
@@ -769,6 +783,17 @@ class _NeonatalFormState extends State<_NeonatalForm> {
           'babyName': _bName.text.trim(),
           'babyGender': _bGender,
           'babyDob': _bDob!.toIso8601String(),
+          
+          'babyBirthWeight': _bBirthWeight.text.trim().isEmpty ? null : _bBirthWeight.text.trim(),
+          'birthLength': _bBirthLength.text.trim().isEmpty ? null : _bBirthLength.text.trim(),
+          'headCircumference': _bHeadCirc.text.trim().isEmpty ? null : _bHeadCirc.text.trim(),
+          'apgarScore': _bApgar.text.trim().isEmpty ? null : int.tryParse(_bApgar.text.trim()),
+          'gestationalAgeAtBirth': _bGestAge.text.trim().isEmpty ? null : int.tryParse(_bGestAge.text.trim()),
+          
+          'deliveryMethod': _bDeliveryMethod,
+          'placeOfBirth': _bPlaceOfBirth,
+          'birthAttendant': _bBirthAttendant,
+          'complicationsDuringDelivery': _bComplications.text.trim().isEmpty ? null : _bComplications.text.trim(),
         });
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -781,6 +806,7 @@ class _NeonatalFormState extends State<_NeonatalForm> {
           setState(() {
             if (!_districtLocked) _mDistrict = null;
             _bGender = null; _bDob = null;
+            _bDeliveryMethod = null; _bPlaceOfBirth = null; _bBirthAttendant = null;
             _mFacilityName = null; _mUrbanRural = null;
             if (!_districtLocked) _facilities = [];
           });
@@ -871,6 +897,29 @@ class _NeonatalFormState extends State<_NeonatalForm> {
             ),
           ]),
         ),
+        const SizedBox(height: 16),
+        _sectionTitle('Birth Metrics & Delivery Information'),
+        _twoCol(
+          _field('Birth Weight (kg)', _bBirthWeight, required: false, keyboard: TextInputType.number, hint: 'e.g., 3.2'),
+          _field('Birth Length (cm)', _bBirthLength, required: false, keyboard: TextInputType.number, hint: 'e.g., 50.5')
+        ),
+        const SizedBox(height: 16),
+        _twoCol(
+          _field('Head Circumference (cm)', _bHeadCirc, required: false, keyboard: TextInputType.number, hint: 'e.g., 34.0'),
+          _field('APGAR Score (1-10)', _bApgar, required: false, keyboard: TextInputType.number, hint: 'e.g., 9', numericOnly: true)
+        ),
+        const SizedBox(height: 16),
+        _twoCol(
+          _field('Gestational Age at Birth (weeks)', _bGestAge, required: false, keyboard: TextInputType.number, hint: 'e.g., 39', numericOnly: true),
+          _dropdown('Delivery Method', _bDeliveryMethod, ['Normal delivery', 'C-section', 'Assisted vaginal'], (v) => setState(() => _bDeliveryMethod = v))
+        ),
+        const SizedBox(height: 16),
+        _twoCol(
+          _dropdown('Place of Birth', _bPlaceOfBirth, ['Health Facility', 'Home', 'In transit', 'Other'], (v) => setState(() => _bPlaceOfBirth = v)),
+          _dropdown('Birth Attendant', _bBirthAttendant, ['Doctor/Specialist', 'Nurse/Midwife', 'Traditional Birth Attendant', 'Relative/None'], (v) => setState(() => _bBirthAttendant = v))
+        ),
+        const SizedBox(height: 16),
+        _field('Complications During Delivery', _bComplications, required: false, hint: 'Briefly describe any complications (if any)', maxLines: 2),
         const SizedBox(height: 28),
         Row(mainAxisAlignment: MainAxisAlignment.end, children: [
           OutlinedButton(
@@ -879,6 +928,7 @@ class _NeonatalFormState extends State<_NeonatalForm> {
               setState(() {
                 if (!_districtLocked) _mDistrict = null;
                 _bGender = null; _bDob = null;
+                _bDeliveryMethod = null; _bPlaceOfBirth = null; _bBirthAttendant = null;
                 _mFacilityName = null; _mUrbanRural = null;
                 if (!_districtLocked) _facilities = [];
               });

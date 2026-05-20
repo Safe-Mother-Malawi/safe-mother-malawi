@@ -147,7 +147,7 @@ class _HeatmapScreenState extends State<HeatmapScreen> {
                             return CircleMarker(
                               point: LatLng(f['lat'] as double, f['lon'] as double),
                               radius: isCentral ? 18 : 12,
-                              color: color.withValues(alpha: 0.25 + val * 0.3),
+                              color: color.withOpacity(0.25 + val * 0.3),
                               borderColor: color.withOpacity(0.8),
                               borderStrokeWidth: isCentral ? 2.5 : 1.5,
                             );

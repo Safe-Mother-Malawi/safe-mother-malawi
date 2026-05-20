@@ -29,9 +29,9 @@ const List<NavItem> _flatItems = [
   // ── Admin only ────────────────────────────────────────────────────────────
   NavItem(label: 'System Users', icon: Icons.manage_accounts_rounded, route: '/clinicians',
       allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Appointments', icon: Icons.calendar_today_rounded, route: '/appointments',
+  NavItem(label: 'Health Facilities', icon: Icons.local_hospital_rounded, route: '/facilities',
       allowedRoles: [UserRole.admin]),
-  NavItem(label: 'Audit Export', icon: Icons.download_for_offline_rounded, route: '/audit-export',
+  NavItem(label: 'Audit Logs', icon: Icons.history_rounded, route: '/logs',
       allowedRoles: [UserRole.admin]),
   NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports',
       allowedRoles: [UserRole.admin]),
@@ -53,10 +53,8 @@ const List<NavItem> _flatItems = [
       allowedRoles: [UserRole.dho]),
 ];
 
-// Insights group — Admin only (IVR + Question)
+// Insights group — Admin only (Question only)
 const _insightsChildren = [
-  NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights',
-      allowedRoles: [UserRole.admin]),
   NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights',
       allowedRoles: [UserRole.admin]),
 ];
@@ -82,15 +80,14 @@ class _AppSidebarState extends State<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final isInsightsActive = widget.currentRoute == '/ivr-insights' ||
-        widget.currentRoute == '/question-insights' ||
+    final isInsightsActive = widget.currentRoute == '/question-insights' ||
         widget.currentRoute == '/insights';
 
-    // All routes that are handled as flat items (not in groups)
     const _flatLabels = {
       'Overview', 'System Users', 'Clinician Management', 'Data Source',
       'Analytics Dashboard', 'Generate Analytics', 'Task Analytics',
-      'Activity Logs', 'Question Insights', 'Reports', 'Audit Export', 'Appointments',
+      'Activity Logs', 'Question Insights', 'Reports', 'Audit Export',
+      'Health Facilities', 'Audit Logs'
     };
 
     return Container(
@@ -127,7 +124,7 @@ class _AppSidebarState extends State<AppSidebar> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
+                  color: Colors.white.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20)),
               child: Text(
                 widget.role == UserRole.admin ? 'System Admin' : 'District Health Officer',

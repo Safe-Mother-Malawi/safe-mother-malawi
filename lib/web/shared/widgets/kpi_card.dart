@@ -39,55 +39,58 @@ class KpiCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: iconBg,
-                    borderRadius: BorderRadius.circular(12),
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: iconBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(icon, color: iconColor, size: 22),
                   ),
-                  child: Icon(icon, color: iconColor, size: 22),
-                ),
-                if (onTap != null)
-                  Icon(Icons.arrow_forward_ios_rounded,
-                      size: 14, color: AppColors.mutedText),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              value,
-              style: GoogleFonts.publicSans(
-                fontSize: 28,
-                fontWeight: FontWeight.w700,
-                color: AppColors.headings,
-                letterSpacing: -0.5,
+                  if (onTap != null)
+                    Icon(Icons.arrow_forward_ios_rounded,
+                        size: 14, color: AppColors.mutedText),
+                ],
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: AppColors.mutedText,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 6),
+              const SizedBox(height: 16),
               Text(
-                subtitle!,
+                value,
+                style: GoogleFonts.publicSans(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.headings,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                title,
                 style: GoogleFonts.inter(
-                  fontSize: 11,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
                   color: AppColors.mutedText,
                 ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 6),
+                Text(
+                  subtitle!,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.mutedText,
+                  ),
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

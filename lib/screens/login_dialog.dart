@@ -122,7 +122,9 @@ class _LoginDialogState extends State<LoginDialog> {
         constraints: const BoxConstraints(maxWidth: 460),
         child: Padding(
           padding: const EdgeInsets.all(36),
-          child: _buildLoginView(),
+          child: SingleChildScrollView(
+            child: _buildLoginView(),
+          ),
         ),
       ),
     );

@@ -41,6 +41,11 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
         title: const Text('Health Facilities Management'),
         elevation: 0,
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showCreateFacilityDialog,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Facility'),
+      ),
       body: store.loading
           ? const Center(child: CircularProgressIndicator())
           : store.error != null
@@ -210,6 +215,109 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
           ),
           const SizedBox(height: 4),
           Text(value),
+        ],
+      ),
+    );
+  }
+
+  void _showCreateFacilityDialog() {
+    final _formKey = GlobalKey<FormState>();
+    String _name = '';
+    String _region = '';
+    String _zone = '';
+    String _district = '';
+    String _type = '';
+    String _authority = '';
+    String _urbanRural = 'Rural';
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add New Facility'),
+        content: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Facility Name'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _name = v!,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Region'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _region = v!,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Zone'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _zone = v!,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'District'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _district = v!,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Facility Type (e.g. Hospital, Clinic)'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _type = v!,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Managing Authority (e.g. Government, CHAM)'),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                  onSaved: (v) => _authority = v!,
+                ),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Urban/Rural'),
+                  value: _urbanRural,
+                  items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                  onChanged: (v) => _urbanRural = v!,
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState!.validate()) {
+                _formKey.currentState!.save();
+                Navigator.pop(ctx);
+                
+                // Show loading indicator
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Creating facility...')),
+                );
+                
+                try {
+                  await store.addFacility({
+                    'facilityName': _name,
+                    'region': _region,
+                    'zone': _zone,
+                    'district': _district,
+                    'facilityType': _type,
+                    'managingAuthority': _authority,
+                    'urbanRural': _urbanRural,
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Facility created successfully')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to create facility: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
         ],
       ),
     );

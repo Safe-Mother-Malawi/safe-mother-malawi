@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
-import '../../../services/ivr_websocket_service.dart';
+import 'anc_visit_page.dart';
+import 'neonatal_assessment_page.dart';
 
 class ClinicianPatientsPage extends StatefulWidget {
   const ClinicianPatientsPage({super.key});
@@ -23,19 +23,18 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   String? _selectedType; // 'prenatal' | 'neonatal'
 
   List<Map<String, dynamic>> _riskHistory = [];
-  List<Map<String, dynamic>> _ivrHistory  = [];
   bool _historyLoading = false;
   bool _editing = false;
+
+  // ANC data
+  List<Map<String, dynamic>> _ancSchedule = [];
+  Map<String, dynamic>? _ancCompliance;
+  bool _ancLoading = false;
 
   @override
   void initState() {
     super.initState();
     _load();
-    // Connect to IVR WebSocket for real-time alerts
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final ivrService = Provider.of<IvrWebSocketService>(context, listen: false);
-      ivrService.connect(userId: 'clinician-user'); // TODO: Use actual clinician ID
-    });
   }
 
   @override
@@ -65,22 +64,43 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
   }
 
   Future<void> _loadHistory(String patientId, String type) async {
-    setState(() { _historyLoading = true; _riskHistory = []; _ivrHistory = []; });
+    setState(() { _historyLoading = true; _riskHistory = []; });
     try {
-      final results = await Future.wait([
-        ApiService.instance.get('/risk-assessments/patient/$patientId'),
-        ApiService.instance.get('/ivr/analytics/patient/$patientId'),
-      ]);
-      final riskData = results[0] is List ? results[0] as List : [];
-      final ivrMap   = results[1] is Map ? results[1] as Map : {};
-      final ivrData  = ivrMap['calls'] is List ? ivrMap['calls'] as List : [];
+      final riskData = await ApiService.instance.get('/risk-assessments/patient/$patientId');
+      final riskList = riskData is List ? riskData as List : [];
       setState(() {
-        _riskHistory    = riskData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-        _ivrHistory     = ivrData.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _riskHistory    = riskList.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
         _historyLoading = false;
       });
     } catch (_) {
       setState(() => _historyLoading = false);
+    }
+
+    // Load ANC data for prenatal patients
+    if (type == 'prenatal') {
+      _loadANCData(patientId);
+    }
+  }
+
+  Future<void> _loadANCData(String patientId) async {
+    setState(() { _ancLoading = true; _ancSchedule = []; _ancCompliance = null; });
+    try {
+      final results = await Future.wait([
+        ApiService.instance.get('/anc/schedule/$patientId'),
+        ApiService.instance.get('/anc/compliance/$patientId'),
+      ]);
+      
+      final scheduleData = results[0];
+      final complianceData = results[1];
+      
+      setState(() {
+        _ancSchedule = (scheduleData is List ? scheduleData : [])
+            .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _ancCompliance = complianceData is Map ? Map<String, dynamic>.from(complianceData) : null;
+        _ancLoading = false;
+      });
+    } catch (_) {
+      setState(() => _ancLoading = false);
     }
   }
 
@@ -152,120 +172,6 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // IVR Alerts Section
-        Consumer<IvrWebSocketService>(
-          builder: (context, ivrService, _) {
-            if (ivrService.alertCount == 0) return const SizedBox.shrink();
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(children: [
-                  const Icon(Icons.notifications_active, color: Colors.red, size: 22),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('IVR Alerts (${ivrService.alertCount})',
-                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.red)),
-                        Text(ivrService.isConnected ? '🟢 Connected' : '🔴 Disconnected',
-                            style: TextStyle(fontSize: 12, color: ivrService.isConnected ? Colors.green : Colors.red)),
-                      ],
-                    ),
-                  ),
-                  if (ivrService.alertCount > 0)
-                    TextButton(
-                      onPressed: ivrService.clearAlerts,
-                      child: const Text('Clear All', style: TextStyle(fontSize: 12)),
-                    ),
-                ]),
-                const SizedBox(height: 12),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: ivrService.alerts.length,
-                    separatorBuilder: (_, __) => Divider(height: 1, color: Colors.grey.shade200),
-                    itemBuilder: (context, index) {
-                      final alert = ivrService.alerts[index];
-                      return Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: alert.riskLevel == 'CRITICAL'
-                                    ? Colors.red.shade100
-                                    : Colors.orange.shade100,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(alert.getRiskEmoji(), style: const TextStyle(fontSize: 20)),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('${alert.riskLevel} Risk - ${alert.patientType}',
-                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                  Text(alert.message, maxLines: 2, overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(fontSize: 12, color: AppColors.g600)),
-                                  Text('Score: ${alert.riskScore}', style: const TextStyle(fontSize: 11, color: AppColors.g600)),
-                                ],
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () async {
-                                try {
-                                  // Mark alert as done in backend
-                                  await ApiService.markAlertDone(alert.sessionId);
-                                  // Remove from local list
-                                  ivrService.removeAlert(alert.sessionId);
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Alert marked as done'),
-                                        backgroundColor: AppColors.green,
-                                        duration: Duration(seconds: 2),
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to mark alert: $e'),
-                                        backgroundColor: AppColors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              icon: const Icon(Icons.check, size: 16),
-                              label: const Text('Done', style: TextStyle(fontSize: 12)),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-            );
-          },
-        ),
         const Row(children: [
           Icon(Icons.people_outline, color: AppColors.navy, size: 22),
           SizedBox(width: 10),
@@ -463,6 +369,208 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
 
           const SizedBox(height: 16),
 
+          // ANC Schedule for prenatal patients
+          if (type == 'prenatal') ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _section('ANC Schedule & Compliance', []),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => ANCVisitPage(
+                        prenatalPatientId: p['id']?.toString(),
+                        patientName: p['fullName']?.toString(),
+                      ),
+                    ));
+                    if (result == true) {
+                      _loadANCData(p['id'].toString());
+                      _loadHistory(p['id'].toString(), type);
+                    }
+                  },
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Record ANC Visit', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_ancLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_ancCompliance != null) ...[
+              // Compliance summary
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.navyL,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.navy.withOpacity(0.2)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          _ancCompliance!['complianceRate'] >= 75 
+                              ? Icons.check_circle 
+                              : Icons.warning,
+                          color: _ancCompliance!['complianceRate'] >= 75 
+                              ? AppColors.green 
+                              : AppColors.orange,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Compliance: ${_ancCompliance!['complianceRate']}%',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.g800,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${_ancCompliance!['completedVisits']}/${_ancCompliance!['totalANCVisits']} visits',
+                          style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Gestational weeks: ${_ancCompliance!['gestationalWeeks']}',
+                      style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                    ),
+                    if (_ancCompliance!['nextRecommendedVisit'] != null) ...[
+                      const SizedBox(height: 4),
+                      Builder(
+                        builder: (context) {
+                          final nextVisit = _ancCompliance!['nextRecommendedVisit'] as Map<String, dynamic>;
+                          return Text(
+                            'Next: Visit ${nextVisit['visitNumber']} at ${nextVisit['recommendedWeeks']} weeks',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: nextVisit['isOverdue'] == true ? AppColors.red : AppColors.g600,
+                              fontWeight: nextVisit['isOverdue'] == true ? FontWeight.bold : FontWeight.normal,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              // ANC Schedule
+              ..._ancSchedule.map((visit) {
+                final visitNum = visit['visitNumber']?.toString() ?? '?';
+                final weeks = visit['recommendedWeeks']?.toString() ?? '?';
+                final description = visit['description']?.toString() ?? '';
+                final isOverdue = visit['isOverdue'] == true;
+                final daysPastDue = visit['daysPastDue']?.toString() ?? '0';
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isOverdue ? AppColors.red.withOpacity(0.1) : AppColors.bg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isOverdue ? AppColors.red.withOpacity(0.3) : AppColors.g200,
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isOverdue ? AppColors.red : AppColors.navy,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              'Visit $visitNum',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '$weeks weeks',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.g800,
+                            ),
+                          ),
+                          const Spacer(),
+                          if (isOverdue)
+                            Text(
+                              '$daysPastDue days overdue',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: AppColors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        description,
+                        style: const TextStyle(fontSize: 11, color: AppColors.g600),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ] else
+              const Text(
+                'ANC data not available.',
+                style: TextStyle(fontSize: 12, color: AppColors.g400),
+              ),
+            const SizedBox(height: 16),
+          ] else if (type == 'neonatal') ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _section('Neonatal Assessment', []),
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute(
+                      builder: (_) => NeonatalAssessmentPage(
+                        neonatalPatientId: p['id']?.toString(),
+                        patientName: p['babyName']?.toString(),
+                      ),
+                    ));
+                    if (result == true) {
+                      _loadHistory(p['id'].toString(), type);
+                    }
+                  },
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Record Assessment', style: TextStyle(fontSize: 12)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
           // Risk history
           _section('Risk History', []),
           const SizedBox(height: 8),
@@ -495,36 +603,111 @@ class _ClinicianPatientsPageState extends State<ClinicianPatientsPage> {
 
           const SizedBox(height: 16),
 
-          // IVR history
-          _section('IVR Call History', []),
-          const SizedBox(height: 8),
-          if (_ivrHistory.isEmpty)
-            const Text('No IVR calls recorded.', style: TextStyle(fontSize: 12, color: AppColors.g400))
-          else
-            ..._ivrHistory.take(3).map((c) {
-              final date     = (c['startedAt'] as String? ?? '').substring(0, 10);
-              final outcome  = c['outcome'] as String? ?? 'unknown';
-              final duration = c['durationSeconds'] as int?;
-              final durStr   = duration != null ? '${duration ~/ 60}m ${duration % 60}s' : 'N/A';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8), border: Border.all(color: AppColors.g200)),
-                child: Row(children: [
-                  Container(width: 34, height: 34,
-                      decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.phone_in_talk_outlined, color: AppColors.navy, size: 18)),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(outcome, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
-                    Text('Duration: $durStr', style: const TextStyle(fontSize: 11, color: AppColors.g400)),
-                  ])),
-                  Text(date, style: const TextStyle(fontSize: 10, color: AppColors.g400)),
-                ]),
-              );
-            }),
+          // ANC Timeline
+          if (type == 'prenatal') ...[
+            _section('Clinical Timeline', []),
+            const SizedBox(height: 8),
+            _buildANCTimeline(),
+          ],
         ]),
       ),
+    );
+  }
+
+  Widget _buildANCTimeline() {
+    // Generate a simple mock timeline from the risk history and appointments
+    // In production, this would be an endpoint returning a chronological feed
+    final items = <Map<String, dynamic>>[];
+    
+    // Add risk history items
+    for (var r in _riskHistory) {
+      items.add({
+        'type': 'risk',
+        'title': 'Risk Assessment: ${r['riskLevel']}',
+        'date': r['submittedAt'] ?? '',
+        'icon': Icons.warning_amber_rounded,
+        'color': AppColors.orange,
+      });
+    }
+
+    // Add ANC appointments (completed)
+    for (var a in _ancSchedule) {
+      if (a['status'] == 'completed') {
+        items.add({
+          'type': 'visit',
+          'title': 'Completed Visit ${a['visitNumber']}',
+          'date': a['date'] ?? '',
+          'icon': Icons.medical_services,
+          'color': AppColors.navy,
+        });
+        
+        // Mock labs and medications based on completion
+        items.add({
+          'type': 'lab',
+          'title': 'Lab: Hb & Urine test',
+          'date': a['date'] ?? '',
+          'icon': Icons.science_outlined,
+          'color': AppColors.primary,
+        });
+        items.add({
+          'type': 'meds',
+          'title': 'Medication: Iron & Folic Acid issued',
+          'date': a['date'] ?? '',
+          'icon': Icons.medication,
+          'color': AppColors.green,
+        });
+      }
+    }
+
+    if (items.isEmpty) {
+      return const Text('No timeline data available.', style: TextStyle(fontSize: 12, color: AppColors.g400));
+    }
+
+    items.sort((a, b) {
+      final da = DateTime.tryParse(a['date'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      final db = DateTime.tryParse(b['date'] ?? '') ?? DateTime.fromMillisecondsSinceEpoch(0);
+      return db.compareTo(da); // Newest first
+    });
+
+    return Column(
+      children: items.map((item) {
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: (item['color'] as Color).withOpacity(0.15), shape: BoxShape.circle),
+                  child: Icon(item['icon'] as IconData, size: 14, color: item['color'] as Color),
+                ),
+                Container(
+                  width: 2,
+                  height: 30,
+                  color: AppColors.g200,
+                ),
+              ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item['title'], style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.g800)),
+                    const SizedBox(height: 2),
+                    Text(
+                      (item['date'] as String).length >= 10 ? (item['date'] as String).substring(0, 10) : item['date'],
+                      style: const TextStyle(fontSize: 10, color: AppColors.g400),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      }).toList(),
     );
   }
 

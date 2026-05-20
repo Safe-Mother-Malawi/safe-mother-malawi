@@ -292,6 +292,11 @@ class ApiService {
   static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
       instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
 
+  static Future<Map<String, dynamic>> createFacility(Map<String, dynamic> body) async {
+    final data = await instance.post('/health-facilities', body);
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
   static Future<List<String>> getRegions() =>
       instance.get('/health-facilities/regions').then((data) => 
           (data as List<dynamic>).cast<String>());

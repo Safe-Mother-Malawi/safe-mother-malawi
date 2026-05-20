@@ -25,6 +25,15 @@ class UserModel {
   // Extended neonatal fields
   final String babyGender;       // 'Male' | 'Female'
   final String babyBirthWeight;  // in kg e.g. '3.2'
+  final String birthLength;
+  final String headCircumference;
+  final String apgarScore;
+  final String gestationalAgeAtBirth;
+  final String deliveryMethod;
+  final String placeOfBirth;
+  final String birthAttendant;
+  final String complicationsDuringDelivery;
+
   // Password recovery
   final String securityQuestion;
   final String securityAnswer;   // stored lowercase-trimmed
@@ -53,6 +62,14 @@ class UserModel {
     this.emergencyContact = '',
     this.babyGender = '',
     this.babyBirthWeight = '',
+    this.birthLength = '',
+    this.headCircumference = '',
+    this.apgarScore = '',
+    this.gestationalAgeAtBirth = '',
+    this.deliveryMethod = '',
+    this.placeOfBirth = '',
+    this.birthAttendant = '',
+    this.complicationsDuringDelivery = '',
     this.securityQuestion = '',
     this.securityAnswer = '',
   });

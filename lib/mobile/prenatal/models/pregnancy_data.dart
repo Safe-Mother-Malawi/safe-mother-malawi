@@ -264,4 +264,33 @@ class PregnancyData {
       default: return 'th';
     }
   }
+
+  /// Danger signs tip
+  String get dangerSignsTip {
+    if (currentWeek <= 12) return 'Watch for severe nausea, bleeding, or intense abdominal pain.';
+    if (currentWeek <= 26) return 'Report severe headaches, blurred vision, or decreased baby movement.';
+    return 'Seek immediate care for bleeding, water breaking early, or no baby movement.';
+  }
+
+  /// Breastfeeding tip
+  String get breastfeedingTip {
+    if (currentWeek <= 26) return 'Your breasts may be changing; it is normal as they prepare for milk production.';
+    return 'Learn about latching and prepare nursing bras for when the baby arrives.';
+  }
+
+  /// Birth preparation tip
+  String get birthPrepTip {
+    if (currentWeek <= 26) return 'Start thinking about where you want to give birth and who will support you.';
+    return 'Pack your hospital bag, plan transport, and keep important numbers handy.';
+  }
+
+  /// Hygiene tip
+  String get hygieneTip {
+    return 'Wash hands frequently, maintain dental hygiene, and wear comfortable, breathable clothing.';
+  }
+
+  /// Family planning tip
+  String get familyPlanningTip {
+    return 'Discuss post-birth family planning options with your healthcare provider during ANC visits.';
+  }
 }

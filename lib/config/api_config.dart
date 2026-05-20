@@ -3,7 +3,7 @@
 /// Switch between development and production environments
 class ApiConfig {
   // Environment flag - change this to switch environments
-  static const bool isProduction = false; // 🔧 Development mode - using localhost backend
+  static const bool isProduction = false; // Changed to development mode
 
   // Development URLs (local development)
   static const String devBaseUrl = 'http://localhost:3001/api/v1';
