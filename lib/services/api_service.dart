@@ -318,6 +318,28 @@ class ApiService {
       instance.get('/health-facilities/districts?zone=${Uri.encodeComponent(zone)}').then((data) => 
           (data as List<dynamic>).cast<String>());
 
+  static Future<Map<String, dynamic>> getHealthFacilityById(String id) async {
+    final data = await instance.get('/health-facilities/$id');
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  static Future<Map<String, dynamic>> updateHealthFacility(
+      String id, Map<String, dynamic> body) async {
+    final data = await instance.put('/health-facilities/$id', body);
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  static Future<void> deleteHealthFacility(String id) =>
+      instance.delete('/health-facilities/$id');
+
+  static Future<List<String>> getFacilityTypes() =>
+      instance.get('/health-facilities/facility-types').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
+  static Future<List<String>> getManagingAuthorities() =>
+      instance.get('/health-facilities/managing-authorities').then((data) => 
+          (data as List<dynamic>).cast<String>());
+
   // ── Patients ──────────────────────────────────────────────────────────────
 
   static Future<Map<String, dynamic>> registerPrenatalPatient(

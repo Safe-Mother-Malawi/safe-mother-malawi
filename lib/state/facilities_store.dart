@@ -55,6 +55,8 @@ class FacilitiesStore {
   final List<String> _regions = [];
   final List<String> _zones = [];
   final List<String> _districts = [];
+  final List<String> _facilityTypes = [];
+  final List<String> _managingAuthorities = [];
 
   bool _loaded = false;
   bool _loading = false;
@@ -73,6 +75,8 @@ class FacilitiesStore {
   List<String> get regions => List.from(_regions);
   List<String> get zones => List.from(_zones);
   List<String> get districts => List.from(_districts);
+  List<String> get facilityTypes => List.from(_facilityTypes);
+  List<String> get managingAuthorities => List.from(_managingAuthorities);
   bool get loaded => _loaded;
   bool get loading => _loading;
   String? get error => _error;
@@ -99,6 +103,16 @@ class FacilitiesStore {
       final regionsData = await ApiService.getRegions();
       _regions.clear();
       _regions.addAll(regionsData);
+
+      // Load facility types
+      final typesData = await ApiService.getFacilityTypes();
+      _facilityTypes.clear();
+      _facilityTypes.addAll(typesData);
+
+      // Load managing authorities
+      final authoritiesData = await ApiService.getManagingAuthorities();
+      _managingAuthorities.clear();
+      _managingAuthorities.addAll(authoritiesData);
 
       // Load all facilities
       final facilitiesData = await ApiService.getHealthFacilities() as List<dynamic>;
@@ -280,6 +294,18 @@ class FacilitiesStore {
   /// Create a new facility
   Future<void> addFacility(Map<String, dynamic> data) async {
     await ApiService.createFacility(data);
+    reload();
+  }
+
+  /// Edit an existing facility
+  Future<void> editFacility(String id, Map<String, dynamic> data) async {
+    await ApiService.updateHealthFacility(id, data);
+    reload();
+  }
+
+  /// Delete a facility
+  Future<void> deleteFacility(String id) async {
+    await ApiService.deleteHealthFacility(id);
     reload();
   }
 

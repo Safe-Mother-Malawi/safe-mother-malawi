@@ -124,6 +124,8 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                               return FacilityCard(
                                 facility: facility,
                                 onTap: () => _showFacilityDetails(facility),
+                                onEdit: () => _showEditFacilityDialog(facility),
+                                onDelete: () => _showDeleteConfirmation(facility),
                               );
                             },
                           ),
@@ -194,6 +196,20 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
           ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showEditFacilityDialog(facility);
+            },
+            child: const Text('Edit'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showDeleteConfirmation(facility);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
         ],
       ),
     );
@@ -223,63 +239,250 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
   void _showCreateFacilityDialog() {
     final _formKey = GlobalKey<FormState>();
     String _name = '';
-    String _region = '';
-    String _zone = '';
-    String _district = '';
-    String _type = '';
-    String _authority = '';
+    String? _region;
+    String? _zone;
+    String? _district;
+    String? _type;
+    String? _authority;
     String _urbanRural = 'Rural';
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add New Facility'),
-        content: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Facility Name'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _name = v!,
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Region'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _region = v!,
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Zone'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _zone = v!,
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'District'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _district = v!,
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Facility Type (e.g. Hospital, Clinic)'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _type = v!,
-                ),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: 'Managing Authority (e.g. Government, CHAM)'),
-                  validator: (v) => v!.isEmpty ? 'Required' : null,
-                  onSaved: (v) => _authority = v!,
-                ),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(labelText: 'Urban/Rural'),
-                  value: _urbanRural,
-                  items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                  onChanged: (v) => _urbanRural = v!,
-                ),
-              ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Add New Facility'),
+          content: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Facility Name'),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    onSaved: (v) => _name = v!,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Region'),
+                    value: _region,
+                    items: store.regions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _region = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Zone'),
+                    value: _zone,
+                    items: store.zones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _zone = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'District'),
+                    value: _district,
+                    items: store.districts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _district = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Facility Type'),
+                    value: _type,
+                    items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _type = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Managing Authority'),
+                    value: _authority,
+                    items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _authority = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Urban/Rural'),
+                    value: _urbanRural,
+                    items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    onChanged: (v) => setState(() => _urbanRural = v!),
+                  ),
+                ],
+              ),
             ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+                  Navigator.pop(ctx);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Creating facility...')),
+                  );
+                  
+                  try {
+                    await store.addFacility({
+                      'facilityName': _name,
+                      'region': _region,
+                      'zone': _zone,
+                      'district': _district,
+                      'facilityType': _type,
+                      'managingAuthority': _authority,
+                      'urbanRural': _urbanRural,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Facility created successfully')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to create facility: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save'),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+
+  void _showEditFacilityDialog(HealthFacility facility) {
+    final _formKey = GlobalKey<FormState>();
+    String _name = facility.facilityName;
+    String? _region = facility.region;
+    String? _zone = facility.zone;
+    String? _district = facility.district;
+    String? _type = facility.facilityType;
+    String? _authority = facility.managingAuthority;
+    String _urbanRural = facility.urbanRural;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Edit Facility'),
+          content: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    initialValue: _name,
+                    decoration: const InputDecoration(labelText: 'Facility Name'),
+                    validator: (v) => v!.isEmpty ? 'Required' : null,
+                    onSaved: (v) => _name = v!,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Region'),
+                    value: _region,
+                    items: store.regions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _region = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Zone'),
+                    value: _zone,
+                    items: store.zones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _zone = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'District'),
+                    value: _district,
+                    items: store.districts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _district = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Facility Type'),
+                    value: _type,
+                    items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _type = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Managing Authority'),
+                    value: _authority,
+                    items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    validator: (v) => v == null ? 'Required' : null,
+                    onChanged: (v) => setState(() => _authority = v),
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Urban/Rural'),
+                    value: _urbanRural,
+                    items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    onChanged: (v) => setState(() => _urbanRural = v!),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  _formKey.currentState!.save();
+                  Navigator.pop(ctx);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Updating facility...')),
+                  );
+                  
+                  try {
+                    await store.editFacility(facility.id, {
+                      'facilityName': _name,
+                      'region': _region,
+                      'zone': _zone,
+                      'district': _district,
+                      'facilityType': _type,
+                      'managingAuthority': _authority,
+                      'urbanRural': _urbanRural,
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Facility updated successfully')),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update facility: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(HealthFacility facility) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Facility'),
+        content: Text('Are you sure you want to delete "${facility.facilityName}"? This action cannot be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -287,36 +490,25 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
           ),
           ElevatedButton(
             onPressed: () async {
-              if (_formKey.currentState!.validate()) {
-                _formKey.currentState!.save();
-                Navigator.pop(ctx);
-                
-                // Show loading indicator
+              Navigator.pop(ctx);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Deleting facility...')),
+              );
+              
+              try {
+                await store.deleteFacility(facility.id);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Creating facility...')),
+                  const SnackBar(content: Text('Facility deleted successfully')),
                 );
-                
-                try {
-                  await store.addFacility({
-                    'facilityName': _name,
-                    'region': _region,
-                    'zone': _zone,
-                    'district': _district,
-                    'facilityType': _type,
-                    'managingAuthority': _authority,
-                    'urbanRural': _urbanRural,
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Facility created successfully')),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to create facility: $e')),
-                  );
-                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Failed to delete facility: $e')),
+                );
               }
             },
-            child: const Text('Save'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
