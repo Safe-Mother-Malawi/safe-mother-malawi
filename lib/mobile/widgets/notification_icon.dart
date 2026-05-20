@@ -37,7 +37,8 @@ class _NotificationIconState extends State<NotificationIcon> {
     
     try {
       final notifications = await ApiService.getNotifications();
-      final unread = notifications.where((n) => n['isRead'] != true).length;
+      // Check both 'read' and 'isRead' fields for compatibility
+      final unread = notifications.where((n) => (n['read'] ?? n['isRead']) != true).length;
       if (mounted) {
         setState(() {
           _unreadCount = unread;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../utils/app_colors.dart';
 import 'health_check_result_screen.dart';
 
 class PrenatalHealthCheckScreen extends StatefulWidget {
@@ -70,6 +70,7 @@ class _PrenatalHealthCheckScreenState extends State<PrenatalHealthCheckScreen> {
       }).toList();
 
       final result = await ApiService.submitHealthAssessment(answers);
+      await _saveToHistory(result);
 
       if (mounted) {
         Navigator.of(context).pushReplacement(
@@ -103,6 +104,19 @@ class _PrenatalHealthCheckScreenState extends State<PrenatalHealthCheckScreen> {
   void _previousQuestion() {
     if (_currentQuestionIndex > 0) {
       setState(() => _currentQuestionIndex--);
+    }
+  }
+
+  Future<void> _saveToHistory(Map<String, dynamic> result) async {
+    try {
+      await ApiService.saveHealthCheckResultToHistory(
+        type: 'prenatal',
+        result: result,
+        questions: _questions,
+        answers: _answers,
+      );
+    } catch (e) {
+      debugPrint('Failed to save health check history: $e');
     }
   }
 

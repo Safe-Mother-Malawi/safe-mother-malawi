@@ -13,6 +13,7 @@ class GenerateAnalytics extends StatefulWidget {
 class _GenerateAnalyticsState extends State<GenerateAnalytics> {
   final Map<String, bool> _sources = {
     'System Logs': true,
+    'IVR Interactions': true,
     'Question Responses': false,
     'Task Data': false,
   };

@@ -6,8 +6,8 @@ import '../auth/widgets/app_logo.dart';
 import 'models/neonatal_data.dart';
 import 'screens/home_screen.dart';
 import 'screens/schedule_screen.dart';
-import 'screens/health_screen.dart';
-import 'screens/call_screen.dart';
+import 'screens/health_check_start_screen.dart';
+import 'screens/ivr_screen.dart';
 import 'screens/feeding_screen.dart';
 import 'screens/sleep_screen.dart';
 import 'screens/vaccines_screen.dart';
@@ -52,8 +52,8 @@ class _NeonatalDashboardState extends State<NeonatalDashboard> {
   List<Widget> get _screens => [
     NeonatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
     ScheduleScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    NeonatalHealthScreen(data: _sharedData, onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    CallScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    NeonatalHealthCheckStartScreen(data: _sharedData, onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    IvrScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
   ];
 
   @override
@@ -81,7 +81,7 @@ class _NeoBottomNav extends StatelessWidget {
     (Icons.grid_view_rounded,       Icons.grid_view_rounded,      'Today'),
     (Icons.calendar_month_outlined, Icons.calendar_month,         'Schedule'),
     (Icons.favorite_border_rounded, Icons.favorite_rounded,       'Health check'),
-    (Icons.phone_outlined,          Icons.phone,                  'Help'),
+    (Icons.phone_outlined,          Icons.phone,                  'Call'),
   ];
 
   @override

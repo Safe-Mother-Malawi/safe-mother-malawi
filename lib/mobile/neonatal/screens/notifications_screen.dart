@@ -34,16 +34,23 @@ class _NeonatalNotificationsScreenState
   }
 
   Future<void> _markRead(Map<String, dynamic> n) async {
-    if (n['isRead'] == true) return;
+    // Check both 'read' and 'isRead' fields
+    final isAlreadyRead = (n['read'] ?? n['isRead']) == true;
+    if (isAlreadyRead) return;
     try {
       await ApiService.markNotificationRead(n['id'].toString());
-      setState(() => n['isRead'] = true);
+      // Update both fields for consistency
+      setState(() {
+        n['read'] = true;
+        n['isRead'] = true;
+      });
     } catch (_) {}
   }
 
   Future<void> _markAllRead() async {
     for (final n in _notifs) {
-      if (n['isRead'] != true) {
+      final isAlreadyRead = (n['read'] ?? n['isRead']) == true;
+      if (!isAlreadyRead) {
         try {
           await ApiService.markNotificationRead(n['id'].toString());
         } catch (_) {}
@@ -51,12 +58,13 @@ class _NeonatalNotificationsScreenState
     }
     setState(() {
       for (final n in _notifs) {
+        n['read'] = true;
         n['isRead'] = true;
       }
     });
   }
 
-  int get _unread => _notifs.where((n) => n['isRead'] != true).length;
+  int get _unread => _notifs.where((n) => (n['read'] ?? n['isRead']) != true).length;
 
   @override
   Widget build(BuildContext context) {
@@ -83,10 +91,6 @@ class _NeonatalNotificationsScreenState
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
-            onPressed: _load,
-          ),
           if (_unread > 0)
             TextButton(
               onPressed: _markAllRead,
@@ -130,7 +134,7 @@ class _NeonatalNotificationsScreenState
                         separatorBuilder: (_, __) => const SizedBox(height: 2),
                         itemBuilder: (_, i) {
                           final n = _notifs[i];
-                          final isRead = n['isRead'] == true;
+                          final isRead = (n['read'] ?? n['isRead']) == true;
                           final title = (n['title'] ?? 'Notification').toString();
                           final body = (n['message'] ?? n['body'] ?? '').toString();
                           final type = (n['type'] ?? 'tip').toString().toLowerCase();

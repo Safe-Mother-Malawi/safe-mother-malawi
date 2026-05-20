@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../services/api_service.dart';
-import '../../../theme/app_colors.dart';
+import '../../../utils/app_colors.dart';
 import 'health_check_screen.dart';
 
 class NeonatalAssessmentHistoryScreen extends StatefulWidget {
@@ -24,8 +24,9 @@ class _NeonatalAssessmentHistoryScreenState extends State<NeonatalAssessmentHist
 
   Future<void> _loadHistory() async {
     try {
-      final result = await ApiService.getAssessmentHistory();
-      final assessments = result
+      await ApiService.instance.loadToken();
+      final result = await ApiService.getMyHealthCheckHistory();
+      final assessments = ((result['data'] as List<dynamic>?) ?? [])
           .cast<Map<String, dynamic>>()
           .toList();
       
@@ -146,7 +147,7 @@ class _NeonatalAssessmentHistoryScreenState extends State<NeonatalAssessmentHist
                         final assessment = _assessments[index];
                         final riskLevel = assessment['riskLevel'] as String? ?? 'Unknown';
                         final score = assessment['score'] as num? ?? 0;
-                        final submittedAt = assessment['submittedAt'] as String?;
+                        final submittedAt = (assessment['createdAt'] ?? assessment['submittedAt']) as String?;
                         final date = submittedAt != null
                             ? DateTime.tryParse(submittedAt)
                             : null;

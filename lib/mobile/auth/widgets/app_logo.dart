@@ -11,27 +11,13 @@ class AppLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final asset = darkBackground ? 'assets/logo/LOGO5.png' : 'assets/logo/LOGO6.png';
-    
     return Image.asset(
       asset,
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) {
-        // Log the error for debugging
-        debugPrint('AppLogo: Failed to load $asset - $error');
-        return _TextLogo(size: size, darkBackground: darkBackground);
-      },
-      frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-        if (wasSynchronouslyLoaded) {
-          return child;
-        }
-        return AnimatedOpacity(
-          opacity: frame == null ? 0 : 1,
-          duration: const Duration(milliseconds: 300),
-          child: child,
-        );
-      },
+      errorBuilder: (_, _, _) =>
+          _TextLogo(size: size, darkBackground: darkBackground),
     );
   }
 }

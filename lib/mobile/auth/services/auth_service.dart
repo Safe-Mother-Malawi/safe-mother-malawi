@@ -4,8 +4,7 @@ import '../../../services/api_service.dart';
 /// Mobile auth service — delegates to the real backend API.
 class AuthService {
   /// Register a new user via the backend.
-  /// Returns a Map with 'success' boolean and 'error' message for better error handling.
-  Future<Map<String, dynamic>> register(UserModel user) async {
+  Future<bool> register(UserModel user) async {
     try {
       final payload = <String, dynamic>{
         'email': user.email.isNotEmpty ? user.email : null,
@@ -30,7 +29,6 @@ class AuthService {
       }..removeWhere((_, v) => v == null);
 
       final data = await ApiService.instance.register(payload);
-      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so the user is immediately authenticated after registration
       final tokens = data?['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -39,23 +37,9 @@ class AuthService {
           tokens['refreshToken'] as String,
         );
       }
-      return {'success': true, 'error': null};
-    } catch (e) {
-      print('Registration error: $e'); // Debug logging
-      
-      // Determine error type based on the exception
-      String errorMessage;
-      if (e.toString().contains('Failed to fetch') || e.toString().contains('ClientException')) {
-        errorMessage = 'Unable to connect to server. Please check your internet connection and try again.';
-      } else if (e.toString().contains('409') || e.toString().contains('already exists')) {
-        errorMessage = 'Phone number or email already registered. Try logging in instead.';
-      } else if (e.toString().contains('400')) {
-        errorMessage = 'Invalid registration data. Please check your information and try again.';
-      } else {
-        errorMessage = 'Registration failed. Please try again later.';
-      }
-      
-      return {'success': false, 'error': errorMessage};
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
@@ -63,7 +47,6 @@ class AuthService {
   Future<UserModel?> login(String emailOrPhone, String password) async {
     try {
       final data = await ApiService.instance.login(emailOrPhone, password);
-      // Backend returns { user: {...}, tokens: {...} }
       // Save tokens so subsequent API calls are authenticated
       final tokens = data['tokens'] as Map<String, dynamic>?;
       if (tokens != null) {
@@ -75,8 +58,7 @@ class AuthService {
       final user = data['user'] as Map<String, dynamic>?;
       if (user == null) return null;
       return _userFromMap(user);
-    } catch (e) {
-      print('Login error: $e'); // Debug logging
+    } catch (_) {
       return null;
     }
   }
@@ -160,40 +142,13 @@ class AuthService {
   /// Returns true if request was successful (neutral response).
   Future<bool> requestPasswordReset(String email) async {
     try {
-      final response = await ApiService.instance.post(
+      await ApiService.instance.post(
         '/auth/forgot-password/request-reset',
         {'email': email},
       );
-      
-      // Check if response contains error information
-      if (response is Map<String, dynamic> && response.containsKey('error')) {
-        final errorMessage = response['error'] as String;
-        final useSecurityQuestion = response['useSecurityQuestion'] as bool? ?? false;
-        
-        if (useSecurityQuestion) {
-          throw Exception('$errorMessage\n\nTip: Try the security question option instead.');
-        } else {
-          throw Exception(errorMessage);
-        }
-      }
-      
       return true;
-    } catch (e) {
-      print('Password reset request failed: $e');
-      
-      // If it's already our custom exception, re-throw it
-      if (e is Exception) {
-        rethrow;
-      }
-      
-      // Handle other errors
-      if (e.toString().contains('400')) {
-        throw Exception('Please check your email address and try again.');
-      } else if (e.toString().contains('500')) {
-        throw Exception('Email service is temporarily unavailable. Please try the security question option.');
-      } else {
-        throw Exception('Failed to send reset email. Please check your internet connection and try again.');
-      }
+    } catch (_) {
+      return false;
     }
   }
 

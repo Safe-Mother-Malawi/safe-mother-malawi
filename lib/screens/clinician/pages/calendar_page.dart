@@ -95,11 +95,6 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
       ),
       const SizedBox(width: 8),
-      IconButton(
-        onPressed: _load,
-        icon: const Icon(Icons.refresh, color: AppColors.navy),
-        tooltip: 'Refresh',
-      ),
     ]);
   }
 

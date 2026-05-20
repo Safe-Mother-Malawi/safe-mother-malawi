@@ -89,7 +89,12 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
       };
       final res = await ApiService.instance.post('/who/assessment', payload)
           as Map<String, dynamic>;
+      final savedToHistory = await _saveToHistory(res);
+      if (!mounted) return;
       setState(() { _result = res; _submitting = false; });
+      if (!savedToHistory) {
+        _showHistorySaveWarning();
+      }
     } catch (_) {
       // Offline fallback
       final score = _answers.entries.fold<double>(0, (s, e) {
@@ -136,6 +141,29 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
     }
   }
 
+  Future<bool> _saveToHistory(Map<String, dynamic> result) async {
+    try {
+      await ApiService.saveHealthCheckResultToHistory(
+        type: 'neonatal',
+        result: result,
+        questions: _questions,
+        answers: _answers,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Failed to save health check history: $e');
+      return false;
+    }
+  }
+
+  void _showHistorySaveWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Result shown, but it could not be saved to history.'),
+      ),
+    );
+  }
+
   String _stageLabel(String stage) {
     switch (stage) {
       case 'early_neonatal': return 'Early Neonatal (0–7 days)';
@@ -152,8 +180,8 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => widget.onOpenDrawer?.call(),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,14 +258,13 @@ class _NeonatalHealthScreenState extends State<NeonatalHealthScreen> {
         Text(_loadError ?? '', textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13, color: Color(0xFF757575))),
         const SizedBox(height: 24),
-        ElevatedButton.icon(
+        ElevatedButton(
           onPressed: _loadQuestions,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Try Again'),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
+          child: const Text('Try Again'),
         ),
       ]),
     ),

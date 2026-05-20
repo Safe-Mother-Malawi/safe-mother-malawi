@@ -94,19 +94,19 @@ class Validators {
   }
 
   /// Validates password with enhanced security requirements
-  /// Must be 6-10 characters with uppercase, lowercase, number, and special character
+  /// Must be 6-24 characters with uppercase, lowercase, number, and special character
   /// Common passwords are not allowed
   static String? validatePassword(String? value, {bool required = true}) {
     if (value == null || value.isEmpty) {
       return required ? 'Password is required' : null;
     }
 
-    // Check length: 6-10 characters
+    // Check length: 6-24 characters
     if (value.length < 6) {
       return 'Password must be at least 6 characters';
     }
-    if (value.length > 10) {
-      return 'Password must be a maximum of 10 characters';
+    if (value.length > 24) {
+      return 'Password must be a maximum of 24 characters';
     }
 
     // Check for uppercase letter

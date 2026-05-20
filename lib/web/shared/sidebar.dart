@@ -29,6 +29,8 @@ const List<NavItem> _flatItems = [
   // ── Admin only ────────────────────────────────────────────────────────────
   NavItem(label: 'System Users', icon: Icons.manage_accounts_rounded, route: '/clinicians',
       allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Appointments', icon: Icons.calendar_today_rounded, route: '/appointments',
+      allowedRoles: [UserRole.admin]),
   NavItem(label: 'Audit Export', icon: Icons.download_for_offline_rounded, route: '/audit-export',
       allowedRoles: [UserRole.admin]),
   NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports',
@@ -51,8 +53,10 @@ const List<NavItem> _flatItems = [
       allowedRoles: [UserRole.dho]),
 ];
 
-// Insights group — Admin only (Question only)
+// Insights group — Admin only (IVR + Question)
 const _insightsChildren = [
+  NavItem(label: 'IVR Insights', icon: Icons.phone_in_talk_rounded, route: '/ivr-insights',
+      allowedRoles: [UserRole.admin]),
   NavItem(label: 'Question Insights', icon: Icons.quiz_rounded, route: '/question-insights',
       allowedRoles: [UserRole.admin]),
 ];
@@ -78,14 +82,15 @@ class _AppSidebarState extends State<AppSidebar> {
 
   @override
   Widget build(BuildContext context) {
-    final isInsightsActive = widget.currentRoute == '/question-insights' ||
+    final isInsightsActive = widget.currentRoute == '/ivr-insights' ||
+        widget.currentRoute == '/question-insights' ||
         widget.currentRoute == '/insights';
 
     // All routes that are handled as flat items (not in groups)
     const _flatLabels = {
       'Overview', 'System Users', 'Clinician Management', 'Data Source',
       'Analytics Dashboard', 'Generate Analytics', 'Task Analytics',
-      'Activity Logs', 'Question Insights', 'Reports', 'Audit Export',
+      'Activity Logs', 'Question Insights', 'Reports', 'Audit Export', 'Appointments',
     };
 
     return Container(

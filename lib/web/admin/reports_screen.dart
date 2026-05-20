@@ -48,8 +48,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
   List<String> _getAvailableReportTypes() {
     final isAdmin = AuthServiceWeb.instance.userRole.toLowerCase() == 'admin';
-    const allTypes = ['District Summary','Risk Report','Task Report','Clinician Report','Full System Report'];
-    const dhoTypes = ['District Summary','Risk Report','Task Report','Clinician Report'];
+    const allTypes = ['District Summary','IVR Report','Risk Report','Task Report','Clinician Report','Full System Report'];
+    const dhoTypes = ['District Summary','IVR Report','Risk Report','Task Report','Clinician Report'];
     return isAdmin ? allTypes : dhoTypes;
   }
 
@@ -300,7 +300,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
               Row(children: [
                 Text('Report History', style: GoogleFonts.publicSans(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
                 const Spacer(),
-                IconButton(onPressed: _load, icon: const Icon(Icons.refresh_rounded, size: 18, color: AppColors.primary), tooltip: 'Refresh'),
               ]),
               const SizedBox(height: 16),
               if (_loading)

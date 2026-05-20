@@ -1,38 +1,18 @@
-# Safe Mother Malawi - Frontend
+# safemothermalawi_frontend
 
-A Flutter application for maternal and neonatal health management in Malawi.
-
-## Features
-
-- **Web Portal**: Admin, DHO, and Clinician dashboards
-- **Mobile App**: Prenatal and neonatal care tracking
-- **Patient Management**: Comprehensive patient records
-- **Risk Assessment**: Health risk scoring and alerts
-- **Analytics**: Health facility performance tracking
-- **Reports**: Comprehensive reporting system
+A new Flutter project.
 
 ## Getting Started
 
-This project is built with Flutter and supports web, mobile, and desktop platforms.
+This project is a starting point for a Flutter application.
 
-### Prerequisites
+A few resources to get you started if this is your first Flutter project:
 
-- Flutter SDK (latest stable version)
-- Dart SDK
-- Web browser for web development
-- Android Studio/Xcode for mobile development
+- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
+- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
+- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
 
-### Installation
-
-1. Clone the repository
-2. Run `flutter pub get` to install dependencies
-3. Configure API endpoints in `lib/config/api_config.dart`
-4. Run `flutter run` for development
-
-### Deployment
-
-- **Web**: Deployed on Vercel
-- **Mobile**: APK builds available
-- **Backend**: Connects to Render-hosted API
-
-For detailed setup instructions, see the deployment guides in the project root.
+For help getting started with Flutter development, view the
+[online documentation](https://docs.flutter.dev/), which offers tutorials,
+samples, guidance on mobile development, and a full API reference.
+# safe-mother-malawi

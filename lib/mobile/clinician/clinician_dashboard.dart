@@ -183,10 +183,6 @@ class _Header extends StatelessWidget {
               ),
               const Spacer(),
               IconButton(
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                onPressed: onRefresh,
-              ),
-              IconButton(
                 icon: const Icon(Icons.logout, color: Colors.white),
                 onPressed: () => performLogout(),
               ),

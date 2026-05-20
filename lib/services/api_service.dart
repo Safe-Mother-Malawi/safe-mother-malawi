@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
@@ -288,19 +289,8 @@ class ApiService {
   static Future<List<dynamic>> getHealthFacilities() =>
       instance.get('/health-facilities').then(_asList);
 
-  static Future<List<dynamic>> getFacilitiesByDistrict(String district) async {
-    try {
-      print('API: Fetching facilities for district: $district'); // Debug log
-      final result = await instance.get('/health-facilities?district=${Uri.encodeComponent(district)}');
-      print('API: Received response: ${result.runtimeType}'); // Debug log
-      final list = _asList(result);
-      print('API: Converted to list with ${list.length} items'); // Debug log
-      return list;
-    } catch (e) {
-      print('API: Error fetching facilities: $e'); // Debug log
-      rethrow;
-    }
-  }
+  static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
+      instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
 
   static Future<List<String>> getRegions() =>
       instance.get('/health-facilities/regions').then((data) => 
@@ -354,6 +344,154 @@ class ApiService {
     if (patientId == null) return [];
     final data = await instance.get('/risk-assessments/patient/$patientId');
     return _asList(data);
+  }
+
+  // ── Health Check History ──────────────────────────────────────────────────
+
+  /// Create a new health check history record
+  static Future<Map<String, dynamic>> createHealthCheckHistory(
+    Map<String, dynamic> data,
+  ) async {
+    final result = await instance.post('/health-check-history', data);
+    return (result as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Save the current user's WHO health-check result to backend history.
+  static Future<Map<String, dynamic>> saveHealthCheckResultToHistory({
+    required String type,
+    required Map<String, dynamic> result,
+    required List<Map<String, dynamic>> questions,
+    required Map<int, int> answers,
+  }) async {
+    // Create a map of question IDs to question text for faster lookup
+    final questionMap = <dynamic, String>{};
+    for (final q in questions) {
+      final id = q['id'];
+      final text = q['questionText']?.toString() ?? 
+                   q['question']?.toString() ?? 
+                   q['text']?.toString() ?? '';
+      if (text.isNotEmpty) {
+        questionMap[id] = text;
+      }
+    }
+
+    debugPrint('=== SYMPTOM EXTRACTION DEBUG ===');
+    debugPrint('Total questions: ${questions.length}');
+    debugPrint('Question map size: ${questionMap.length}');
+    debugPrint('Total answers: ${answers.length}');
+    debugPrint('Questions with YES answers: ${answers.entries.where((e) => e.value == 1).length}');
+
+    final symptoms = <String>[];
+    for (final entry in answers.entries) {
+      if (entry.value == 1) {
+        // Try to find the question text - check multiple key formats
+        String? questionText;
+        
+        // Try direct key match
+        if (questionMap.containsKey(entry.key)) {
+          questionText = questionMap[entry.key];
+        }
+        // Try string key match
+        else if (questionMap.containsKey(entry.key.toString())) {
+          questionText = questionMap[entry.key.toString()];
+        }
+        // Try int key match
+        else {
+          final intKey = int.tryParse(entry.key.toString());
+          if (intKey != null && questionMap.containsKey(intKey)) {
+            questionText = questionMap[intKey];
+          }
+        }
+        
+        debugPrint('Answer ID: ${entry.key}, Found: ${questionText != null}, Text: $questionText');
+        
+        if (questionText != null && questionText.isNotEmpty) {
+          symptoms.add(questionText);
+        }
+      }
+    }
+
+    debugPrint('Extracted symptoms: ${symptoms.length}');
+    for (final symptom in symptoms) {
+      debugPrint('  - $symptom');
+    }
+    debugPrint('=== END DEBUG ===');
+
+    final maxScore = _numberValue(result['maxScore']);
+    final fallbackMaxScore = questions.fold<double>(
+      0,
+      (total, question) => total + _numberValue(question['weight']),
+    );
+
+    final payload = {
+      'type': type,
+      'riskLevel': _healthCheckRiskLevel(result['riskLevel']),
+      'score': _numberValue(result['score']),
+      'maxScore': maxScore > 0 ? maxScore : fallbackMaxScore,
+      'percentage': _numberValue(result['percentage']),
+      'message': result['message']?.toString() ?? '',
+      'symptoms': symptoms.isNotEmpty ? symptoms : [],
+      'answers': {
+        for (final entry in answers.entries) entry.key.toString(): entry.value,
+      },
+    };
+
+    debugPrint('Payload symptoms: ${payload['symptoms']}');
+    return createHealthCheckHistory(payload);
+  }
+
+  static double _numberValue(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  static String _healthCheckRiskLevel(dynamic value) {
+    final level = value?.toString().toLowerCase() ?? '';
+    if (level.contains('seek')) return 'Seek Help Immediately';
+    if (level.contains('high')) return 'High Risk';
+    if (level.contains('medium') || level.contains('moderate')) return 'Moderate Risk';
+    return 'Low Risk';
+  }
+
+  /// Get health check history for the current user
+  static Future<Map<String, dynamic>> getMyHealthCheckHistory({
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final data = await instance.get(
+      '/health-check-history/my-history?limit=$limit&offset=$offset',
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get health check history for a specific user (clinician/admin only)
+  static Future<Map<String, dynamic>> getUserHealthCheckHistory(
+    String userId, {
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    final data = await instance.get(
+      '/health-check-history/user/$userId?limit=$limit&offset=$offset',
+    );
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get the latest health check for a user
+  static Future<Map<String, dynamic>> getLatestHealthCheck(String userId) async {
+    final data = await instance.get('/health-check-history/user/$userId/latest');
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get health check statistics for a user
+  static Future<Map<String, dynamic>> getHealthCheckStatistics(String userId) async {
+    final data = await instance.get('/health-check-history/user/$userId/statistics');
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
+  /// Get a single health check record by ID
+  static Future<Map<String, dynamic>> getHealthCheckRecord(String id) async {
+    final data = await instance.get('/health-check-history/$id');
+    return (data as Map<String, dynamic>?) ?? {};
   }
 
   // ── Settings & Account ────────────────────────────────────────────────────

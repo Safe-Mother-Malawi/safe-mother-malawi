@@ -149,7 +149,6 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         Text('Track and assess patient risk levels in real time.',
             style: TextStyle(fontSize: 13, color: AppColors.g400)),
       ])),
-      IconButton(onPressed: _load, icon: const Icon(Icons.refresh, color: AppColors.navy), tooltip: 'Refresh'),
       const SizedBox(width: 6),
       _chip('All', _filterStatus == 'All', () => setState(() { _filterStatus = 'All'; _selected = null; })),
       const SizedBox(width: 6),

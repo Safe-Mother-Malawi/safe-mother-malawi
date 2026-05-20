@@ -5,7 +5,6 @@ import '../widgets/auth_button.dart';
 import '../../../utils/validators.dart';
 import '../../../widgets/password_strength_indicator.dart';
 import 'login_screen.dart';
-import 'forgot_password_screen.dart';
 
 /// Email-based password reset flow (3 steps):
 ///   Step 0 — Enter email
@@ -58,44 +57,6 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
   void _snack(String msg, Color color) => ScaffoldMessenger.of(context)
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: color));
 
-  void _showSecurityQuestionOption() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Email Service Unavailable'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('The email service is currently experiencing issues.'),
-            SizedBox(height: 12),
-            Text('You can reset your password using your security question instead.'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => ForgotPasswordScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A237E),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Use Security Question'),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Step 0: Request password reset ────────────────────────────────────────
   Future<void> _requestReset() async {
     final email = _emailCtrl.text.trim();
@@ -109,31 +70,16 @@ class _EmailForgotPasswordScreenState extends State<EmailForgotPasswordScreen> {
     }
 
     setState(() => _loading = true);
-    
-    try {
-      final ok = await AuthService().requestPasswordReset(email);
-      setState(() => _loading = false);
+    final ok = await AuthService().requestPasswordReset(email);
+    setState(() => _loading = false);
 
-      if (!mounted) return;
-      if (ok) {
-        _snack('Check your email for reset instructions', const Color(0xFF1A237E));
-        // Show step 1 to enter token
-        setState(() => _step = 1);
-      } else {
-        _snack('Failed to send reset email. Please try again.', Colors.red);
-      }
-    } catch (e) {
-      setState(() => _loading = false);
-      if (!mounted) return;
-      
-      // Show the specific error message from the auth service
-      final errorMessage = e.toString().replaceAll('Exception: ', '');
-      _snack(errorMessage, Colors.red);
-      
-      // If the error suggests using security question, show a helpful button
-      if (errorMessage.contains('security question')) {
-        _showSecurityQuestionOption();
-      }
+    if (!mounted) return;
+    if (ok) {
+      _snack('Check your email for reset instructions', const Color(0xFF1A237E));
+      // Show step 1 to enter token
+      setState(() => _step = 1);
+    } else {
+      _snack('Failed to send reset email. Please try again.', Colors.red);
     }
   }
 

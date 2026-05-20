@@ -25,14 +25,14 @@ class _HelpScreenState extends State<HelpScreen> {
   ];
 
   Future<void> _callHelpline() async {
-    const phoneNumber = 'tel:116';
+    const phoneNumber = 'tel:700';
     try {
       if (await canLaunchUrl(Uri.parse(phoneNumber))) {
         await launchUrl(Uri.parse(phoneNumber));
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Unable to make call. Please dial 116 manually.')),
+            const SnackBar(content: Text('Unable to make call. Please dial 700 manually.')),
           );
         }
       }
@@ -46,7 +46,7 @@ class _HelpScreenState extends State<HelpScreen> {
   }
 
   Future<void> _sendEmail() async {
-    const email = 'support@safemothermalawi.org';
+    const email = 'safemothermalawi@gmail.com';
     final emailUri = Uri(
       scheme: 'mailto',
       path: email,
@@ -247,7 +247,7 @@ class _HelpScreenState extends State<HelpScreen> {
               _LinkTile(
                 icon: Icons.phone_outlined,
                 label: 'SafeMother Helpline',
-                subtitle: '116 (Free call)',
+                subtitle: '700',
                 color: AppColors.statusRed,
                 onTap: _callHelpline,
               ),
@@ -255,7 +255,7 @@ class _HelpScreenState extends State<HelpScreen> {
               _LinkTile(
                 icon: Icons.email_outlined,
                 label: 'Email Support',
-                subtitle: 'support@safemothermalawi.org',
+                subtitle: 'safemothermalawi@gmail.com',
                 color: AppColors.mobileNavy,
                 onTap: _sendEmail,
               ),

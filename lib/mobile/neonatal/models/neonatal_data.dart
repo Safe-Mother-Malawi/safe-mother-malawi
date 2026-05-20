@@ -202,8 +202,19 @@ class NeonatalData {
     '🤱','😴','👀','🏥','💪','💬','🧼','💛','🍼','💨',
   ];
 
-  String get tipOfTheDay   => _tips[ageInDays % _tips.length];
-  String get tipEmoji      => _tipEmojis[ageInDays % _tipEmojis.length];
+  String get tipOfTheDay {
+    // Use current date to ensure it changes daily
+    final today = DateTime.now();
+    final dayOfYear = today.difference(DateTime(today.year, 1, 1)).inDays;
+    return _tips[dayOfYear % _tips.length];
+  }
+
+  String get tipEmoji {
+    // Use current date to ensure it changes daily
+    final today = DateTime.now();
+    final dayOfYear = today.difference(DateTime(today.year, 1, 1)).inDays;
+    return _tipEmojis[dayOfYear % _tipEmojis.length];
+  }
 
   // ─── Vaccines (Malawi EPI Schedule) ───────────────────────────────────────
 

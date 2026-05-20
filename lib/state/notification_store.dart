@@ -1,4 +1,5 @@
 import '../services/api_service.dart';
+import 'dart:async';
 
 enum NotifType { alert, appointment, info }
 
@@ -21,16 +22,21 @@ class AppNotification {
 
   factory AppNotification.fromJson(Map<String, dynamic> j) {
     final typeStr = (j['type'] ?? 'info').toString();
-    final type = typeStr == 'alert' ? NotifType.alert
-        : typeStr == 'appointment' ? NotifType.appointment
+    final type = typeStr == 'alert'
+        ? NotifType.alert
+        : typeStr == 'appointment'
+        ? NotifType.appointment
         : NotifType.info;
+    // Support both 'read' and 'isRead' fields from API
+    final isRead = (j['read'] ?? j['isRead']) == true;
     return AppNotification(
-      id:        j['id']?.toString() ?? '',
-      title:     j['title']?.toString() ?? '',
-      body:      j['body']?.toString() ?? '',
-      type:      type,
-      timestamp: DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),
-      read:      j['read'] == true,
+      id: j['id']?.toString() ?? '',
+      title: j['title']?.toString() ?? '',
+      body: j['body']?.toString() ?? '',
+      type: type,
+      timestamp:
+          DateTime.tryParse(j['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      read: isRead,
     );
   }
 }
@@ -41,25 +47,35 @@ class NotificationStore {
 
   final List<AppNotification> _items = [];
   bool _loaded = false;
+  Timer? _refreshTimer;
 
-  List<AppNotification> get all => List.from(_items)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  List<AppNotification> get all =>
+      List.from(_items)..sort((a, b) => b.timestamp.compareTo(a.timestamp));
   int get unreadCount => _items.where((n) => !n.read).length;
 
   Future<void> load() async {
     if (_loaded) return;
     try {
-      final data = await ApiService.instance.get('/notifications') as List<dynamic>;
+      final data =
+          await ApiService.instance.get('/notifications') as List<dynamic>;
       _items.clear();
-      _items.addAll(data.cast<Map<String, dynamic>>().map(AppNotification.fromJson));
+      _items.addAll(
+        data.cast<Map<String, dynamic>>().map(AppNotification.fromJson),
+      );
       _loaded = true;
       _notify();
+      // Start auto-refresh timer after initial load
+      _startAutoRefresh();
     } catch (_) {}
   }
 
   Future<void> markRead(String id) async {
     try {
       await ApiService.instance.patch('/notifications/$id/read', {});
-      final n = _items.firstWhere((n) => n.id == id, orElse: () => _items.first);
+      final n = _items.firstWhere(
+        (n) => n.id == id,
+        orElse: () => _items.first,
+      );
       n.read = true;
       _notify();
     } catch (_) {}
@@ -68,7 +84,9 @@ class NotificationStore {
   Future<void> markAllRead() async {
     try {
       await ApiService.instance.patch('/notifications/mark-all-read', {});
-      for (final n in _items) { n.read = true; }
+      for (final n in _items) {
+        n.read = true;
+      }
       _notify();
     } catch (_) {}
   }
@@ -91,8 +109,50 @@ class NotificationStore {
     load();
   }
 
+  /// Start auto-refresh timer to periodically reload notifications
+  void _startAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      try {
+        final data =
+            await ApiService.instance.get('/notifications') as List<dynamic>;
+        final newItems = data
+            .cast<Map<String, dynamic>>()
+            .map(AppNotification.fromJson)
+            .toList();
+
+        // Update existing items and add new ones
+        for (final newItem in newItems) {
+          final existingIndex = _items.indexWhere((n) => n.id == newItem.id);
+          if (existingIndex >= 0) {
+            // Update existing notification's read status
+            _items[existingIndex].read = newItem.read;
+          } else {
+            // Add new notification
+            _items.insert(0, newItem);
+          }
+        }
+
+        // Remove notifications that no longer exist
+        _items.removeWhere((n) => !newItems.any((ni) => ni.id == n.id));
+
+        _notify();
+      } catch (_) {}
+    });
+  }
+
+  /// Stop auto-refresh timer
+  void stopAutoRefresh() {
+    _refreshTimer?.cancel();
+    _refreshTimer = null;
+  }
+
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);
-  void _notify() { for (final l in _listeners) { l(); } }
+  void _notify() {
+    for (final l in _listeners) {
+      l();
+    }
+  }
 }

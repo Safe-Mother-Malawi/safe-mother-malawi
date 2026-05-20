@@ -45,6 +45,15 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
       await ApiService.instance.loadToken();
       final res = await ApiService.instance.get('/who/questions') as Map<String, dynamic>;
       final qs  = (res['questions'] as List).cast<Map<String, dynamic>>();
+      
+      debugPrint('=== QUESTIONS LOADED ===');
+      debugPrint('Total questions: ${qs.length}');
+      for (int i = 0; i < qs.length && i < 5; i++) {
+        final q = qs[i];
+        debugPrint('Q${i}: ID=${q['id']}, Text=${q['questionText']}, Weight=${q['weight']}');
+      }
+      debugPrint('=== END QUESTIONS ===');
+      
       setState(() {
         _questions = qs;
         _stage = res['stage']?.toString() ?? '';
@@ -81,6 +90,14 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
   Future<void> _submit() async {
     setState(() { _submitting = true; _offline = false; });
     try {
+      debugPrint('=== SUBMITTING ASSESSMENT ===');
+      debugPrint('Total answers: ${_answers.length}');
+      debugPrint('YES answers: ${_answers.entries.where((e) => e.value == 1).length}');
+      for (final entry in _answers.entries.where((e) => e.value == 1)) {
+        debugPrint('  YES: Question ID ${entry.key}');
+      }
+      debugPrint('=== END SUBMIT ===');
+      
       final payload = {
         'answers': _answers.entries
             .map((e) => {'questionId': e.key, 'value': e.value})
@@ -88,7 +105,12 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
       };
       final res = await ApiService.instance.post('/who/assessment', payload)
           as Map<String, dynamic>;
+      final savedToHistory = await _saveToHistory(res);
+      if (!mounted) return;
       setState(() { _result = res; _submitting = false; });
+      if (!savedToHistory) {
+        _showHistorySaveWarning();
+      }
     } catch (_) {
       // Offline fallback — compute locally
       final score = _answers.entries.fold<double>(0, (s, e) {
@@ -125,6 +147,29 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
     }
   }
 
+  Future<bool> _saveToHistory(Map<String, dynamic> result) async {
+    try {
+      await ApiService.saveHealthCheckResultToHistory(
+        type: 'prenatal',
+        result: result,
+        questions: _questions,
+        answers: _answers,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Failed to save health check history: $e');
+      return false;
+    }
+  }
+
+  void _showHistorySaveWarning() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Result shown, but it could not be saved to history.'),
+      ),
+    );
+  }
+
   Map<String, dynamic> _uiForLevel(String level) {
     if (level.contains('Low')) {
       return {'color': const Color(0xFF2E7D32), 'bg': const Color(0xFFE8F5E9), 'icon': Icons.check_circle};
@@ -152,8 +197,8 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.menu, color: Colors.white),
-          onPressed: () => widget.onOpenDrawer?.call(),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -214,14 +259,13 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
         Text(_loadError ?? '', textAlign: TextAlign.center,
             style: const TextStyle(fontSize: 13, color: Color(0xFF757575))),
         const SizedBox(height: 24),
-        ElevatedButton.icon(
+        ElevatedButton(
           onPressed: _loadQuestions,
-          icon: const Icon(Icons.refresh),
-          label: const Text('Try Again'),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF1A237E), foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
+          child: const Text('Try Again'),
         ),
       ]),
     ),

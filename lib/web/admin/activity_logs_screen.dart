@@ -204,11 +204,6 @@ class _SystemLogsTabState extends State<_SystemLogsTab> {
                 onChanged: (v) => setState(() { _roleFilter = v!; _page = 0; }),
               ),
               const Spacer(),
-              IconButton(
-                onPressed: _load,
-                icon: const Icon(Icons.refresh_rounded, color: AppColors.primary),
-                tooltip: 'Refresh',
-              ),
             ],
           ),
         ),
