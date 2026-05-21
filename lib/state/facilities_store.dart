@@ -61,9 +61,6 @@ class FacilitiesStore {
   // Cache for all zones and districts (extracted from facilities)
   List<String> _allZonesCache = [];
   List<String> _allDistrictsCache = [];
-  
-  // Hierarchy data: region -> zones -> districts
-  Map<String, List<Map<String, dynamic>>> _hierarchyData = {};
 
   bool _loaded = false;
   bool _loading = false;
@@ -85,7 +82,6 @@ class FacilitiesStore {
   List<String> get districts => List.from(_districts);
   List<String> get facilityTypes => List.from(_facilityTypes);
   List<String> get managingAuthorities => List.from(_managingAuthorities);
-  Map<String, List<Map<String, dynamic>>> get hierarchyData => Map.from(_hierarchyData);
   bool get loaded => _loaded;
   bool get loading => _loading;
   String? get error => _error;
@@ -102,23 +98,12 @@ class FacilitiesStore {
 
   /// Load all facilities and regions
   Future<void> load() async {
-    if (_loaded) return;
+    if (_loaded && _allFacilities.isNotEmpty) return;
     _loading = true;
     _error = null;
     _notify();
 
     try {
-      // Load regions with hierarchy (zones and districts)
-      final hierarchyList = await ApiService.getRegionsWithHierarchy();
-      _hierarchyData.clear();
-      for (final item in hierarchyList) {
-        if (item is Map<String, dynamic>) {
-          final region = item['region']?.toString() ?? '';
-          final zones = item['zones'] as List<dynamic>? ?? [];
-          _hierarchyData[region] = zones.cast<Map<String, dynamic>>();
-        }
-      }
-
       // Load regions
       final regionsData = await ApiService.getRegions();
       _regions.clear();
@@ -179,7 +164,7 @@ class FacilitiesStore {
   /// Load districts for a zone
   Future<void> loadDistricts(String zone) async {
     try {
-      final districtsData = await ApiService.getDistricts(zone);
+      final districtsData = await ApiService.getDistricts(zone, _selectedRegion);
       _districts.clear();
       _districts.addAll(districtsData);
       _notify();
@@ -189,7 +174,7 @@ class FacilitiesStore {
     }
   }
 
-  /// Set region filter and load zones
+  /// Set region filter and load zones from backend
   Future<void> setRegion(String? region) async {
     _selectedRegion = region;
     _selectedZone = null;
@@ -198,35 +183,62 @@ class FacilitiesStore {
     _districts.clear();
 
     if (region != null) {
-      // Get zones from hierarchy data
-      final zonesList = _hierarchyData[region] ?? [];
-      final zonesSet = <String>{};
-      for (final zoneData in zonesList) {
-        final zone = zoneData['zone']?.toString();
-        if (zone != null) {
-          zonesSet.add(zone);
+      try {
+        // Load zones from backend API for this region
+        final zonesData = await ApiService.getZones(region);
+        _zones.clear();
+        _zones.addAll(zonesData);
+      } catch (e) {
+        // Fallback to local filtering if API fails
+        final zonesForRegion = <String>{};
+        for (final facility in _allFacilities) {
+          if (facility.region == region) {
+            zonesForRegion.add(facility.zone);
+          }
         }
+        _zones.addAll(zonesForRegion.toList()..sort());
       }
-      _zones.addAll(zonesSet.toList()..sort());
     }
     _applyFilters();
   }
 
-  /// Set zone filter and load districts
+  /// Set zone filter and load districts from backend
   Future<void> setZone(String? zone) async {
     _selectedZone = zone;
     _selectedDistrict = null;
     _districts.clear();
 
     if (zone != null && _selectedRegion != null) {
-      // Get districts from hierarchy data
-      final zonesList = _hierarchyData[_selectedRegion] ?? [];
-      for (final zoneData in zonesList) {
-        if (zoneData['zone']?.toString() == zone) {
-          final districtsList = zoneData['districts'] as List<dynamic>? ?? [];
-          _districts.addAll(districtsList.cast<String>()..sort());
-          break;
+      try {
+        // Load districts from backend API for this zone AND region
+        final districtsData = await ApiService.getDistricts(zone, _selectedRegion);
+        _districts.clear();
+        _districts.addAll(districtsData);
+      } catch (e) {
+        // Fallback to local filtering if API fails
+        final districtsForZone = <String>{};
+        for (final facility in _allFacilities) {
+          if (facility.zone == zone && facility.region == _selectedRegion) {
+            districtsForZone.add(facility.district);
+          }
         }
+        _districts.addAll(districtsForZone.toList()..sort());
+      }
+    } else if (zone != null) {
+      try {
+        // If no region selected, load all districts for the zone
+        final districtsData = await ApiService.getDistricts(zone);
+        _districts.clear();
+        _districts.addAll(districtsData);
+      } catch (e) {
+        // Fallback to local filtering if API fails
+        final districtsForZone = <String>{};
+        for (final facility in _allFacilities) {
+          if (facility.zone == zone) {
+            districtsForZone.add(facility.district);
+          }
+        }
+        _districts.addAll(districtsForZone.toList()..sort());
       }
     }
     _applyFilters();
@@ -417,28 +429,39 @@ class FacilitiesStore {
     }
   }
 
-  /// Reload data
-  void reload() {
+  /// Reload data (force fresh load from backend)
+  Future<void> reload() async {
     _loaded = false;
-    load();
+    _allFacilities.clear();
+    _filteredFacilities.clear();
+    _regions.clear();
+    _zones.clear();
+    _districts.clear();
+    _selectedRegion = null;
+    _selectedZone = null;
+    _selectedDistrict = null;
+    _selectedFacilityType = null;
+    _selectedManagedBy = null;
+    _searchQuery = null;
+    await load();
   }
 
   /// Create a new facility
   Future<void> addFacility(Map<String, dynamic> data) async {
     await ApiService.createFacility(data);
-    reload();
+    await reload();
   }
 
   /// Edit an existing facility
   Future<void> editFacility(String id, Map<String, dynamic> data) async {
     await ApiService.updateHealthFacility(id, data);
-    reload();
+    await reload();
   }
 
   /// Delete a facility
   Future<void> deleteFacility(String id) async {
     await ApiService.deleteHealthFacility(id);
-    reload();
+    await reload();
   }
 
   final List<void Function()> _listeners = [];
