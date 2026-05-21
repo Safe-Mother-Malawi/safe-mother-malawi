@@ -334,15 +334,18 @@ class FacilitiesStore {
   /// Get unique managing authorities from filtered facilities (based on region/zone/district)
   Future<List<String>> getAvailableManagedBy() async {
     try {
+      List<String> authorities;
       if (_selectedDistrict != null) {
-        return await ApiService.getManagingAuthoritiesByDistrict(_selectedDistrict!);
+        authorities = await ApiService.getManagingAuthoritiesByDistrict(_selectedDistrict!);
       } else if (_selectedZone != null) {
-        return await ApiService.getManagingAuthoritiesByZone(_selectedZone!);
+        authorities = await ApiService.getManagingAuthoritiesByZone(_selectedZone!);
       } else if (_selectedRegion != null) {
-        return await ApiService.getManagingAuthoritiesByRegion(_selectedRegion!);
+        authorities = await ApiService.getManagingAuthoritiesByRegion(_selectedRegion!);
       } else {
-        return await ApiService.getManagingAuthorities();
+        authorities = await ApiService.getManagingAuthorities();
       }
+      // Filter out GOVERNMENT and CLINIC
+      return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList();
     } catch (e) {
       // Fallback to local filtering
       var facilities = _allFacilities;
@@ -363,7 +366,8 @@ class FacilitiesStore {
       for (final f in facilities) {
         authorities.add(f.managingAuthority);
       }
-      return authorities.toList()..sort();
+      // Filter out GOVERNMENT and CLINIC
+      return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList()..sort();
     }
   }
 
@@ -382,7 +386,8 @@ class FacilitiesStore {
     for (final f in _allFacilities) {
       authorities.add(f.managingAuthority);
     }
-    return authorities.toList()..sort();
+    // Filter out GOVERNMENT and CLINIC
+    return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList()..sort();
   }
 
   /// Get facility by name

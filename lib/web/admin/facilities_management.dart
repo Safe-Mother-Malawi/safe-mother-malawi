@@ -341,7 +341,10 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Managing Authority'),
                     value: _authority,
-                    items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: store.managingAuthorities
+                        .where((e) => e != 'GOVERNMENT' && e != 'CLINIC')
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                     validator: (v) => v == null ? 'Required' : null,
                     onChanged: (v) => setState(() => _authority = v),
                   ),
@@ -525,7 +528,10 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Managing Authority'),
                       value: _authority,
-                      items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      items: store.managingAuthorities
+                          .where((e) => e != 'GOVERNMENT' && e != 'CLINIC')
+                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
                       validator: (v) => v == null ? 'Required' : null,
                       onChanged: (v) => setState(() => _authority = v),
                     ),
