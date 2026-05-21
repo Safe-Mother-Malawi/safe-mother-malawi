@@ -57,6 +57,10 @@ class FacilitiesStore {
   final List<String> _districts = [];
   final List<String> _facilityTypes = [];
   final List<String> _managingAuthorities = [];
+  
+  // Cache for all zones and districts (extracted from facilities)
+  List<String> _allZonesCache = [];
+  List<String> _allDistrictsCache = [];
 
   bool _loaded = false;
   bool _loading = false;
@@ -114,12 +118,24 @@ class FacilitiesStore {
       _managingAuthorities.clear();
       _managingAuthorities.addAll(authoritiesData);
 
-      // Load all facilities
+      // Load all facilities (with high limit to get all records)
       final facilitiesData = await ApiService.getHealthFacilities() as List<dynamic>;
       _allFacilities.clear();
       _allFacilities.addAll(
         facilitiesData.cast<Map<String, dynamic>>().map(HealthFacility.fromJson),
       );
+
+      // Extract all unique zones and districts from facilities
+      final allZones = <String>{};
+      final allDistricts = <String>{};
+      for (final facility in _allFacilities) {
+        allZones.add(facility.zone);
+        allDistricts.add(facility.district);
+      }
+      
+      // Store them for reference (not filtered by region/zone yet)
+      _allZonesCache = allZones.toList()..sort();
+      _allDistrictsCache = allDistricts.toList()..sort();
 
       _loaded = true;
       _applyFilters();
@@ -166,7 +182,14 @@ class FacilitiesStore {
     _districts.clear();
 
     if (region != null) {
-      await loadZones(region);
+      // Filter zones for this region from all facilities
+      final zonesForRegion = <String>{};
+      for (final facility in _allFacilities) {
+        if (facility.region == region) {
+          zonesForRegion.add(facility.zone);
+        }
+      }
+      _zones.addAll(zonesForRegion.toList()..sort());
     }
     _applyFilters();
   }
@@ -178,7 +201,14 @@ class FacilitiesStore {
     _districts.clear();
 
     if (zone != null) {
-      await loadDistricts(zone);
+      // Filter districts for this zone from all facilities
+      final districtsForZone = <String>{};
+      for (final facility in _allFacilities) {
+        if (facility.zone == zone) {
+          districtsForZone.add(facility.district);
+        }
+      }
+      _districts.addAll(districtsForZone.toList()..sort());
     }
     _applyFilters();
   }
