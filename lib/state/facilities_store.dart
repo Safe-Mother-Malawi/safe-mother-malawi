@@ -61,6 +61,9 @@ class FacilitiesStore {
   // Cache for all zones and districts (extracted from facilities)
   List<String> _allZonesCache = [];
   List<String> _allDistrictsCache = [];
+  
+  // Hierarchy data: region -> zones -> districts
+  Map<String, List<Map<String, dynamic>>> _hierarchyData = {};
 
   bool _loaded = false;
   bool _loading = false;
@@ -82,6 +85,7 @@ class FacilitiesStore {
   List<String> get districts => List.from(_districts);
   List<String> get facilityTypes => List.from(_facilityTypes);
   List<String> get managingAuthorities => List.from(_managingAuthorities);
+  Map<String, List<Map<String, dynamic>>> get hierarchyData => Map.from(_hierarchyData);
   bool get loaded => _loaded;
   bool get loading => _loading;
   String? get error => _error;
@@ -104,6 +108,17 @@ class FacilitiesStore {
     _notify();
 
     try {
+      // Load regions with hierarchy (zones and districts)
+      final hierarchyList = await ApiService.getRegionsWithHierarchy();
+      _hierarchyData.clear();
+      for (final item in hierarchyList) {
+        if (item is Map<String, dynamic>) {
+          final region = item['region']?.toString() ?? '';
+          final zones = item['zones'] as List<dynamic>? ?? [];
+          _hierarchyData[region] = zones.cast<Map<String, dynamic>>();
+        }
+      }
+
       // Load regions
       final regionsData = await ApiService.getRegions();
       _regions.clear();
@@ -183,14 +198,16 @@ class FacilitiesStore {
     _districts.clear();
 
     if (region != null) {
-      // Filter zones for this region from all facilities
-      final zonesForRegion = <String>{};
-      for (final facility in _allFacilities) {
-        if (facility.region == region) {
-          zonesForRegion.add(facility.zone);
+      // Get zones from hierarchy data
+      final zonesList = _hierarchyData[region] ?? [];
+      final zonesSet = <String>{};
+      for (final zoneData in zonesList) {
+        final zone = zoneData['zone']?.toString();
+        if (zone != null) {
+          zonesSet.add(zone);
         }
       }
-      _zones.addAll(zonesForRegion.toList()..sort());
+      _zones.addAll(zonesSet.toList()..sort());
     }
     _applyFilters();
   }
@@ -201,15 +218,16 @@ class FacilitiesStore {
     _selectedDistrict = null;
     _districts.clear();
 
-    if (zone != null) {
-      // Filter districts for this zone from all facilities
-      final districtsForZone = <String>{};
-      for (final facility in _allFacilities) {
-        if (facility.zone == zone) {
-          districtsForZone.add(facility.district);
+    if (zone != null && _selectedRegion != null) {
+      // Get districts from hierarchy data
+      final zonesList = _hierarchyData[_selectedRegion] ?? [];
+      for (final zoneData in zonesList) {
+        if (zoneData['zone']?.toString() == zone) {
+          final districtsList = zoneData['districts'] as List<dynamic>? ?? [];
+          _districts.addAll(districtsList.cast<String>()..sort());
+          break;
         }
       }
-      _districts.addAll(districtsForZone.toList()..sort());
     }
     _applyFilters();
   }

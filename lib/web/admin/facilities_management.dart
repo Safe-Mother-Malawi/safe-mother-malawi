@@ -280,15 +280,17 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                         _dialogZones = [];
                         _dialogDistricts = [];
                         
-                        // Extract zones for this region from all facilities
+                        // Get zones from hierarchy data
                         if (v != null) {
-                          final zonesForRegion = <String>{};
-                          for (final facility in store.allFacilities) {
-                            if (facility.region == v) {
-                              zonesForRegion.add(facility.zone);
+                          final zonesList = store.hierarchyData[v] ?? [];
+                          final zonesSet = <String>{};
+                          for (final zoneData in zonesList) {
+                            final zone = zoneData['zone']?.toString();
+                            if (zone != null) {
+                              zonesSet.add(zone);
                             }
                           }
-                          _dialogZones = zonesForRegion.toList()..sort();
+                          _dialogZones = zonesSet.toList()..sort();
                         }
                       });
                     },
@@ -305,15 +307,16 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                         _district = null;
                         _dialogDistricts = [];
                         
-                        // Extract districts for this zone from all facilities
-                        if (v != null) {
-                          final districtsForZone = <String>{};
-                          for (final facility in store.allFacilities) {
-                            if (facility.zone == v) {
-                              districtsForZone.add(facility.district);
+                        // Get districts from hierarchy data
+                        if (v != null && _region != null) {
+                          final zonesList = store.hierarchyData[_region] ?? [];
+                          for (final zoneData in zonesList) {
+                            if (zoneData['zone']?.toString() == v) {
+                              final districtsList = zoneData['districts'] as List<dynamic>? ?? [];
+                              _dialogDistricts = districtsList.cast<String>()..sort();
+                              break;
                             }
                           }
-                          _dialogDistricts = districtsForZone.toList()..sort();
                         }
                       });
                     },
@@ -420,25 +423,28 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) {
-          // Initialize zones and districts on first build
+          // Initialize zones and districts on first build using hierarchy data
           if (_dialogZones.isEmpty && _region != null) {
-            final zonesForRegion = <String>{};
-            for (final f in store.allFacilities) {
-              if (f.region == _region) {
-                zonesForRegion.add(f.zone);
+            final zonesList = store.hierarchyData[_region] ?? [];
+            final zonesSet = <String>{};
+            for (final zoneData in zonesList) {
+              final zone = zoneData['zone']?.toString();
+              if (zone != null) {
+                zonesSet.add(zone);
               }
             }
-            _dialogZones = zonesForRegion.toList()..sort();
+            _dialogZones = zonesSet.toList()..sort();
           }
           
-          if (_dialogDistricts.isEmpty && _zone != null) {
-            final districtsForZone = <String>{};
-            for (final f in store.allFacilities) {
-              if (f.zone == _zone) {
-                districtsForZone.add(f.district);
+          if (_dialogDistricts.isEmpty && _zone != null && _region != null) {
+            final zonesList = store.hierarchyData[_region] ?? [];
+            for (final zoneData in zonesList) {
+              if (zoneData['zone']?.toString() == _zone) {
+                final districtsList = zoneData['districts'] as List<dynamic>? ?? [];
+                _dialogDistricts = districtsList.cast<String>()..sort();
+                break;
               }
             }
-            _dialogDistricts = districtsForZone.toList()..sort();
           }
           
           return AlertDialog(
@@ -470,13 +476,15 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                           _dialogDistricts = [];
                           
                           if (v != null) {
-                            final zonesForRegion = <String>{};
-                            for (final f in store.allFacilities) {
-                              if (f.region == v) {
-                                zonesForRegion.add(f.zone);
+                            final zonesList = store.hierarchyData[v] ?? [];
+                            final zonesSet = <String>{};
+                            for (final zoneData in zonesList) {
+                              final zone = zoneData['zone']?.toString();
+                              if (zone != null) {
+                                zonesSet.add(zone);
                               }
                             }
-                            _dialogZones = zonesForRegion.toList()..sort();
+                            _dialogZones = zonesSet.toList()..sort();
                           }
                         });
                       },
@@ -493,14 +501,15 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                           _district = null;
                           _dialogDistricts = [];
                           
-                          if (v != null) {
-                            final districtsForZone = <String>{};
-                            for (final f in store.allFacilities) {
-                              if (f.zone == v) {
-                                districtsForZone.add(f.district);
+                          if (v != null && _region != null) {
+                            final zonesList = store.hierarchyData[_region] ?? [];
+                            for (final zoneData in zonesList) {
+                              if (zoneData['zone']?.toString() == v) {
+                                final districtsList = zoneData['districts'] as List<dynamic>? ?? [];
+                                _dialogDistricts = districtsList.cast<String>()..sort();
+                                break;
                               }
                             }
-                            _dialogDistricts = districtsForZone.toList()..sort();
                           }
                         });
                       },

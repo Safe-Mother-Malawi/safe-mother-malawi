@@ -309,6 +309,10 @@ class ApiService {
       instance.get('/health-facilities/regions').then((data) => 
           (data as List<dynamic>).cast<String>());
 
+  static Future<List<dynamic>> getRegionsWithHierarchy() =>
+      instance.get('/health-facilities/regions-with-hierarchy').then((data) => 
+          (data as List<dynamic>));
+
   static Future<List<String>> getZones(String region) =>
       instance.get('/health-facilities/zones?region=${Uri.encodeComponent(region)}').then((data) => 
           (data as List<dynamic>).cast<String>());
