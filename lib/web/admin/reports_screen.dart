@@ -53,14 +53,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return isAdmin ? allTypes : dhoTypes;
   }
 
+  String get _userDistrict {
+    final user = AuthServiceWeb.instance.currentUser;
+    return user?['district'] as String? ?? '';
+  }
+
+  bool get _isDho {
+    return AuthServiceWeb.instance.userRole.toLowerCase() == 'dho';
+  }
+
   Future<void> _generate() async {
     setState(() => _generating = true);
     try {
       final now = DateTime.now();
+      final selectedDistrict = _isDho ? _userDistrict : _district;
       final raw = await ApiService.instance.post('/reports/generate', {
         'title': '$_reportType — ${now.toString().substring(0, 10)}',
         'type': _reportType,
-        'district': _district == 'All Districts' ? null : _district,
+        'district': selectedDistrict == 'All Districts' ? null : selectedDistrict,
         'dateRange': _dateRange,
         'format': _format,
       });
@@ -241,9 +251,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   _ReportDrop(label: 'Report Type', value: _reportType,
                       items: _getAvailableReportTypes(),
                       onChanged: (v) => setState(() => _reportType = v!)),
-                  _ReportDrop(label: 'District', value: _district,
-                      items: const ['All Districts','Blantyre','Lilongwe','Mzuzu','Zomba','Mangochi'],
-                      onChanged: (v) => setState(() => _district = v!)),
+                  _ReportDrop(label: 'District', value: _isDho ? _userDistrict : _district,
+                      items: _isDho ? [_userDistrict] : const ['All Districts','Blantyre','Lilongwe','Mzuzu','Zomba','Mangochi'],
+                      onChanged: _isDho ? null : (v) => setState(() => _district = v!),
+                      enabled: !_isDho),
                   _ReportDrop(label: 'Date Range', value: _dateRange,
                       items: const ['Last 7 days','Last 30 days','Last 3 months','Last 6 months'],
                       onChanged: (v) => setState(() => _dateRange = v!)),
@@ -600,8 +611,9 @@ class _DataView extends StatelessWidget {
 class _ReportDrop extends StatelessWidget {
   final String label, value;
   final List<String> items;
-  final ValueChanged<String?> onChanged;
-  const _ReportDrop({required this.label, required this.value, required this.items, required this.onChanged});
+  final ValueChanged<String?>? onChanged;
+  final bool enabled;
+  const _ReportDrop({required this.label, required this.value, required this.items, this.onChanged, this.enabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -610,14 +622,19 @@ class _ReportDrop extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label.toUpperCase(), style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.mutedText, letterSpacing: 0.8)),
         const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          value: value, onChanged: onChanged,
-          style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
-          decoration: InputDecoration(
-            filled: true, fillColor: AppColors.surfaceContainerHighest,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
-          items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList()),
+        Opacity(
+          opacity: enabled ? 1.0 : 0.6,
+          child: DropdownButtonFormField<String>(
+            value: value, 
+            onChanged: enabled ? onChanged : null,
+            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
+            decoration: InputDecoration(
+              filled: true, 
+              fillColor: enabled ? AppColors.surfaceContainerHighest : AppColors.surfaceContainerLow,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12)),
+            items: items.map((i) => DropdownMenuItem(value: i, child: Text(i))).toList()),
+        ),
       ]),
     );
   }
