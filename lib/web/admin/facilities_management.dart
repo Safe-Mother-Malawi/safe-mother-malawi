@@ -245,6 +245,10 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
     String? _type;
     String? _authority;
     String _urbanRural = 'Rural';
+    
+    // Local state for zones and districts in this dialog
+    List<String> _dialogZones = [];
+    List<String> _dialogDistricts = [];
 
     showDialog(
       context: context,
@@ -268,21 +272,57 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                     value: _region,
                     items: store.regions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _region = v),
+                    onChanged: (v) {
+                      setState(() {
+                        _region = v;
+                        _zone = null;
+                        _district = null;
+                        _dialogZones = [];
+                        _dialogDistricts = [];
+                        
+                        // Extract zones for this region from all facilities
+                        if (v != null) {
+                          final zonesForRegion = <String>{};
+                          for (final facility in store.allFacilities) {
+                            if (facility.region == v) {
+                              zonesForRegion.add(facility.zone);
+                            }
+                          }
+                          _dialogZones = zonesForRegion.toList()..sort();
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Zone'),
                     value: _zone,
-                    items: store.zones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: _dialogZones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _zone = v),
+                    onChanged: (v) {
+                      setState(() {
+                        _zone = v;
+                        _district = null;
+                        _dialogDistricts = [];
+                        
+                        // Extract districts for this zone from all facilities
+                        if (v != null) {
+                          final districtsForZone = <String>{};
+                          for (final facility in store.allFacilities) {
+                            if (facility.zone == v) {
+                              districtsForZone.add(facility.district);
+                            }
+                          }
+                          _dialogDistricts = districtsForZone.toList()..sort();
+                        }
+                      });
+                    },
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'District'),
                     value: _district,
-                    items: store.districts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: _dialogDistricts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     validator: (v) => v == null ? 'Required' : null,
                     onChanged: (v) => setState(() => _district = v),
                   ),
@@ -290,7 +330,10 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Facility Type'),
                     value: _type,
-                    items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                    items: store.facilityTypes
+                        .where((e) => e.toUpperCase() != 'CLINIC' && e.toUpperCase() != 'GOVERNMENT')
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
                     validator: (v) => v == null ? 'Required' : null,
                     onChanged: (v) => setState(() => _type = v),
                   ),
@@ -365,114 +408,178 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
     String? _type = facility.facilityType;
     String? _authority = facility.managingAuthority;
     String _urbanRural = facility.urbanRural;
+    
+    // Local state for zones and districts in this dialog
+    List<String> _dialogZones = [];
+    List<String> _dialogDistricts = [];
 
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setState) => AlertDialog(
-          title: const Text('Edit Facility'),
-          content: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    initialValue: _name,
-                    decoration: const InputDecoration(labelText: 'Facility Name'),
-                    validator: (v) => v!.isEmpty ? 'Required' : null,
-                    onSaved: (v) => _name = v!,
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Region'),
-                    value: _region,
-                    items: store.regions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _region = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Zone'),
-                    value: _zone,
-                    items: store.zones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _zone = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'District'),
-                    value: _district,
-                    items: store.districts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _district = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Facility Type'),
-                    value: _type,
-                    items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _type = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Managing Authority'),
-                    value: _authority,
-                    items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    validator: (v) => v == null ? 'Required' : null,
-                    onChanged: (v) => setState(() => _authority = v),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Urban/Rural'),
-                    value: _urbanRural,
-                    items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-                    onChanged: (v) => setState(() => _urbanRural = v!),
-                  ),
-                ],
+        builder: (ctx, setState) {
+          // Initialize zones and districts on first build
+          if (_dialogZones.isEmpty && _region != null) {
+            final zonesForRegion = <String>{};
+            for (final f in store.allFacilities) {
+              if (f.region == _region) {
+                zonesForRegion.add(f.zone);
+              }
+            }
+            _dialogZones = zonesForRegion.toList()..sort();
+          }
+          
+          if (_dialogDistricts.isEmpty && _zone != null) {
+            final districtsForZone = <String>{};
+            for (final f in store.allFacilities) {
+              if (f.zone == _zone) {
+                districtsForZone.add(f.district);
+              }
+            }
+            _dialogDistricts = districtsForZone.toList()..sort();
+          }
+          
+          return AlertDialog(
+            title: const Text('Edit Facility'),
+            content: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      initialValue: _name,
+                      decoration: const InputDecoration(labelText: 'Facility Name'),
+                      validator: (v) => v!.isEmpty ? 'Required' : null,
+                      onSaved: (v) => _name = v!,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Region'),
+                      value: _region,
+                      items: store.regions.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) {
+                        setState(() {
+                          _region = v;
+                          _zone = null;
+                          _district = null;
+                          _dialogZones = [];
+                          _dialogDistricts = [];
+                          
+                          if (v != null) {
+                            final zonesForRegion = <String>{};
+                            for (final f in store.allFacilities) {
+                              if (f.region == v) {
+                                zonesForRegion.add(f.zone);
+                              }
+                            }
+                            _dialogZones = zonesForRegion.toList()..sort();
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Zone'),
+                      value: _zone,
+                      items: _dialogZones.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) {
+                        setState(() {
+                          _zone = v;
+                          _district = null;
+                          _dialogDistricts = [];
+                          
+                          if (v != null) {
+                            final districtsForZone = <String>{};
+                            for (final f in store.allFacilities) {
+                              if (f.zone == v) {
+                                districtsForZone.add(f.district);
+                              }
+                            }
+                            _dialogDistricts = districtsForZone.toList()..sort();
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'District'),
+                      value: _district,
+                      items: _dialogDistricts.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) => setState(() => _district = v),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Facility Type'),
+                      value: _type,
+                      items: store.facilityTypes
+                          .where((e) => e.toUpperCase() != 'CLINIC' && e.toUpperCase() != 'GOVERNMENT')
+                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) => setState(() => _type = v),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Managing Authority'),
+                      value: _authority,
+                      items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      validator: (v) => v == null ? 'Required' : null,
+                      onChanged: (v) => setState(() => _authority = v),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(labelText: 'Urban/Rural'),
+                      value: _urbanRural,
+                      items: ['Urban', 'Rural'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+                      onChanged: (v) => setState(() => _urbanRural = v!),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (_formKey.currentState!.validate()) {
-                  _formKey.currentState!.save();
-                  Navigator.pop(ctx);
-                  
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Updating facility...')),
-                  );
-                  
-                  try {
-                    await store.editFacility(facility.id, {
-                      'facilityName': _name,
-                      'region': _region,
-                      'zone': _zone,
-                      'district': _district,
-                      'facilityType': _type,
-                      'managingAuthority': _authority,
-                      'urbanRural': _urbanRural,
-                    });
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    _formKey.currentState!.save();
+                    Navigator.pop(ctx);
+                    
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Facility updated successfully')),
+                      const SnackBar(content: Text('Updating facility...')),
                     );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Failed to update facility: $e')),
-                    );
+                    
+                    try {
+                      await store.editFacility(facility.id, {
+                        'facilityName': _name,
+                        'region': _region,
+                        'zone': _zone,
+                        'district': _district,
+                        'facilityType': _type,
+                        'managingAuthority': _authority,
+                        'urbanRural': _urbanRural,
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Facility updated successfully')),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to update facility: $e')),
+                      );
+                    }
                   }
-                }
-              },
-              child: const Text('Update'),
-            ),
-          ],
-        ),
+                },
+                child: const Text('Update'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

@@ -76,6 +76,7 @@ class FacilitiesStore {
 
   // Getters
   List<HealthFacility> get facilities => List.from(_filteredFacilities);
+  List<HealthFacility> get allFacilities => List.from(_allFacilities);
   List<String> get regions => List.from(_regions);
   List<String> get zones => List.from(_zones);
   List<String> get districts => List.from(_districts);
@@ -292,13 +293,17 @@ class FacilitiesStore {
   Future<List<String>> getAvailableFacilityTypes() async {
     try {
       if (_selectedDistrict != null) {
-        return await ApiService.getFacilityTypesByDistrict(_selectedDistrict!);
+        final types = await ApiService.getFacilityTypesByDistrict(_selectedDistrict!);
+        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
       } else if (_selectedZone != null) {
-        return await ApiService.getFacilityTypesByZone(_selectedZone!);
+        final types = await ApiService.getFacilityTypesByZone(_selectedZone!);
+        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
       } else if (_selectedRegion != null) {
-        return await ApiService.getFacilityTypesByRegion(_selectedRegion!);
+        final types = await ApiService.getFacilityTypesByRegion(_selectedRegion!);
+        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
       } else {
-        return await ApiService.getFacilityTypes();
+        final types = await ApiService.getFacilityTypes();
+        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
       }
     } catch (e) {
       // Fallback to local filtering
@@ -320,7 +325,9 @@ class FacilitiesStore {
       for (final f in facilities) {
         types.add(f.facilityType);
       }
-      return types.toList()..sort();
+      return types.toList()
+        ..sort()
+        ..removeWhere((t) => t.toUpperCase() == 'CLINIC' || t.toUpperCase() == 'GOVERNMENT');
     }
   }
 
