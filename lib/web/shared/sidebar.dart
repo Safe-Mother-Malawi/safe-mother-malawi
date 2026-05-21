@@ -39,8 +39,6 @@ const List<NavItem> _flatItems = [
   // ── DHO only ──────────────────────────────────────────────────────────────
   NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians',
       allowedRoles: [UserRole.dho]),
-  NavItem(label: 'Data Source', icon: Icons.storage_rounded, route: '/data-explorer',
-      allowedRoles: [UserRole.dho]),
   NavItem(label: 'Analytics Dashboard', icon: Icons.bar_chart_rounded, route: '/analytics',
       allowedRoles: [UserRole.dho]),
   NavItem(label: 'Generate Analytics', icon: Icons.auto_graph_rounded, route: '/generate-analytics',
@@ -84,7 +82,7 @@ class _AppSidebarState extends State<AppSidebar> {
         widget.currentRoute == '/insights';
 
     const _flatLabels = {
-      'Overview', 'System Users', 'Clinician Management', 'Data Source',
+      'Overview', 'System Users', 'Clinician Management',
       'Analytics Dashboard', 'Generate Analytics', 'Task Analytics',
       'Activity Logs', 'Question Insights', 'Reports', 'Audit Export',
       'Health Facilities', 'Audit Logs'

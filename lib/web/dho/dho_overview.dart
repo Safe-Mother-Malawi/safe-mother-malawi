@@ -8,7 +8,6 @@ import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
 import '../admin/clinician_management.dart';
-import '../admin/data_explorer.dart';
 import '../admin/generate_analytics.dart';
 import '../admin/analytics_dashboard.dart';
 import '../admin/task_analytics.dart';
@@ -48,7 +47,6 @@ class _DhoOverviewState extends State<DhoOverview> {
   Widget _buildPage() {
     switch (_currentRoute) {
       case '/clinicians':         return const ClinicianManagement();
-      case '/data-explorer':      return const DataExplorer();
       case '/generate-analytics': return const GenerateAnalytics();
       case '/analytics':          return const AnalyticsDashboard();
       case '/task-analytics':     return const TaskAnalytics();
@@ -62,7 +60,6 @@ class _DhoOverviewState extends State<DhoOverview> {
     const titles = {
       '/overview':          'Overview',
       '/clinicians':        'Clinician Management',
-      '/data-explorer':     'Data Source',
       '/generate-analytics':'Generate Analytics',
       '/analytics':         'Analytics Dashboard',
       '/task-analytics':    'Task Analytics',
