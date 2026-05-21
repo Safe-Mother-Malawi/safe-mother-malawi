@@ -15,17 +15,19 @@ class AppointmentsSchedule extends StatefulWidget {
 
 class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
   List<Map<String, dynamic>> _todayAppointments = [];
+  List<Map<String, dynamic>> _allAppointments = [];
   bool _loading = true;
   String? _error;
   late Timer _refreshTimer;
+  String _filterMode = 'Today'; // 'Today' or 'All'
 
   @override
   void initState() {
     super.initState();
-    _loadTodayAppointments();
+    _loadAppointments();
     // Refresh appointments every 10 seconds to catch updates/deletions
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
-      _loadTodayAppointments();
+      _loadAppointments();
     });
   }
 
@@ -35,7 +37,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
     super.dispose();
   }
 
-  Future<void> _loadTodayAppointments() async {
+  Future<void> _loadAppointments() async {
     try {
       // Get current user to filter appointments by their ID
       final currentUser = AuthServiceWeb.instance.currentUser;
@@ -59,7 +61,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
       final today = DateTime.now();
       final todayDate = DateTime(today.year, today.month, today.day);
 
-      final todayAppointments = (allAppointments as List)
+      final todayAppointmentsList = (allAppointments as List)
           .cast<Map<String, dynamic>>()
           .where((a) {
             // Try multiple date field names
@@ -96,7 +98,8 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
 
       if (mounted) {
         setState(() {
-          _todayAppointments = todayAppointments;
+          _todayAppointments = todayAppointmentsList;
+          _allAppointments = (allAppointments as List).cast<Map<String, dynamic>>();
           _loading = false;
           _error = null;
         });
@@ -184,23 +187,57 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
 
   @override
   Widget build(BuildContext context) {
+    final displayAppointments = _filterMode == 'Today' ? _todayAppointments : _allAppointments;
+    
     return Padding(
       padding: const EdgeInsets.all(28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Today's Appointments",
-            style: TextStyle(fontFamily: 'Public Sans', 
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: AppColors.headings,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'View and manage appointments scheduled for today',
-            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _filterMode == 'Today' ? "Today's Appointments" : "All Appointments",
+                    style: TextStyle(fontFamily: 'Public Sans', 
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.headings,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _filterMode == 'Today' 
+                      ? 'View and manage appointments scheduled for today'
+                      : 'View and manage all appointments and events',
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText),
+                  ),
+                ],
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    _FilterButton(
+                      label: 'Today',
+                      isActive: _filterMode == 'Today',
+                      onTap: () => setState(() => _filterMode = 'Today'),
+                    ),
+                    _FilterButton(
+                      label: 'All',
+                      isActive: _filterMode == 'All',
+                      onTap: () => setState(() => _filterMode = 'All'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           Expanded(
@@ -222,13 +259,13 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                             ),
                             const SizedBox(height: 16),
                             ElevatedButton(
-                              onPressed: _loadTodayAppointments,
+                              onPressed: _loadAppointments,
                               child: const Text('Retry'),
                             ),
                           ],
                         ),
                       )
-                    : _todayAppointments.isEmpty
+                    : displayAppointments.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -240,7 +277,7 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No Appointments Today',
+                                  _filterMode == 'Today' ? 'No Appointments Today' : 'No Appointments',
                                   style: TextStyle(fontFamily: 'Roboto', 
                                     fontSize: 16,
                                     fontWeight: FontWeight.w700,
@@ -261,13 +298,13 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
                             ),
                           )
                         : RefreshIndicator(
-                            onRefresh: _loadTodayAppointments,
+                            onRefresh: _loadAppointments,
                             color: AppColors.primary,
                             child: ListView.builder(
                               physics: const AlwaysScrollableScrollPhysics(),
-                              itemCount: _todayAppointments.length,
+                              itemCount: displayAppointments.length,
                               itemBuilder: (context, index) {
-                                final appointment = _todayAppointments[index];
+                                final appointment = displayAppointments[index];
                                 final date = DateTime.tryParse(appointment['date'] ?? '') ?? DateTime.now();
                                 final title = (appointment['title'] ?? appointment['type'] ?? 'Appointment').toString();
                                 final time = (appointment['time'] ?? '—').toString();
@@ -367,3 +404,39 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
   }
 }
 
+// ── Filter Button Widget ──────────────────────────────────────────────────────
+
+class _FilterButton extends StatelessWidget {
+  final String label;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _FilterButton({
+    required this.label,
+    required this.isActive,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isActive ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'Roboto',
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: isActive ? Colors.white : AppColors.mutedText,
+          ),
+        ),
+      ),
+    );
+  }
+}

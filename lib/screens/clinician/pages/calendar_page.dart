@@ -685,10 +685,12 @@ class _CalendarPageState extends State<CalendarPage> {
               // Date picker
               GestureDetector(
                 onTap: () async {
+                  final today = DateTime.now();
+                  final todayDate = DateTime(today.year, today.month, today.day);
                   final picked = await showDatePicker(
                     context: context,
-                    initialDate: date,
-                    firstDate: DateTime(2024),
+                    initialDate: date.isBefore(todayDate) ? todayDate : date,
+                    firstDate: todayDate,
                     lastDate: DateTime(2028),
                     builder: (ctx, child) => Theme(
                       data: Theme.of(ctx).copyWith(
