@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
+import '../../services/auth_service_web.dart';
 
 class GenerateAnalytics extends StatefulWidget {
   const GenerateAnalytics({super.key});
@@ -26,6 +27,15 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
   bool _done = false;
   int _progress = 0;
 
+  String get _userDistrict {
+    final user = AuthServiceWeb.instance.currentUser;
+    return user?['district'] as String? ?? '';
+  }
+
+  bool get _isDho {
+    return AuthServiceWeb.instance.userRole.toLowerCase() == 'dho';
+  }
+
   Future<void> _generate() async {
     setState(() { _loading = true; _done = false; _progress = 0; });
     try {
@@ -35,6 +45,7 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
         setState(() => _progress = i * 20);
       }
       // Call real analytics endpoint
+      final selectedDistrict = _isDho ? _userDistrict : _district;
       await ApiService.getAnalyticsOverview();
       setState(() => _progress = 100);
       await Future.delayed(const Duration(milliseconds: 200));
@@ -107,12 +118,13 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                           ),
                           _FilterDrop(
                             label: 'District',
-                            value: _district,
-                            items: const [
+                            value: _isDho ? _userDistrict : _district,
+                            items: _isDho ? [_userDistrict] : const [
                               'All Districts', 'Blantyre', 'Lilongwe',
                               'Mzuzu', 'Zomba', 'Mangochi', 'Kasungu'
                             ],
-                            onChanged: (v) => setState(() => _district = v!),
+                            onChanged: _isDho ? null : (v) => setState(() => _district = v!),
+                            enabled: !_isDho,
                           ),
                           _FilterDrop(
                             label: 'Risk Level',
@@ -354,13 +366,15 @@ class _FilterDrop extends StatelessWidget {
   final String label;
   final String value;
   final List<String> items;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String?>? onChanged;
+  final bool enabled;
 
   const _FilterDrop(
       {required this.label,
       required this.value,
       required this.items,
-      required this.onChanged});
+      this.onChanged,
+      this.enabled = true});
 
   @override
   Widget build(BuildContext context) {
@@ -376,23 +390,26 @@ class _FilterDrop extends StatelessWidget {
                   color: AppColors.mutedText,
                   letterSpacing: 0.8)),
           const SizedBox(height: 6),
-          DropdownButtonFormField<String>(
-            value: value,
-            onChanged: onChanged,
-            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: AppColors.surfaceContainerHighest,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
+          Opacity(
+            opacity: enabled ? 1.0 : 0.6,
+            child: DropdownButtonFormField<String>(
+              value: value,
+              onChanged: enabled ? onChanged : null,
+              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: enabled ? AppColors.surfaceContainerHighest : AppColors.surfaceContainerLow,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              items: items
+                  .map((i) => DropdownMenuItem(value: i, child: Text(i)))
+                  .toList(),
             ),
-            items: items
-                .map((i) => DropdownMenuItem(value: i, child: Text(i)))
-                .toList(),
           ),
         ],
       ),
