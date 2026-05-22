@@ -1,37 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'theme/app_colors.dart';
 import 'screens/splash_screen.dart';
 import 'screens/reset_password_page.dart';
 
-// Conditional imports for platform-specific code
-import 'services/notification_service.dart' 
-    if (dart.library.html) 'services/notification_service_stub.dart';
-import 'services/api_service.dart'
-    if (dart.library.html) 'services/api_service_stub.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Initialize Firebase
+  // Initialize Firebase (web-only, no messaging)
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } catch (e) {
-    print('Firebase initialization error: $e');
-  }
-  
-  // Initialize notification service (mobile only)
-  try {
-    final apiService = ApiService();
-    final notificationService = NotificationService();
-    await notificationService.initialize(apiService);
-  } catch (e) {
-    // Silently fail on web - notification service not available
-    print('Notification service initialization skipped: $e');
+    print('Error initializing Firebase: $e');
   }
   
   runApp(const SafeMotherApp());

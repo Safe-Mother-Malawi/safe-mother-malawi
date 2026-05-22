@@ -61,12 +61,16 @@ class AppSidebar extends StatefulWidget {
   final UserRole role;
   final String currentRoute;
   final ValueChanged<String> onNavigate;
+  final bool isCollapsed;
+  final bool isMobile;
 
   const AppSidebar({
     super.key,
     required this.role,
     required this.currentRoute,
     required this.onNavigate,
+    this.isCollapsed = false,
+    this.isMobile = false,
   });
 
   @override
@@ -88,55 +92,66 @@ class _AppSidebarState extends State<AppSidebar> {
       'Health Facilities', 'Audit Logs'
     };
 
+    final sidebarWidth = widget.isCollapsed ? 70.0 : 240.0;
+
     return Container(
-      width: 240,
+      width: sidebarWidth,
       color: AppColors.sidebarBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Brand
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/logo/LOGO5.png', width: 110, height: 110, fit: BoxFit.contain),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text('Safe Mother',
-                          style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text('Malawi', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.sidebarMuted, letterSpacing: 1.5)),
-              ],
+          if (!widget.isCollapsed)
+            Container(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Image.asset('assets/logo/LOGO5.png', width: 110, height: 110, fit: BoxFit.contain),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text('Safe Mother',
+                            style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text('Malawi', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.sidebarMuted, letterSpacing: 1.5)),
+                ],
+              ),
+            )
+          else
+            // Collapsed brand icon
+            Container(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              alignment: Alignment.center,
+              child: Image.asset('assets/logo/LOGO5.png', width: 40, height: 40, fit: BoxFit.contain),
             ),
-          ),
 
           // Role chip
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20)),
-              child: Text(
-                widget.role == UserRole.admin ? 'System Admin' : 'District Health Officer',
-                style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.sidebarMuted),
+          if (!widget.isCollapsed)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20)),
+                child: Text(
+                  widget.role == UserRole.admin ? 'System Admin' : 'District Health Officer',
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.sidebarMuted),
+                ),
               ),
             ),
-          ),
 
           const SizedBox(height: 24),
 
           // Nav list
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: widget.isCollapsed ? 8 : 12),
               children: [
                 // All flat items for this role
                 ..._flatItems
@@ -146,6 +161,7 @@ class _AppSidebarState extends State<AppSidebar> {
                           item: i,
                           isActive: widget.currentRoute == i.route,
                           onTap: () => widget.onNavigate(i.route),
+                          isCollapsed: widget.isCollapsed,
                         )),
 
                 // Insights group — Admin only
@@ -156,27 +172,29 @@ class _AppSidebarState extends State<AppSidebar> {
                     isOpen: _insightsOpen,
                     isActive: isInsightsActive,
                     onTap: () => setState(() => _insightsOpen = !_insightsOpen),
+                    isCollapsed: widget.isCollapsed,
                   ),
-                  AnimatedCrossFade(
-                    duration: const Duration(milliseconds: 200),
-                    crossFadeState: _insightsOpen
-                        ? CrossFadeState.showFirst
-                        : CrossFadeState.showSecond,
-                    firstChild: Padding(
-                      padding: const EdgeInsets.only(left: 12),
-                      child: Column(
-                        children: _insightsChildren
-                            .map((c) => _NavTile(
-                                  item: c,
-                                  isActive: widget.currentRoute == c.route,
-                                  onTap: () => widget.onNavigate(c.route),
-                                  isChild: true,
-                                ))
-                            .toList(),
+                  if (!widget.isCollapsed)
+                    AnimatedCrossFade(
+                      duration: const Duration(milliseconds: 200),
+                      crossFadeState: _insightsOpen
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                      firstChild: Padding(
+                        padding: const EdgeInsets.only(left: 12),
+                        child: Column(
+                          children: _insightsChildren
+                              .map((c) => _NavTile(
+                                    item: c,
+                                    isActive: widget.currentRoute == c.route,
+                                    onTap: () => widget.onNavigate(c.route),
+                                    isChild: true,
+                                  ))
+                              .toList(),
+                        ),
                       ),
+                      secondChild: const SizedBox.shrink(),
                     ),
-                    secondChild: const SizedBox.shrink(),
-                  ),
                 ],
               ],
             ),
@@ -193,22 +211,25 @@ class _AppSidebarState extends State<AppSidebar> {
                 onTap: () => _confirmLogout(context),
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  child: Row(children: [
-                    const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
-                    const SizedBox(width: 12),
-                    Text('Log Out', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Colors.white54)),
-                  ]),
+                  child: widget.isCollapsed
+                      ? const Icon(Icons.logout_rounded, size: 18, color: Colors.white54)
+                      : Row(children: [
+                          const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
+                          const SizedBox(width: 12),
+                          Text('Log Out', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Colors.white54)),
+                        ]),
                 ),
               ),
             ),
           ),
 
           // Footer
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-            child: Text('Ministry of Health\nMalawi',
-                style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
-          ),
+          if (!widget.isCollapsed)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+              child: Text('Ministry of Health\nMalawi',
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.sidebarMuted, height: 1.6)),
+            ),
         ],
       ),
     );
@@ -221,6 +242,7 @@ class _GroupHeader extends StatelessWidget {
   final bool isOpen;
   final bool isActive;
   final VoidCallback onTap;
+  final bool isCollapsed;
 
   const _GroupHeader({
     required this.label,
@@ -228,6 +250,7 @@ class _GroupHeader extends StatelessWidget {
     required this.isOpen,
     required this.isActive,
     required this.onTap,
+    this.isCollapsed = false,
   });
 
   @override
@@ -247,25 +270,27 @@ class _GroupHeader extends StatelessWidget {
               color: isActive && !isOpen ? AppColors.sidebarActive : Colors.transparent,
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(label,
-                      style: TextStyle(fontFamily: 'Roboto', 
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: isActive ? Colors.white : AppColors.sidebarText,
-                      )),
-                ),
-                Icon(
-                  isOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                  size: 16,
-                  color: AppColors.sidebarMuted,
-                ),
-              ],
-            ),
+            child: isCollapsed
+                ? Icon(icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted)
+                : Row(
+                    children: [
+                      Icon(icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(label,
+                            style: TextStyle(fontFamily: 'Roboto', 
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              color: isActive ? Colors.white : AppColors.sidebarText,
+                            )),
+                      ),
+                      Icon(
+                        isOpen ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                        size: 16,
+                        color: AppColors.sidebarMuted,
+                      ),
+                    ],
+                  ),
           ),
         ),
       ),
@@ -278,8 +303,15 @@ class _NavTile extends StatelessWidget {
   final bool isActive;
   final VoidCallback onTap;
   final bool isChild;
+  final bool isCollapsed;
 
-  const _NavTile({required this.item, required this.isActive, required this.onTap, this.isChild = false});
+  const _NavTile({
+    required this.item,
+    required this.isActive,
+    required this.onTap,
+    this.isChild = false,
+    this.isCollapsed = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -288,33 +320,38 @@ class _NavTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(10),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            padding: EdgeInsets.symmetric(horizontal: isChild ? 10 : 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: isActive ? AppColors.sidebarActive : Colors.transparent,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                if (isChild)
-                  Container(width: 4, height: 4, margin: const EdgeInsets.only(right: 10),
-                      decoration: BoxDecoration(color: isActive ? Colors.white : AppColors.sidebarMuted, shape: BoxShape.circle))
-                else
-                  Icon(item.icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted),
-                SizedBox(width: isChild ? 0 : 12),
-                Expanded(
-                  child: Text(item.label,
-                      style: TextStyle(fontFamily: 'Roboto', 
-                        fontSize: isChild ? 12 : 13,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                        color: isActive ? Colors.white : AppColors.sidebarText,
-                      )),
-                ),
-              ],
+        child: Tooltip(
+          message: isCollapsed ? item.label : '',
+          child: InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: EdgeInsets.symmetric(horizontal: isChild ? 10 : 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.sidebarActive : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: isCollapsed
+                  ? Icon(item.icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted)
+                  : Row(
+                      children: [
+                        if (isChild)
+                          Container(width: 4, height: 4, margin: const EdgeInsets.only(right: 10),
+                              decoration: BoxDecoration(color: isActive ? Colors.white : AppColors.sidebarMuted, shape: BoxShape.circle))
+                        else
+                          Icon(item.icon, size: 18, color: isActive ? Colors.white : AppColors.sidebarMuted),
+                        SizedBox(width: isChild ? 0 : 12),
+                        Expanded(
+                          child: Text(item.label,
+                              style: TextStyle(fontFamily: 'Roboto', 
+                                fontSize: isChild ? 12 : 13,
+                                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                                color: isActive ? Colors.white : AppColors.sidebarText,
+                              )),
+                        ),
+                      ],
+                    ),
             ),
           ),
         ),

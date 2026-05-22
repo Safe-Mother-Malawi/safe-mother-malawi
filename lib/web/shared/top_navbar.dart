@@ -9,8 +9,17 @@ class TopNavbar extends StatefulWidget implements PreferredSizeWidget {
   final UserRole role;
   final String userName;
   final String pageTitle;
+  final bool isMobile;
+  final VoidCallback? onMenuTap;
 
-  const TopNavbar({super.key, required this.role, required this.userName, required this.pageTitle});
+  const TopNavbar({
+    super.key,
+    required this.role,
+    required this.userName,
+    required this.pageTitle,
+    this.isMobile = false,
+    this.onMenuTap,
+  });
 
   @override
   Size get preferredSize => const Size.fromHeight(64);
@@ -118,6 +127,8 @@ class _TopNavbarState extends State<TopNavbar> {
   @override
   Widget build(BuildContext context) {
     final unread = NotificationStore.instance.unreadCount;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
 
     return Container(
       height: 64,
@@ -125,11 +136,37 @@ class _TopNavbarState extends State<TopNavbar> {
         color: AppColors.surfaceContainerLowest.withOpacity(0.9),
         boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 12, offset: Offset(0, 2))],
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 24),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
       child: Row(children: [
-        Text(widget.pageTitle,
-            style: TextStyle(fontFamily: 'Public Sans', fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.headings)),
-        const Spacer(),
+        // Menu button for mobile/tablet
+        if (isMobile || widget.isMobile)
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: IconButton(
+              icon: const Icon(Icons.menu_rounded, color: AppColors.secondary),
+              onPressed: widget.onMenuTap,
+              style: IconButton.styleFrom(
+                backgroundColor: AppColors.surfaceContainerLow,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ),
+
+        // Page title
+        Expanded(
+          child: Text(
+            widget.pageTitle,
+            style: TextStyle(
+              fontFamily: 'Public Sans',
+              fontSize: isMobile ? 16 : 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.headings,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+
+        const SizedBox(width: 12),
 
         // Notifications bell
         _IconBtn(
@@ -140,10 +177,32 @@ class _TopNavbarState extends State<TopNavbar> {
         const SizedBox(width: 12),
 
         // Profile chip — clicking opens profile dialog (no logout here)
-        GestureDetector(
-          onTap: _showProfile,
-          child: Row(children: [
-            CircleAvatar(
+        if (!isMobile)
+          GestureDetector(
+            onTap: _showProfile,
+            child: Row(children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: AppColors.primaryContainer,
+                child: Text(
+                  widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(widget.userName,
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
+                Text(_roleLabel,
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
+              ]),
+              const SizedBox(width: 4),
+            ]),
+          )
+        else
+          // Mobile profile button
+          IconButton(
+            icon: CircleAvatar(
               radius: 16,
               backgroundColor: AppColors.primaryContainer,
               child: Text(
@@ -151,16 +210,8 @@ class _TopNavbarState extends State<TopNavbar> {
                 style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
-            const SizedBox(width: 8),
-            Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(widget.userName,
-                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
-              Text(_roleLabel,
-                  style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
-            ]),
-            const SizedBox(width: 4),
-          ]),
-        ),
+            onPressed: _showProfile,
+          ),
       ]),
     );
   }

@@ -44,7 +44,11 @@ dependencies:
   permission_handler: ^11.0.1
   connectivity_plus: ^5.0.0
   firebase_core: ^2.24.0
-  firebase_messaging: ^14.6.0
+  firebase_messaging: 
+    version: ^14.6.0
+    platforms:
+      android: null
+      ios: null
   flutter_local_notifications: ^16.1.0
 
 dev_dependencies:
