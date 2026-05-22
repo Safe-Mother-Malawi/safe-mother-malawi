@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "flutter/bin/flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true",
+  "buildCommand": "python3 build_web.py",
   "outputDirectory": "build/web",
   "installCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && flutter/bin/flutter config --no-analytics && flutter/bin/flutter pub get",
   "framework": null,
