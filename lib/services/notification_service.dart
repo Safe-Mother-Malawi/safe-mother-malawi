@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
+import 'fcm_service.dart';
 
 /// Notification service for handling push and local notifications
 class NotificationService {
@@ -18,6 +19,7 @@ class NotificationService {
   late FirebaseMessaging _firebaseMessaging;
   late FlutterLocalNotificationsPlugin _localNotifications;
   late ApiService _apiService;
+  late FCMService _fcmService;
 
   final StreamController<Map<String, dynamic>> _notificationStream =
       StreamController<Map<String, dynamic>>.broadcast();
@@ -34,50 +36,24 @@ class NotificationService {
     _apiService = apiService;
     _firebaseMessaging = FirebaseMessaging.instance;
     _localNotifications = FlutterLocalNotificationsPlugin();
+    _fcmService = FCMService();
 
-    // Initialize Firebase Messaging
+    // Initialize FCM service (handles token registration)
+    await _fcmService.initialize(apiService);
+
+    // Initialize Firebase Messaging handlers
     await _initializeFirebaseMessaging();
 
     // Initialize local notifications
     await _initializeLocalNotifications();
 
     _isInitialized = true;
+    print('✓ Notification Service initialized');
   }
 
   /// Initialize Firebase Messaging
   Future<void> _initializeFirebaseMessaging() async {
     try {
-      // Request notification permissions
-      final settings = await _firebaseMessaging.requestPermission(
-        alert: true,
-        announcement: false,
-        badge: true,
-        carPlay: false,
-        criticalAlert: false,
-        provisional: false,
-        sound: true,
-      );
-
-      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-        print('User granted notification permission');
-      } else if (settings.authorizationStatus ==
-          AuthorizationStatus.provisional) {
-        print('User granted provisional notification permission');
-      } else {
-        print('User declined or has not yet granted notification permission');
-      }
-
-      // Get FCM token
-      final token = await _firebaseMessaging.getToken();
-      if (token != null) {
-        await _registerDeviceToken(token);
-      }
-
-      // Listen for token refresh
-      _firebaseMessaging.onTokenRefresh.listen((newToken) {
-        _registerDeviceToken(newToken);
-      });
-
       // Handle foreground messages
       FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
@@ -89,6 +65,8 @@ class NotificationService {
       if (initialMessage != null) {
         _handleMessageOpenedApp(initialMessage);
       }
+
+      print('✓ Firebase Messaging handlers registered');
     } catch (e) {
       print('Error initializing Firebase Messaging: $e');
     }
@@ -136,34 +114,15 @@ class NotificationService {
     }
   }
 
-  /// Register device token with backend
-  Future<void> _registerDeviceToken(String token) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final lastToken = prefs.getString('fcm_token');
-
-      // Only register if token changed
-      if (lastToken != token) {
-        await _apiService.post(
-          '/push-notifications/register',
-          {
-            'token': token,
-            'platform': 'mobile',
-            'deviceName': 'Flutter App',
-          },
-        );
-
-        await prefs.setString('fcm_token', token);
-        print('Device token registered: $token');
-      }
-    } catch (e) {
-      print('Error registering device token: $e');
-    }
-  }
-
   /// Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    print('Foreground message received: ${message.notification?.title}');
+    print('═══════════════════════════════════════════');
+    print('📬 FOREGROUND MESSAGE RECEIVED');
+    print('═══════════════════════════════════════════');
+    print('Title: ${message.notification?.title}');
+    print('Body: ${message.notification?.body}');
+    print('Data: ${message.data}');
+    print('═══════════════════════════════════════════');
 
     // Show local notification
     _showLocalNotification(
@@ -178,18 +137,26 @@ class NotificationService {
       'body': message.notification?.body,
       'data': message.data,
       'type': 'foreground',
+      'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
   /// Handle message opened from background
   void _handleMessageOpenedApp(RemoteMessage message) {
-    print('Message opened from background: ${message.notification?.title}');
+    print('═══════════════════════════════════════════');
+    print('📭 BACKGROUND MESSAGE OPENED');
+    print('═══════════════════════════════════════════');
+    print('Title: ${message.notification?.title}');
+    print('Body: ${message.notification?.body}');
+    print('Data: ${message.data}');
+    print('═══════════════════════════════════════════');
 
     _notificationStream.add({
       'title': message.notification?.title,
       'body': message.notification?.body,
       'data': message.data,
       'type': 'background',
+      'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
@@ -212,6 +179,8 @@ class NotificationService {
     Map<String, dynamic>? data,
   }) async {
     try {
+      print('📲 Showing local notification: $title');
+
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
         'default',
@@ -221,6 +190,7 @@ class NotificationService {
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
+        sound: RawResourceAndroidNotificationSound('notification'),
       );
 
       const DarwinNotificationDetails iosDetails =
@@ -242,6 +212,8 @@ class NotificationService {
         details,
         payload: data != null ? data.toString() : null,
       );
+
+      print('✓ Local notification displayed');
     } catch (e) {
       print('Error showing local notification: $e');
     }
@@ -249,39 +221,17 @@ class NotificationService {
 
   /// Get current FCM token
   Future<String?> getFCMToken() async {
-    try {
-      return await _firebaseMessaging.getToken();
-    } catch (e) {
-      print('Error getting FCM token: $e');
-      return null;
-    }
+    return await _fcmService.getToken();
   }
 
   /// Get stored FCM token from SharedPreferences
   Future<String?> getStoredFCMToken() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getString('fcm_token');
-    } catch (e) {
-      print('Error getting stored FCM token: $e');
-      return null;
-    }
+    return await _fcmService.getStoredToken();
   }
 
   /// Unregister device token
   Future<void> unregisterDevice() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('fcm_token');
-
-      if (token != null) {
-        await _apiService.delete('/push-notifications/unregister/$token');
-        await prefs.remove('fcm_token');
-        print('Device token unregistered');
-      }
-    } catch (e) {
-      print('Error unregistering device token: $e');
-    }
+    await _fcmService.unregisterDevice();
   }
 
   /// Get notification statistics
