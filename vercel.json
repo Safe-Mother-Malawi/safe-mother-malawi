@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "python3 build_web.py",
+  "buildCommand": "bash build.sh",
   "outputDirectory": "build/web",
   "framework": null,
   "env": {
