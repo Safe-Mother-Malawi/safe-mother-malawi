@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
+import 'firebase_options.dart';
 import 'theme/app_colors.dart';
 import 'screens/splash_screen.dart';
 import 'screens/reset_password_page.dart';
+import 'services/notification_service.dart';
+import 'services/api_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  
+  // Initialize notification service
+  final apiService = ApiService();
+  final notificationService = NotificationService();
+  await notificationService.initialize(apiService);
+  
   runApp(const SafeMotherApp());
 }
 

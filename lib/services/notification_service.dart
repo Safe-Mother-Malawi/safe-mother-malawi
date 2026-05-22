@@ -247,6 +247,27 @@ class NotificationService {
     }
   }
 
+  /// Get current FCM token
+  Future<String?> getFCMToken() async {
+    try {
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      print('Error getting FCM token: $e');
+      return null;
+    }
+  }
+
+  /// Get stored FCM token from SharedPreferences
+  Future<String?> getStoredFCMToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('fcm_token');
+    } catch (e) {
+      print('Error getting stored FCM token: $e');
+      return null;
+    }
+  }
+
   /// Unregister device token
   Future<void> unregisterDevice() async {
     try {
