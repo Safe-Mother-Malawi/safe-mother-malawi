@@ -16,7 +16,9 @@ class DefaultFirebaseOptions {
       return ios;
     }
     // For Web
-    if (defaultTargetPlatform == TargetPlatform.windows) {
+    if (defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.macOS) {
       return web;
     }
     throw UnsupportedError(
@@ -25,28 +27,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-    appId: '1:123456789:android:abcdefghijklmnopqrst',
-    messagingSenderId: '123456789',
-    projectId: 'safe-mother-malawi',
-    storageBucket: 'safe-mother-malawi.appspot.com',
+    apiKey: 'AIzaSyCmB-FDoPYNTBJ-WxOJe0420c6ioJVjey4',
+    appId: '1:364677454045:android:abcdefghijklmnopqrst',
+    messagingSenderId: '364677454045',
+    projectId: 'fir-mobile-app-34535',
+    storageBucket: 'fir-mobile-app-34535.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-    appId: '1:123456789:ios:abcdefghijklmnopqrst',
-    messagingSenderId: '123456789',
-    projectId: 'safe-mother-malawi',
-    storageBucket: 'safe-mother-malawi.appspot.com',
+    apiKey: 'AIzaSyCmB-FDoPYNTBJ-WxOJe0420c6ioJVjey4',
+    appId: '1:364677454045:ios:abcdefghijklmnopqrst',
+    messagingSenderId: '364677454045',
+    projectId: 'fir-mobile-app-34535',
+    storageBucket: 'fir-mobile-app-34535.firebasestorage.app',
     iosBundleId: 'com.example.safemothermalawi',
   );
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyDXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX',
-    appId: '1:123456789:web:abcdefghijklmnopqrst',
-    messagingSenderId: '123456789',
-    projectId: 'safe-mother-malawi',
-    authDomain: 'safe-mother-malawi.firebaseapp.com',
-    storageBucket: 'safe-mother-malawi.appspot.com',
+    apiKey: 'AIzaSyCmB-FDoPYNTBJ-WxOJe0420c6ioJVjey4',
+    appId: '1:364677454045:web:6b858004f58d0656b8e334',
+    messagingSenderId: '364677454045',
+    projectId: 'fir-mobile-app-34535',
+    authDomain: 'fir-mobile-app-34535.firebaseapp.com',
+    storageBucket: 'fir-mobile-app-34535.firebasestorage.app',
+    measurementId: 'G-YET8NZC3Y2',
   );
 }
