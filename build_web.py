@@ -46,6 +46,17 @@ def main():
     backup_path = "pubspec.yaml.bak"
     
     try:
+        # Install Flutter if not already installed
+        if not os.path.exists("flutter/bin/flutter"):
+            run_command(
+                "git clone https://github.com/flutter/flutter.git -b stable --depth 1",
+                "Cloning Flutter"
+            )
+            run_command(
+                "flutter/bin/flutter config --no-analytics",
+                "Configuring Flutter"
+            )
+        
         # Backup original pubspec.yaml
         shutil.copy(pubspec_path, backup_path)
         print("✓ Backed up pubspec.yaml")
