@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "364677454045",
+    "project_id": "fir-mobile-app-34535",
+    "storage_bucket": "fir-mobile-app-34535.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:364677454045:android:b1d5d44857a8734ab8e334",
+        "android_client_info": {
+          "package_name": "com.example.safemothermalawi_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeiXIGD9OF8yQCiF4pcIcqb5_Pj5fw2DI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
