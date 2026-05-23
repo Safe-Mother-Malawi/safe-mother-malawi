@@ -18,35 +18,10 @@ void main() async {
     print('Firebase initialization error: $e');
   }
   
-  // Initialize notification service asynchronously
-  // This will fail gracefully on web
-  _initializeNotifications();
+  // Skip notification service initialization on web
+  // It will fail gracefully if attempted
   
   runApp(const SafeMotherApp());
-}
-
-/// Initialize notifications asynchronously
-/// Wrapped in a function to avoid import errors on web
-void _initializeNotifications() {
-  try {
-    // Only initialize on mobile platforms
-    // This import will fail on web and be caught
-    _initNotificationService();
-  } catch (e) {
-    print('Notification service not available: $e');
-  }
-}
-
-/// Separate function to isolate firebase_messaging imports
-void _initNotificationService() {
-  // This function body will only be called on mobile
-  // On web, the import will fail before this is reached
-  try {
-    // Import and initialize only on mobile
-    // The conditional import below will use stubs on web
-  } catch (e) {
-    print('Failed to initialize notifications: $e');
-  }
 }
 
 class SafeMotherApp extends StatelessWidget {

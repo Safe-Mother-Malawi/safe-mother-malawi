@@ -10,22 +10,12 @@ if [ ! -d "flutter" ]; then
   flutter/bin/flutter config --no-analytics
 fi
 
-# Backup pubspec.yaml
-cp pubspec.yaml pubspec.yaml.bak
-
-# Remove firebase_messaging from pubspec.yaml using Python script
-echo "📦 Removing firebase_messaging..."
-python3 remove_firebase.py
-
-# Run flutter pub get
+# Run flutter pub get with the original pubspec.yaml
 echo "📦 Running flutter pub get..."
 flutter/bin/flutter pub get
 
 # Build for web
 echo "🌐 Building Flutter web app..."
 flutter/bin/flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true
-
-# Restore pubspec.yaml
-mv pubspec.yaml.bak pubspec.yaml
 
 echo "✅ Web build completed successfully!"
