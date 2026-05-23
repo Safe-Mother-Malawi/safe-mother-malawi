@@ -1,7 +1,6 @@
 {
   "version": 2,
-  "installCommand": "echo 'Install handled by build script'",
-  "buildCommand": "./vercel-build",
+  "buildCommand": "npm run build",
   "outputDirectory": "build/web",
   "framework": null
 }
