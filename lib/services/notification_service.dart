@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'fcm_service.dart';
 
 /// Notification service for handling push and local notifications
+/// Note: Firebase Messaging is only available on mobile platforms
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
 
@@ -15,7 +15,6 @@ class NotificationService {
 
   NotificationService._internal();
 
-  late FirebaseMessaging _firebaseMessaging;
   late FlutterLocalNotificationsPlugin _localNotifications;
   late ApiService _apiService;
   late FCMService _fcmService;
@@ -33,42 +32,17 @@ class NotificationService {
     if (_isInitialized) return;
 
     _apiService = apiService;
-    _firebaseMessaging = FirebaseMessaging.instance;
     _localNotifications = FlutterLocalNotificationsPlugin();
     _fcmService = FCMService();
 
-    // Initialize FCM service (handles token registration)
+    // Initialize FCM service (handles token registration on mobile)
     await _fcmService.initialize(apiService);
-
-    // Initialize Firebase Messaging handlers
-    await _initializeFirebaseMessaging();
 
     // Initialize local notifications
     await _initializeLocalNotifications();
 
     _isInitialized = true;
     print('✓ Notification Service initialized');
-  }
-
-  /// Initialize Firebase Messaging
-  Future<void> _initializeFirebaseMessaging() async {
-    try {
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-      // Handle background messages
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleMessageOpenedApp);
-
-      // Handle terminated state messages
-      final initialMessage = await _firebaseMessaging.getInitialMessage();
-      if (initialMessage != null) {
-        _handleMessageOpenedApp(initialMessage);
-      }
-
-      print('✓ Firebase Messaging handlers registered');
-    } catch (e) {
-      print('Error initializing Firebase Messaging: $e');
-    }
   }
 
   /// Initialize local notifications
@@ -113,47 +87,19 @@ class NotificationService {
     }
   }
 
-  /// Handle foreground messages
-  void _handleForegroundMessage(RemoteMessage message) {
-    print('═══════════════════════════════════════════');
-    print('📬 FOREGROUND MESSAGE RECEIVED');
-    print('═══════════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('═══════════════════════════════════════════');
-
-    // Show local notification
-    _showLocalNotification(
-      title: message.notification?.title ?? 'Notification',
-      body: message.notification?.body ?? '',
-      data: message.data,
-    );
-
-    // Emit to stream
+  /// Handle foreground messages (stub for mobile)
+  void _handleForegroundMessage(dynamic message) {
+    print('📬 Message received');
     _notificationStream.add({
-      'title': message.notification?.title,
-      'body': message.notification?.body,
-      'data': message.data,
       'type': 'foreground',
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Handle message opened from background
-  void _handleMessageOpenedApp(RemoteMessage message) {
-    print('═══════════════════════════════════════════');
-    print('📭 BACKGROUND MESSAGE OPENED');
-    print('═══════════════════════════════════════════');
-    print('Title: ${message.notification?.title}');
-    print('Body: ${message.notification?.body}');
-    print('Data: ${message.data}');
-    print('═══════════════════════════════════════════');
-
+  /// Handle message opened from background (stub for mobile)
+  void _handleMessageOpenedApp(dynamic message) {
+    print('📭 Message opened');
     _notificationStream.add({
-      'title': message.notification?.title,
-      'body': message.notification?.body,
-      'data': message.data,
       'type': 'background',
       'timestamp': DateTime.now().toIso8601String(),
     });
