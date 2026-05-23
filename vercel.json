@@ -3,8 +3,5 @@
   "installCommand": "echo 'Install handled by build script'",
   "buildCommand": "./vercel-build",
   "outputDirectory": "build/web",
-  "framework": null,
-  "env": {
-    "FLUTTER_WEB_CANVASKIT_URL": "@flutter_web_canvaskit_url"
-  }
+  "framework": null
 }
