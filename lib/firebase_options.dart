@@ -15,15 +15,8 @@ class DefaultFirebaseOptions {
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return ios;
     }
-    // For Web
-    if (defaultTargetPlatform == TargetPlatform.windows ||
-        defaultTargetPlatform == TargetPlatform.linux ||
-        defaultTargetPlatform == TargetPlatform.macOS) {
-      return web;
-    }
-    throw UnsupportedError(
-      'DefaultFirebaseOptions are not supported for this platform.',
-    );
+    // For Web (default for web platform)
+    return web;
   }
 
   static const FirebaseOptions android = FirebaseOptions(
