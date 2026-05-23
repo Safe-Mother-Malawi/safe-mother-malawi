@@ -45,12 +45,22 @@ class _TopNavbarState extends State<TopNavbar> {
   void _onNotif() => setState(() {});
 
   void _showNotifications() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    
     showDialog(
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 0,
+          vertical: isMobile ? 24 : 0,
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 440, maxHeight: 560),
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? double.infinity : 440,
+            maxHeight: isMobile ? MediaQuery.of(context).size.height * 0.7 : 560,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: Column(children: [
@@ -78,21 +88,47 @@ class _TopNavbarState extends State<TopNavbar> {
                       },
                     ),
                   ])),
-                  TextButton(
-                    onPressed: () => NotificationStore.instance.markAllRead(),
-                    child: const Text('Mark all read',
-                        style: TextStyle(color: Colors.white70, fontSize: 12)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 18),
-                    onPressed: () => NotificationStore.instance.reload(),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
+                  if (!isMobile) ...[
+                    TextButton(
+                      onPressed: () => NotificationStore.instance.markAllRead(),
+                      child: const Text('Mark all read',
+                          style: TextStyle(color: Colors.white70, fontSize: 12)),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, color: Colors.white70, size: 18),
+                      onPressed: () => NotificationStore.instance.reload(),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                   const SizedBox(width: 4),
                 ]),
               ),
               Expanded(child: _NotificationList()),
+              // Mobile action buttons
+              if (isMobile)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => NotificationStore.instance.markAllRead(),
+                          child: const Text('Mark all read', style: TextStyle(fontSize: 12)),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.refresh_rounded, size: 18),
+                        onPressed: () => NotificationStore.instance.reload(),
+                        tooltip: 'Refresh',
+                      ),
+                    ],
+                  ),
+                ),
             ]),
           ),
         ),
@@ -101,12 +137,22 @@ class _TopNavbarState extends State<TopNavbar> {
   }
 
   void _showProfile() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 768;
+    
     showDialog(
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 0,
+          vertical: isMobile ? 24 : 0,
+        ),
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 560, maxHeight: 680),
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? double.infinity : 560,
+            maxHeight: isMobile ? MediaQuery.of(context).size.height * 0.8 : 680,
+          ),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: MyProfilePage(onClose: () => Navigator.pop(context)),
@@ -129,6 +175,7 @@ class _TopNavbarState extends State<TopNavbar> {
     final unread = NotificationStore.instance.unreadCount;
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
+    final isSmallMobile = screenWidth < 480;
 
     return Container(
       height: 64,
@@ -136,52 +183,89 @@ class _TopNavbarState extends State<TopNavbar> {
         color: AppColors.surfaceContainerLowest.withOpacity(0.9),
         boxShadow: const [BoxShadow(color: AppColors.shadowColor, blurRadius: 12, offset: Offset(0, 2))],
       ),
-      padding: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+      padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
       child: Row(children: [
         // Menu button for mobile/tablet
         if (isMobile || widget.isMobile)
           Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 8),
             child: IconButton(
               icon: const Icon(Icons.menu_rounded, color: AppColors.secondary),
               onPressed: widget.onMenuTap,
               style: IconButton.styleFrom(
                 backgroundColor: AppColors.surfaceContainerLow,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                padding: const EdgeInsets.all(8),
               ),
+              tooltip: 'Menu',
             ),
           ),
 
-        // Page title
+        // Page title - responsive font size
         Expanded(
           child: Text(
             widget.pageTitle,
             style: TextStyle(
               fontFamily: 'Public Sans',
-              fontSize: isMobile ? 16 : 18,
+              fontSize: isSmallMobile ? 14 : (isMobile ? 16 : 18),
               fontWeight: FontWeight.w600,
               color: AppColors.headings,
             ),
             overflow: TextOverflow.ellipsis,
+            maxLines: 1,
           ),
         ),
 
-        const SizedBox(width: 12),
+        const SizedBox(width: 8),
 
-        // Notifications bell
+        // Notifications bell - always visible
         _IconBtn(
           icon: Icons.notifications_none_rounded,
           badge: unread > 0 ? '$unread' : null,
           onTap: _showNotifications,
         ),
-        const SizedBox(width: 12),
 
-        // Profile chip — clicking opens profile dialog (no logout here)
-        if (!isMobile)
-          GestureDetector(
-            onTap: _showProfile,
-            child: Row(children: [
-              CircleAvatar(
+        // Profile section - responsive
+        if (!isSmallMobile) ...[
+          const SizedBox(width: 8),
+          if (!isMobile)
+            // Desktop: full profile chip
+            GestureDetector(
+              onTap: _showProfile,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceContainerLow,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.primaryContainer,
+                    child: Text(
+                      widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                      style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(widget.userName,
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                    Text(_roleLabel,
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ]),
+                  const SizedBox(width: 4),
+                ]),
+              ),
+            )
+          else
+            // Tablet: profile button only
+            IconButton(
+              icon: CircleAvatar(
                 radius: 16,
                 backgroundColor: AppColors.primaryContainer,
                 child: Text(
@@ -189,28 +273,28 @@ class _TopNavbarState extends State<TopNavbar> {
                   style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
                 ),
               ),
-              const SizedBox(width: 8),
-              Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(widget.userName,
-                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.onSurface)),
-                Text(_roleLabel,
-                    style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText)),
-              ]),
-              const SizedBox(width: 4),
-            ]),
-          )
-        else
-          // Mobile profile button
+              onPressed: _showProfile,
+              tooltip: 'Profile',
+              style: IconButton.styleFrom(
+                padding: const EdgeInsets.all(8),
+              ),
+            ),
+        ] else
+          // Small mobile: just profile icon
           IconButton(
             icon: CircleAvatar(
-              radius: 16,
+              radius: 14,
               backgroundColor: AppColors.primaryContainer,
               child: Text(
                 widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
               ),
             ),
             onPressed: _showProfile,
+            tooltip: 'Profile',
+            style: IconButton.styleFrom(
+              padding: const EdgeInsets.all(4),
+            ),
           ),
       ]),
     );

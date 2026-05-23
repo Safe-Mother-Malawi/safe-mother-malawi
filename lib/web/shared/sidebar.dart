@@ -93,9 +93,11 @@ class _AppSidebarState extends State<AppSidebar> {
     };
 
     final sidebarWidth = widget.isCollapsed ? 70.0 : 240.0;
+    final screenHeight = MediaQuery.of(context).size.height;
 
     return Container(
       width: sidebarWidth,
+      height: screenHeight,
       color: AppColors.sidebarBg,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,7 +150,7 @@ class _AppSidebarState extends State<AppSidebar> {
 
           const SizedBox(height: 24),
 
-          // Nav list
+          // Nav list - scrollable to ensure all items are accessible
           Expanded(
             child: ListView(
               padding: EdgeInsets.symmetric(horizontal: widget.isCollapsed ? 8 : 12),
@@ -166,6 +168,7 @@ class _AppSidebarState extends State<AppSidebar> {
 
                 // Insights group — Admin only
                 if (widget.role == UserRole.admin) ...[
+                  const SizedBox(height: 8),
                   _GroupHeader(
                     label: 'Insights',
                     icon: Icons.insights_rounded,

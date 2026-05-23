@@ -28,6 +28,7 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   bool _sidebarOpen = true;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +37,8 @@ class _AppShellState extends State<AppShell> {
     final isTablet = screenWidth >= 768 && screenWidth < 1024;
     final isDesktop = screenWidth >= 1024;
 
-    // Auto-close sidebar on mobile
-    if (isMobile && _sidebarOpen) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() => _sidebarOpen = false);
-      });
-    }
-
     return Scaffold(
+      key: _scaffoldKey,
       backgroundColor: AppColors.pageBg,
       body: isMobile
           ? _buildMobileLayout()
@@ -52,6 +47,7 @@ class _AppShellState extends State<AppShell> {
               : _buildDesktopLayout(),
       drawer: isMobile
           ? Drawer(
+              width: 280,
               child: AppSidebar(
                 role: widget.role,
                 currentRoute: widget.currentRoute,
@@ -63,6 +59,9 @@ class _AppShellState extends State<AppShell> {
               ),
             )
           : null,
+      endDrawer: isTablet && _sidebarOpen
+          ? null
+          : null, // Tablet uses side panel, not drawer
     );
   }
 
@@ -75,7 +74,7 @@ class _AppShellState extends State<AppShell> {
           pageTitle: widget.pageTitle,
           isMobile: true,
           onMenuTap: () {
-            Scaffold.of(context).openDrawer();
+            _scaffoldKey.currentState?.openDrawer();
           },
         ),
         Expanded(
@@ -92,10 +91,14 @@ class _AppShellState extends State<AppShell> {
         AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           width: _sidebarOpen ? 240 : 70,
+          color: AppColors.sidebarBg,
           child: AppSidebar(
             role: widget.role,
             currentRoute: widget.currentRoute,
-            onNavigate: widget.onNavigate,
+            onNavigate: (route) {
+              widget.onNavigate(route);
+              // Keep sidebar open on tablet after navigation
+            },
             isCollapsed: !_sidebarOpen,
             isMobile: false,
           ),
@@ -125,6 +128,7 @@ class _AppShellState extends State<AppShell> {
   Widget _buildDesktopLayout() {
     return Row(
       children: [
+        // Full sidebar for desktop
         AppSidebar(
           role: widget.role,
           currentRoute: widget.currentRoute,
