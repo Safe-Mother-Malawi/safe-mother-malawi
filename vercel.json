@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
+  "buildCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && flutter/bin/flutter config --no-analytics && cp pubspec.yaml pubspec.yaml.bak && cp pubspec_web.yaml pubspec.yaml && flutter/bin/flutter pub get && flutter/bin/flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true && mv pubspec.yaml.bak pubspec.yaml",
   "outputDirectory": "build/web",
   "framework": null
 }
