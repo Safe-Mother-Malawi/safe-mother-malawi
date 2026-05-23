@@ -3,11 +3,17 @@ set -e
 
 echo "🔨 Building Safe Mother Malawi for Web..."
 
+# Install Flutter if not already installed
+if [ ! -d "flutter" ]; then
+  echo "📥 Installing Flutter..."
+  git clone https://github.com/flutter/flutter.git -b stable --depth 1
+  flutter/bin/flutter config --no-analytics
+fi
+
 # Backup pubspec.yaml
 cp pubspec.yaml pubspec.yaml.bak
 
 # Remove firebase_messaging from pubspec.yaml
-# This sed command removes the line containing "firebase_messaging:" and the next line if it starts with spaces
 sed -i '/^  firebase_messaging:/,/^  [a-z]/{ /^  [a-z]/!d; }' pubspec.yaml
 
 echo "✓ Removed firebase_messaging from pubspec.yaml"
