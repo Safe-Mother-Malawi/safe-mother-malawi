@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import 'sidebar.dart';
+import 'sidebar.dart' show AppSidebar, UserRole;
 import 'top_navbar.dart';
 import 'widgets/error_boundary.dart';
 
