@@ -19,8 +19,11 @@ class UserModel {
   final String expectedDeliveryDate;
   final String gravida;
   final String parity;
+  final bool previousMiscarriage;
+  final bool previousCSection;
   final List<String> existingConditions;
   final String emergencyContact;
+  final String emergencyContactPhone;
 
   // Extended neonatal fields
   final String babyGender;       // 'Male' | 'Female'
@@ -58,8 +61,11 @@ class UserModel {
     this.expectedDeliveryDate = '',
     this.gravida = '',
     this.parity = '',
+    this.previousMiscarriage = false,
+    this.previousCSection = false,
     this.existingConditions = const [],
     this.emergencyContact = '',
+    this.emergencyContactPhone = '',
     this.babyGender = '',
     this.babyBirthWeight = '',
     this.birthLength = '',

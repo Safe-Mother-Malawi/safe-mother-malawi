@@ -10,6 +10,7 @@ import 'notifications_screen.dart';
 import 'nutrition_detail_screen.dart';
 import 'exercise_detail_screen.dart';
 import 'anc_visits_screen.dart';
+import 'pregnancy_registration_screen.dart';
 
 class PrenatalHomeScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -159,22 +160,36 @@ class _NoDataView extends StatelessWidget {
           children: [
             const Icon(Icons.pregnant_woman, size: 80, color: Color(0xFF3949AB)),
             const SizedBox(height: 20),
-            const Text('Set up your pregnancy tracker',
+            const Text('Welcome to Safe Mother Malawi',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1A237E))),
             const SizedBox(height: 10),
-            const Text('Enter your Last Menstrual Period (LMP) to get started.',
+            const Text('Let\'s register your pregnancy to get personalized care.',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: Color(0xFF757575))),
             const SizedBox(height: 28),
             ElevatedButton(
-              onPressed: onSetup,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (ctx) => PregnancyRegistrationScreen(
+                      onRegistrationComplete: onSetup,
+                    ),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1A237E),
                 padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
               ),
-              child: const Text('Set LMP Date', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+              child: const Text('Start Registration', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: onSetup,
+              child: const Text('Or just set LMP date', style: TextStyle(color: Color(0xFF1A237E), fontSize: 14)),
             ),
           ],
         ),

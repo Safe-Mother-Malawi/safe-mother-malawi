@@ -3,6 +3,7 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/auth_text_field.dart';
 import '../widgets/auth_button.dart';
+import '../data/fallback_facilities.dart';
 import 'login_screen.dart';
 import '../../../../services/api_service.dart';
 import '../../../../utils/validators.dart';
@@ -82,12 +83,17 @@ class _SignupScreenState extends State<SignupScreen> {
       .showSnackBar(SnackBar(content: Text(msg), backgroundColor: c));
 
   Future<void> _loadFacilities(String district) async {
-    setState(() { _loadingFacilities = true; _facilities = []; _facilityObjects = []; _facilityName = null; });
+    setState(() { 
+      _loadingFacilities = true; 
+      _facilities = []; 
+      _facilityObjects = []; 
+      _facilityName = null; 
+    });
+    
     try {
       final data = await ApiService.getFacilitiesByDistrict(district);
       final objects = data.whereType<Map>().map((f) => Map<String, dynamic>.from(f)).toList();
       
-      // Remove duplicates by facility name (keep first occurrence)
       final seen = <String>{};
       final uniqueObjects = objects.where((f) {
         final name = (f['facilityName'] ?? '').toString();
@@ -96,7 +102,6 @@ class _SignupScreenState extends State<SignupScreen> {
         return true;
       }).toList();
       
-      // Sort: Hospitals first, then Health Centres, then others alphabetically
       const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
       uniqueObjects.sort((a, b) {
         final ta = (a['facilityType'] ?? '').toString();
@@ -112,8 +117,45 @@ class _SignupScreenState extends State<SignupScreen> {
         _facilities = uniqueObjects.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
         _loadingFacilities = false;
       });
-    } catch (_) {
-      setState(() { _facilities = []; _facilityObjects = []; _loadingFacilities = false; });
+    } catch (e) {
+      _loadFallbackFacilities(district);
+    }
+  }
+
+  void _loadFallbackFacilities(String district) {
+    try {
+      final fallbackData = FallbackFacilities.getFacilitiesForDistrict(district);
+      
+      if (fallbackData.isEmpty) {
+        setState(() {
+          _facilityObjects = [];
+          _facilities = [];
+          _loadingFacilities = false;
+        });
+        return;
+      }
+      
+      const order = ['Hospital', 'Health Centre', 'Clinic', 'Dispensary', 'Health Post'];
+      fallbackData.sort((a, b) {
+        final ta = (a['facilityType'] ?? '').toString();
+        final tb = (b['facilityType'] ?? '').toString();
+        final ia = order.indexOf(ta) == -1 ? order.length : order.indexOf(ta);
+        final ib = order.indexOf(tb) == -1 ? order.length : order.indexOf(tb);
+        if (ia != ib) return ia.compareTo(ib);
+        return (a['facilityName'] ?? '').toString().compareTo((b['facilityName'] ?? '').toString());
+      });
+      
+      setState(() {
+        _facilityObjects = fallbackData;
+        _facilities = fallbackData.map((f) => (f['facilityName'] ?? '').toString()).where((n) => n.isNotEmpty).toList();
+        _loadingFacilities = false;
+      });
+    } catch (e) {
+      setState(() {
+        _facilityObjects = [];
+        _facilities = [];
+        _loadingFacilities = false;
+      });
     }
   }
 
@@ -404,41 +446,52 @@ class _SignupScreenState extends State<SignupScreen> {
           else if (_facilityObjects.isEmpty && _district != null)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No health facilities found for this district',
-                style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Unable to load facilities for this district.',
+                    style: const TextStyle(fontSize: 13, color: Color(0xFFD32F2F)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Please check your internet connection or try again later.',
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                  ),
+                ],
               ),
             )
           else
-          DropdownButtonFormField<String>(
-            key: ValueKey(_district),
-            value: _facilities.contains(_facilityName) ? _facilityName : null,
-            decoration: _dd('Health Centre / Zone *'),
-            style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
-            isExpanded: true,
-            hint: Text(
-              _district == null ? 'Select district first' : 'Select health facility',
-              style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
-            items: _facilityObjects.isEmpty ? [] : _facilityObjects.map((f) {
-              final name = f['facilityName']?.toString() ?? '';
-              return DropdownMenuItem<String>(
-                value: name,
-                child: SizedBox(
-                  width: double.infinity,
-                  child: Text(
-                    name,
-                    style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+            DropdownButtonFormField<String>(
+              key: ValueKey(_district),
+              value: _facilities.contains(_facilityName) ? _facilityName : null,
+              decoration: _dd('Health Centre / Zone *'),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF212121)),
+              isExpanded: true,
+              hint: Text(
+                _district == null ? 'Select district first' : 'Select health facility',
+                style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 14)),
+              items: _facilityObjects.isEmpty ? [] : _facilityObjects.map((f) {
+                final name = f['facilityName']?.toString() ?? '';
+                final type = f['facilityType']?.toString() ?? '';
+                return DropdownMenuItem<String>(
+                  value: name,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      '$name${type.isNotEmpty ? ' ($type)' : ''}',
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF212121)),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
                   ),
-                ),
-              );
-            }).toList(),
-            onChanged: _district == null || _facilityObjects.isEmpty
-                ? null
-                : (v) => setState(() => _facilityName = v),
-            validator: (v) => v == null ? 'Please select a health facility' : null,
-          ),
+                );
+              }).toList(),
+              onChanged: _district == null || _facilityObjects.isEmpty
+                  ? null
+                  : (v) => setState(() => _facilityName = v),
+              validator: (v) => v == null ? 'Please select a health facility' : null,
+            ),
           const SizedBox(height: 12),
           AuthTextField(
             hint: 'Email Address (optional)',

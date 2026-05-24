@@ -55,6 +55,10 @@
     native <methods>;
 }
 
+# Keep Google Play Core classes
+-keep class com.google.android.play.core.** { *; }
+-dontwarn com.google.android.play.core.**
+
 # Keep custom application class
 -keep public class * extends android.app.Application
 -keep public class * extends android.app.Service

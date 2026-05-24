@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
-import 'screens/home_screen.dart';
-import 'screens/appointments_screen.dart';
-import 'screens/health_check_start_screen.dart';
-import 'screens/ivr_screen.dart';
-import 'screens/anc_visits_enhanced_screen.dart';
-import 'widgets/app_drawer.dart';
+import 'screens/neonatal_visits_enhanced_screen.dart';
+import 'screens/postnatal_home_screen.dart';
+import 'screens/immunization_tracker_screen.dart';
+import '../prenatal/widgets/app_drawer.dart';
 
-class PrenatalDashboard extends StatefulWidget {
-  const PrenatalDashboard({super.key});
+class PostnatalDashboard extends StatefulWidget {
+  const PostnatalDashboard({super.key});
 
   @override
-  State<PrenatalDashboard> createState() => _PrenatalDashboardState();
+  State<PostnatalDashboard> createState() => _PostnatalDashboardState();
 }
 
-class _PrenatalDashboardState extends State<PrenatalDashboard> {
+class _PostnatalDashboardState extends State<PostnatalDashboard> {
   int _index = 0;
   final _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<Widget> get _screens => [
-    PrenatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    AppointmentsScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    ANCVisitsEnhancedScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    HealthCheckStartScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
-    IvrScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    PostnatalHomeScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    NeonatalVisitsEnhancedScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
+    ImmunizationTrackerScreen(onOpenDrawer: () => _scaffoldKey.currentState?.openDrawer()),
   ];
 
   @override
@@ -32,7 +28,7 @@ class _PrenatalDashboardState extends State<PrenatalDashboard> {
       key: _scaffoldKey,
       drawer: const AppDrawer(),
       body: IndexedStack(index: _index, children: _screens),
-      bottomNavigationBar: _PinkBottomNav(
+      bottomNavigationBar: _PostnatalBottomNav(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
       ),
@@ -40,10 +36,10 @@ class _PrenatalDashboardState extends State<PrenatalDashboard> {
   }
 }
 
-class _PinkBottomNav extends StatelessWidget {
+class _PostnatalBottomNav extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
-  const _PinkBottomNav({required this.currentIndex, required this.onTap});
+  const _PostnatalBottomNav({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -62,11 +58,9 @@ class _PinkBottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(icon: Icons.grid_view_rounded, label: 'Today', index: 0, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.calendar_month_outlined, label: 'Schedule', index: 1, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.medical_services_outlined, label: 'ANC', index: 2, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.favorite_border, label: 'Health check', index: 3, current: currentIndex, onTap: onTap),
-              _NavItem(icon: Icons.phone_outlined, label: 'Call', index: 4, current: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.home_outlined, label: 'Home', index: 0, current: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.medical_services_outlined, label: 'Neonatal', index: 1, current: currentIndex, onTap: onTap),
+              _NavItem(icon: Icons.vaccines_outlined, label: 'Vaccines', index: 2, current: currentIndex, onTap: onTap),
             ],
           ),
         ),
@@ -117,4 +111,3 @@ class _NavItem extends StatelessWidget {
     );
   }
 }
-
