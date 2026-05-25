@@ -35,6 +35,15 @@ class ApiService {
   }
 
   String? _token;
+  
+  // ── Request deduplication ─────────────────────────────────────────────────
+  final Map<String, Future<dynamic>> _pendingRequests = {};
+  
+  // ── Rate limiting ─────────────────────────────────────────────────────────
+  int _requestCount = 0;
+  DateTime _rateLimitResetTime = DateTime.now();
+  static const int _rateLimitPerMinute = 10;
+  static const int _rateLimitWindowMs = 60000;
 
   // ── Token management ──────────────────────────────────────────────────────
 
@@ -71,12 +80,65 @@ class ApiService {
 
   // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-  Future<dynamic> get(String path) async {
+  /// Check and enforce rate limiting
+  Future<void> _checkRateLimit() async {
+    final now = DateTime.now();
+    
+    // Reset counter if window has passed
+    if (now.difference(_rateLimitResetTime).inMilliseconds > _rateLimitWindowMs) {
+      _requestCount = 0;
+      _rateLimitResetTime = now;
+    }
+    
+    // If at limit, wait until window resets
+    if (_requestCount >= _rateLimitPerMinute) {
+      final waitTime = _rateLimitWindowMs - now.difference(_rateLimitResetTime).inMilliseconds;
+      if (waitTime > 0) {
+        debugPrint('⏳ Rate limit reached. Waiting ${waitTime}ms before next request...');
+        await Future.delayed(Duration(milliseconds: waitTime + 100));
+        _requestCount = 0;
+        _rateLimitResetTime = DateTime.now();
+      }
+    }
+    
+    _requestCount++;
+  }
+
+  /// Deduplicate identical GET requests
+  Future<dynamic> _deduplicatedGet(String path) async {
+    final key = 'GET:$path';
+    
+    // If request is already pending, return the same future
+    if (_pendingRequests.containsKey(key)) {
+      debugPrint('🔄 Reusing pending request for: $path');
+      return _pendingRequests[key]!;
+    }
+    
+    // Create new request and store it
+    final future = _performGet(path);
+    _pendingRequests[key] = future;
+    
+    try {
+      final result = await future;
+      return result;
+    } finally {
+      // Remove from pending after completion
+      _pendingRequests.remove(key);
+    }
+  }
+
+  Future<dynamic> _performGet(String path) async {
+    await _checkRateLimit();
     final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
     return _handle(res);
   }
 
+  Future<dynamic> get(String path) async {
+    return _deduplicatedGet(path);
+  }
+
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
+    await _checkRateLimit();
     debugPrint('📤 POST $_base$path');
     debugPrint('📦 Body: $body');
     final res = await http.post(
@@ -95,6 +157,7 @@ class ApiService {
   }
 
   Future<dynamic> patch(String path, Map<String, dynamic> body) async {
+    await _checkRateLimit();
     final res = await http.patch(
       Uri.parse('$_base$path'),
       headers: _headers,
@@ -104,6 +167,7 @@ class ApiService {
   }
 
   Future<dynamic> put(String path, Map<String, dynamic> body) async {
+    await _checkRateLimit();
     final res = await http.put(
       Uri.parse('$_base$path'),
       headers: _headers,
@@ -113,6 +177,7 @@ class ApiService {
   }
 
   Future<void> delete(String path) async {
+    await _checkRateLimit();
     final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
     _handle(res);
   }
@@ -122,6 +187,13 @@ class ApiService {
       if (res.body.isEmpty) return null;
       return jsonDecode(res.body);
     }
+    
+    // Handle rate limiting (429)
+    if (res.statusCode == 429) {
+      debugPrint('⚠️ Rate limited (429). Waiting before retry...');
+      throw ApiException(res.statusCode, 'Too many requests. Please wait a moment and try again.');
+    }
+    
     final msg = _tryParseError(res.body);
     throw ApiException(res.statusCode, msg);
   }
