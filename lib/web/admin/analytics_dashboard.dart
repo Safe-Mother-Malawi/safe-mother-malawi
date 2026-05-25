@@ -62,20 +62,32 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
   Future<void> _silentLoad() async {
     try {
       final results = await Future.wait([
-        ApiService.instance.get('/analytics/overview'),
-        ApiService.instance.get('/analytics/risk-distribution'),
-        ApiService.instance.get('/analytics/districts'),
-        ApiService.instance.get('/analytics/task-analytics'),
-        ApiService.instance.get('/analytics/neonatal-analytics'),
-      ]);
-      final overview  = results[0] as Map<String, dynamic>;
-      final riskDist  = results[1] as List<dynamic>;
-      final districts = results[2] as List<dynamic>;
-      final tasks     = results[3] as Map<String, dynamic>;
-      final neonatal  = results[4] as Map<String, dynamic>;
+        ApiService.instance.get('/analytics/overview').timeout(const Duration(seconds: 10)),
+        ApiService.instance.get('/analytics/risk-distribution').timeout(const Duration(seconds: 10)),
+        ApiService.instance.get('/analytics/districts').timeout(const Duration(seconds: 10)),
+        ApiService.instance.get('/analytics/task-analytics').timeout(const Duration(seconds: 10)),
+        ApiService.instance.get('/analytics/neonatal-analytics').timeout(const Duration(seconds: 10)),
+      ], eagerError: false).catchError((e) {
+        debugPrint('❌ Analytics polling error: $e');
+        return <dynamic>[];
+      });
+      
+      if (results.isEmpty || results.length < 5) return;
+      
+      final overview  = results[0] as Map<String, dynamic>?;
+      final riskDist  = results[1] as List<dynamic>?;
+      final districts = results[2] as List<dynamic>?;
+      final tasks     = results[3] as Map<String, dynamic>?;
+      final neonatal  = results[4] as Map<String, dynamic>?;
+      
+      if (overview == null || riskDist == null || districts == null || tasks == null || neonatal == null) {
+        return;
+      }
+      
       final riskList  = riskDist.cast<Map<String, dynamic>>();
       final highCount = riskList.where((r) => (r['riskLevel'] as String? ?? '').contains('High')).fold<double>(0, (s, r) => s + (double.tryParse(r['count'].toString()) ?? 0));
       final modCount  = riskList.where((r) => (r['riskLevel'] as String? ?? '').contains('Moderate')).fold<double>(0, (s, r) => s + (double.tryParse(r['count'].toString()) ?? 0));
+      
       if (mounted) setState(() {
         _liveBirths = neonatal['liveBirths'] ?? 0;
         _neonatalDeaths = neonatal['neonatalDeaths'] ?? 0;
@@ -96,24 +108,41 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         _riskTrendHigh  = List.generate(6, (i) => FlSpot(i.toDouble(), highCount * (0.7 + i * 0.06)));
         _riskTrendMod   = List.generate(6, (i) => FlSpot(i.toDouble(), modCount  * (0.7 + i * 0.06)));
       });
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('❌ Silent load error: $e');
+    }
   }
 
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        ApiService.instance.get('/analytics/overview'),
-        ApiService.instance.get('/analytics/risk-distribution'),
-        ApiService.instance.get('/analytics/districts'),
-        ApiService.instance.get('/analytics/task-analytics'),
-        ApiService.instance.get('/analytics/neonatal-analytics'),
-      ]);
+      // Load all endpoints with individual timeouts
+      final overviewFuture = ApiService.instance.get('/analytics/overview').timeout(const Duration(seconds: 10));
+      final riskDistFuture = ApiService.instance.get('/analytics/risk-distribution').timeout(const Duration(seconds: 10));
+      final districtsFuture = ApiService.instance.get('/analytics/districts').timeout(const Duration(seconds: 10));
+      final tasksFuture = ApiService.instance.get('/analytics/task-analytics').timeout(const Duration(seconds: 10));
+      final neonatalFuture = ApiService.instance.get('/analytics/neonatal-analytics').timeout(const Duration(seconds: 10));
 
-      final overview  = results[0] as Map<String, dynamic>;
-      final riskDist  = results[1] as List<dynamic>;
-      final districts = results[2] as List<dynamic>;
-      final tasks     = results[3] as Map<String, dynamic>;
-      final neonatal  = results[4] as Map<String, dynamic>;
+      final results = await Future.wait([
+        overviewFuture,
+        riskDistFuture,
+        districtsFuture,
+        tasksFuture,
+        neonatalFuture,
+      ], eagerError: false).catchError((e) {
+        debugPrint('❌ Analytics load error: $e');
+        throw Exception('Failed to load analytics data. Please try again.');
+      });
+
+      // Validate results
+      final overview  = results[0] as Map<String, dynamic>?;
+      final riskDist  = results[1] as List<dynamic>?;
+      final districts = results[2] as List<dynamic>?;
+      final tasks     = results[3] as Map<String, dynamic>?;
+      final neonatal  = results[4] as Map<String, dynamic>?;
+
+      if (overview == null || riskDist == null || districts == null || tasks == null || neonatal == null) {
+        throw Exception('Invalid data format received from server');
+      }
 
       // Build risk trend spots from risk distribution counts (simplified)
       final riskList = riskDist.cast<Map<String, dynamic>>();
@@ -122,9 +151,10 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
 
       Map<String, dynamic>? geo;
       try {
-        geo = await ApiService.instance.get('/analytics/geographic-insights') as Map<String, dynamic>?;
+        geo = await ApiService.instance.get('/analytics/geographic-insights').timeout(const Duration(seconds: 10)) as Map<String, dynamic>?;
       } catch (e) {
-        debugPrint('Geographic insights error: $e');
+        debugPrint('⚠️ Geographic insights error (non-critical): $e');
+        // Continue without geographic data
       }
 
       setState(() {
@@ -173,7 +203,8 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      debugPrint('❌ Analytics load failed: $e');
+      setState(() { _error = e.toString().replaceAll('Exception: ', ''); _loading = false; });
     }
   }
 

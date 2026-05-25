@@ -179,8 +179,16 @@ class _HomeBodyState extends State<_HomeBody> {
         return;
       }
 
-      // Fetch appointments for this user
-      final allAppointments = await ApiService.getAppointments(patientId: user.id);
+      // Fetch appointments for this user with timeout
+      final allAppointments = await ApiService.getAppointments(patientId: user.id).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (allAppointments is! List) {
+        throw Exception('Invalid data format');
+      }
+      
       final today = DateTime.now();
       final todayDate = DateTime(today.year, today.month, today.day);
       
@@ -226,6 +234,7 @@ class _HomeBodyState extends State<_HomeBody> {
         });
       }
     } catch (e) {
+      debugPrint('❌ Failed to load neonatal appointments: $e');
       if (mounted) {
         setState(() => _loadingAppointments = false);
       }

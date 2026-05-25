@@ -224,7 +224,15 @@ class _BodyState extends State<_Body> {
   Future<void> _loadTodayAppointments() async {
     setState(() { _loadingAppointments = true; _appointmentError = false; });
     try {
-      final allAppointments = await ApiService.getAppointments();
+      final allAppointments = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (allAppointments is! List) {
+        throw Exception('Invalid data format');
+      }
+      
       final today = DateTime.now();
       final todayAppointments = (allAppointments as List)
           .cast<Map<String, dynamic>>()
@@ -234,13 +242,15 @@ class _BodyState extends State<_Body> {
             return date.year == today.year && date.month == today.month && date.day == today.day;
           })
           .toList();
+      
       if (mounted) {
         setState(() {
           _todayAppointments = todayAppointments;
           _loadingAppointments = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('❌ Failed to load today appointments: $e');
       if (mounted) setState(() { _loadingAppointments = false; _appointmentError = true; });
     }
   }

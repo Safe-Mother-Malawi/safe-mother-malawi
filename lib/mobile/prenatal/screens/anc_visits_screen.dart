@@ -42,12 +42,21 @@ class _ANCVisitsScreenState extends State<ANCVisitsScreen> {
         _data = PregnancyData.fromTotalWeeks(20); // Fallback
       }
 
-      final data = await ApiService.getAppointments();
+      final data = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (data is! List) {
+        throw Exception('Invalid data format');
+      }
+      
       setState(() {
         _appointments = data.cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
+      debugPrint('❌ Failed to load ANC data: $e');
       setState(() => _loading = false);
     }
   }

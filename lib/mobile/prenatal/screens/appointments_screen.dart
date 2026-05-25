@@ -29,13 +29,34 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getAppointments();
+      final data = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout. Please check your connection.'),
+      );
+      
+      if (data is! List) {
+        throw Exception('Invalid data format received from server');
+      }
+      
+      final appointments = data.cast<Map<String, dynamic>>();
+      
+      // Sort by date
+      appointments.sort((a, b) {
+        final da = DateTime.tryParse(a['date'] ?? '') ?? DateTime.now();
+        final db = DateTime.tryParse(b['date'] ?? '') ?? DateTime.now();
+        return da.compareTo(db);
+      });
+      
       setState(() {
-        _appointments = data.cast<Map<String, dynamic>>();
+        _appointments = appointments;
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      debugPrint('❌ Failed to load appointments: $e');
+      setState(() { 
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false; 
+      });
     }
   }
 

@@ -39,19 +39,55 @@ class _SystemUsersState extends State<SystemUsers> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      // Load all user types for admin dashboard
-      final staffData = await ApiService.instance.get('/users') as List<dynamic>;
-      final patientData = await ApiService.instance.get('/users/patients') as List<dynamic>;
+      // Load all user types for admin dashboard with individual error handling
+      final staffFuture = ApiService.instance.get('/users')
+          .timeout(const Duration(seconds: 10))
+          .catchError((e) {
+            debugPrint('⚠️ Failed to load staff users: $e');
+            return <dynamic>[];
+          });
+      
+      final patientFuture = ApiService.instance.get('/users/patients')
+          .timeout(const Duration(seconds: 10))
+          .catchError((e) {
+            debugPrint('⚠️ Failed to load patient users: $e');
+            return <dynamic>[];
+          });
+
+      final results = await Future.wait([staffFuture, patientFuture]);
+      
+      final staffData = _parseList(results[0]);
+      final patientData = _parseList(results[1]);
       
       setState(() {
-        _users = [
-          ...staffData.cast<Map<String, dynamic>>(),
-          ...patientData.cast<Map<String, dynamic>>(),
-        ];
+        _users = [...staffData, ...patientData];
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      debugPrint('❌ Failed to load users: $e');
+      setState(() { 
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false; 
+      });
+    }
+  }
+
+  /// Safely parse API response to List<Map<String, dynamic>>
+  List<Map<String, dynamic>> _parseList(dynamic data) {
+    try {
+      if (data is List) {
+        return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      if (data is Map<String, dynamic>) {
+        final items = data['data'] ?? data['items'] ?? data['results'] ?? [];
+        if (items is List) {
+          return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('⚠️ Error parsing user list: $e');
+      return [];
     }
   }
 

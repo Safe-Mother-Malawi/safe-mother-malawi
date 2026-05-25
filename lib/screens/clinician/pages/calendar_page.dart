@@ -30,13 +30,25 @@ class _CalendarPageState extends State<CalendarPage> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getAppointments();
+      final data = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout. Please check your connection.'),
+      );
+      
+      if (data is! List) {
+        throw Exception('Invalid data format received from server');
+      }
+      
       setState(() {
         _events = data.cast<Map<String, dynamic>>();
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      debugPrint('❌ Failed to load calendar events: $e');
+      setState(() { 
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false; 
+      });
     }
   }
 

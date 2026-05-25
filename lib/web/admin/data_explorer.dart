@@ -432,10 +432,22 @@ class _TaskTabState extends State<_TaskTab> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getAppointments();
+      final data = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (data is! List) {
+        throw Exception('Invalid data format');
+      }
+      
       setState(() { _data = data; _loading = false; });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      debugPrint('❌ Failed to load appointments: $e');
+      setState(() { 
+        _error = e.toString().replaceAll('Exception: ', '');
+        _loading = false; 
+      });
     }
   }
 

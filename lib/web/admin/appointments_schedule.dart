@@ -56,8 +56,16 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
         return;
       }
 
-      // Fetch appointments for this user
-      final allAppointments = await ApiService.getAppointments(patientId: userId);
+      // Fetch appointments for this user with timeout
+      final allAppointments = await ApiService.getAppointments(patientId: userId).timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (allAppointments is! List) {
+        throw Exception('Invalid data format');
+      }
+      
       final today = DateTime.now();
       final todayDate = DateTime(today.year, today.month, today.day);
 
@@ -105,9 +113,10 @@ class _AppointmentsScheduleState extends State<AppointmentsSchedule> {
         });
       }
     } catch (e) {
+      debugPrint('❌ Failed to load appointments: $e');
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = e.toString().replaceAll('Exception: ', '');
           _loading = false;
         });
       }

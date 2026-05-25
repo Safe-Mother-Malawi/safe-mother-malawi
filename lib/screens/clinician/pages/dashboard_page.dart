@@ -45,18 +45,34 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
 
   Future<void> _load() async {
     try {
-      final results = await Future.wait([
-        ApiService.instance.get('/patients/prenatal').catchError((_) => <dynamic>[]),
-        ApiService.instance.get('/patients/neonatal').catchError((_) => <dynamic>[]),
-        ApiService.instance.get('/alerts/active').catchError((_) => <dynamic>[]),
-      ]);
+      // Load patient and alert data with individual error handling
+      final prenatalFuture = ApiService.instance.get('/patients/prenatal')
+          .timeout(const Duration(seconds: 10))
+          .catchError((e) {
+            debugPrint('⚠️ Failed to load prenatal patients: $e');
+            return <dynamic>[];
+          });
+      
+      final neonatalFuture = ApiService.instance.get('/patients/neonatal')
+          .timeout(const Duration(seconds: 10))
+          .catchError((e) {
+            debugPrint('⚠️ Failed to load neonatal patients: $e');
+            return <dynamic>[];
+          });
+      
+      final alertsFuture = ApiService.instance.get('/alerts/active')
+          .timeout(const Duration(seconds: 10))
+          .catchError((e) {
+            debugPrint('⚠️ Failed to load alerts: $e');
+            return <dynamic>[];
+          });
 
-      final prenatal = (results[0] is List ? results[0] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final neonatal = (results[1] is List ? results[1] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      final alerts   = (results[2] is List ? results[2] as List : [])
-          .whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      final results = await Future.wait([prenatalFuture, neonatalFuture, alertsFuture]);
+
+      // Safely parse results with validation
+      final prenatal = _parseList(results[0]);
+      final neonatal = _parseList(results[1]);
+      final alerts = _parseList(results[2]);
 
       if (!mounted) return;
       setState(() {
@@ -70,32 +86,43 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
       // Load today's appointments separately
       await _loadTodayAppointments();
     } catch (e) {
+      debugPrint('❌ Failed to load clinician dashboard: $e');
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() { _error = e.toString().replaceAll('Exception: ', ''); _loading = false; });
+    }
+  }
+
+  /// Safely parse API response to List<Map<String, dynamic>>
+  List<Map<String, dynamic>> _parseList(dynamic data) {
+    try {
+      if (data is List) {
+        return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      }
+      if (data is Map<String, dynamic>) {
+        final items = data['data'] ?? data['items'] ?? data['results'] ?? [];
+        if (items is List) {
+          return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('⚠️ Error parsing list data: $e');
+      return [];
     }
   }
 
   Future<void> _loadTodayAppointments() async {
     try {
-      // Get current clinician to filter appointments by their ID
-      final user = await ApiService.instance.currentUser();
-      if (user == null) {
-        if (mounted) {
-          setState(() => _loadingAppointments = false);
-        }
-        return;
+      // Get all appointments (not filtered by clinician ID - that's done server-side)
+      final allAppointments = await ApiService.getAppointments().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Request timeout'),
+      );
+      
+      if (allAppointments is! List) {
+        throw Exception('Invalid data format');
       }
-
-      final clinicianId = user['id'] as String?;
-      if (clinicianId == null) {
-        if (mounted) {
-          setState(() => _loadingAppointments = false);
-        }
-        return;
-      }
-
-      // Fetch appointments for this clinician
-      final allAppointments = await ApiService.getAppointments(patientId: clinicianId);
+      
       final today = DateTime.now();
       final todayDate = DateTime(today.year, today.month, today.day);
       
@@ -141,6 +168,7 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
         });
       }
     } catch (e) {
+      debugPrint('❌ Failed to load clinician appointments: $e');
       if (mounted) {
         setState(() => _loadingAppointments = false);
       }
