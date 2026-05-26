@@ -308,10 +308,18 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
   Future<void> _loadPatientHistory(String id, String type) async {
     setState(() { _historyLoading = true; _riskHistory = []; });
     try {
-      final data = await ApiService.instance.get('/risk-assessments/patient/$id') as List;
-      setState(() { _riskHistory = data.cast<Map<String, dynamic>>(); _historyLoading = false; });
-    } catch (_) {
-      setState(() => _historyLoading = false);
+      final data = await ApiService.instance.get('/risk-assessments/patient/$id');
+      if (data is List) {
+        setState(() { _riskHistory = data.cast<Map<String, dynamic>>(); _historyLoading = false; });
+      } else if (data is Map<String, dynamic>) {
+        // Handle case where API returns a single object
+        setState(() { _riskHistory = [data]; _historyLoading = false; });
+      } else {
+        setState(() { _riskHistory = []; _historyLoading = false; });
+      }
+    } catch (e) {
+      print('Error loading patient history: $e');
+      setState(() { _riskHistory = []; _historyLoading = false; });
     }
   }
 
@@ -325,7 +333,8 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
 
     return Container(
       decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.g200)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      child: SingleChildScrollView(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
         Container(
           padding: const EdgeInsets.all(20),
@@ -431,6 +440,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           ]),
         ),
       ]),
+      ),
     );
   }
 
