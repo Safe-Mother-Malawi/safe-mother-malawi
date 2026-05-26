@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "git clone https://github.com/flutter/flutter.git -b stable --depth 1 && flutter/bin/flutter config --no-analytics && flutter/bin/flutter pub get && flutter/bin/flutter build web --release",
+  "buildCommand": "npm run build",
   "outputDirectory": "build/web",
   "framework": null
 }

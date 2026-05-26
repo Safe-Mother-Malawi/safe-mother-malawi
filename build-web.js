@@ -3,41 +3,92 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔨 Building Safe Mother Malawi for Web...');
+const root = __dirname;
+const flutterDir = path.join(root, '.vercel-flutter');
+const flutterBin = process.platform === 'win32'
+  ? path.join(flutterDir, 'bin', 'flutter.bat')
+  : path.join(flutterDir, 'bin', 'flutter');
+const pubspecPath = path.join(root, 'pubspec.yaml');
+const webPubspecPath = path.join(root, 'pubspec_web.yaml');
+const backupPath = path.join(root, 'pubspec.yaml.bak');
+
+function run(command) {
+  execSync(command, { cwd: root, stdio: 'inherit' });
+}
+
+function quote(value) {
+  return `"${value}"`;
+}
+
+function restorePubspec() {
+  if (fs.existsSync(backupPath)) {
+    fs.copyFileSync(backupPath, pubspecPath);
+    fs.unlinkSync(backupPath);
+  }
+}
+
+function installFlutterIfNeeded() {
+  if (fs.existsSync(flutterBin)) {
+    return;
+  }
+
+  if (fs.existsSync(flutterDir)) {
+    throw new Error(
+      `${flutterDir} exists but ${flutterBin} is missing. Delete .vercel-flutter and rebuild.`,
+    );
+  }
+
+  console.log('Installing Flutter stable for this build...');
+  run(`git clone https://github.com/flutter/flutter.git -b stable --depth 1 ${quote(flutterDir)}`);
+}
+
+function writeBuildStamp() {
+  const commit = process.env.VERCEL_GIT_COMMIT_SHA
+    || execSync('git rev-parse HEAD', { cwd: root }).toString().trim();
+  const branch = process.env.VERCEL_GIT_COMMIT_REF
+    || execSync('git branch --show-current', { cwd: root }).toString().trim();
+  const stamp = {
+    commit,
+    branch,
+    builtAt: new Date().toISOString(),
+  };
+
+  fs.mkdirSync(path.join(root, 'build', 'web'), { recursive: true });
+  fs.writeFileSync(
+    path.join(root, 'build', 'web', 'build-stamp.json'),
+    `${JSON.stringify(stamp, null, 2)}\n`,
+  );
+  console.log(`Build stamp: ${branch} @ ${commit.slice(0, 7)}`);
+}
+
+console.log('Building Safe Mother Malawi web app...');
 
 try {
-  // Check if Flutter is installed
-  if (!fs.existsSync('flutter')) {
-    console.log('📥 Installing Flutter...');
-    execSync('git clone https://github.com/flutter/flutter.git -b stable --depth 1', { stdio: 'inherit' });
-    execSync('flutter/bin/flutter config --no-analytics', { stdio: 'inherit' });
+  if (!fs.existsSync(webPubspecPath)) {
+    throw new Error('pubspec_web.yaml is missing.');
   }
 
-  // Use web-specific pubspec.yaml
-  console.log('📦 Using web-specific pubspec.yaml...');
-  fs.copyFileSync('pubspec.yaml', 'pubspec.yaml.bak');
-  fs.copyFileSync('pubspec_web.yaml', 'pubspec.yaml');
+  installFlutterIfNeeded();
 
-  // Run flutter pub get
-  console.log('📦 Running flutter pub get...');
-  execSync('flutter/bin/flutter pub get', { stdio: 'inherit' });
+  run(`${quote(flutterBin)} config --no-analytics`);
 
-  // Build for web
-  console.log('🌐 Building Flutter web app...');
-  execSync('flutter/bin/flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true', { stdio: 'inherit' });
+  console.log('Using web pubspec...');
+  restorePubspec();
+  fs.copyFileSync(pubspecPath, backupPath);
+  fs.copyFileSync(webPubspecPath, pubspecPath);
 
-  // Restore original pubspec.yaml
-  fs.copyFileSync('pubspec.yaml.bak', 'pubspec.yaml');
-  fs.unlinkSync('pubspec.yaml.bak');
+  console.log('Installing Flutter dependencies...');
+  run(`${quote(flutterBin)} pub get`);
 
-  console.log('✅ Web build completed successfully!');
-  process.exit(0);
+  console.log('Building Flutter web release...');
+  run(`${quote(flutterBin)} build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true`);
+
+  restorePubspec();
+  writeBuildStamp();
+
+  console.log('Web build completed successfully.');
 } catch (error) {
-  console.error('❌ Build failed:', error.message);
-  // Restore pubspec.yaml on error
-  if (fs.existsSync('pubspec.yaml.bak')) {
-    fs.copyFileSync('pubspec.yaml.bak', 'pubspec.yaml');
-    fs.unlinkSync('pubspec.yaml.bak');
-  }
+  restorePubspec();
+  console.error(`Build failed: ${error.message}`);
   process.exit(1);
 }
