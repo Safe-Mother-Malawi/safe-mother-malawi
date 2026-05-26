@@ -117,7 +117,7 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
-                        minute: (_selectedTime.minute + 5) % 60,
+                        minute: (_selectedTime.minute + 1) % 60,
                       );
                       widget.onTimeChanged(_selectedTime);
                     });
@@ -132,7 +132,7 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
-                        minute: (_selectedTime.minute - 5 + 60) % 60,
+                        minute: (_selectedTime.minute - 1 + 60) % 60,
                       );
                       widget.onTimeChanged(_selectedTime);
                     });
