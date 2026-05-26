@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 /// A clock-based time picker widget that allows users to select time visually
@@ -169,10 +171,10 @@ class _ClockPainter extends CustomPainter {
     // Draw hour markers
     for (int i = 0; i < 12; i++) {
       final angle = (i * 30 - 90) * 3.14159 / 180;
-      final x1 = center.dx + (radius - 15) * cos(angle);
-      final y1 = center.dy + (radius - 15) * sin(angle);
-      final x2 = center.dx + (radius - 5) * cos(angle);
-      final y2 = center.dy + (radius - 5) * sin(angle);
+      final x1 = center.dx + (radius - 15) * math.cos(angle);
+      final y1 = center.dy + (radius - 15) * math.sin(angle);
+      final x2 = center.dx + (radius - 5) * math.cos(angle);
+      final y2 = center.dy + (radius - 5) * math.sin(angle);
 
       canvas.drawLine(
         Offset(x1, y1),
@@ -195,15 +197,15 @@ class _ClockPainter extends CustomPainter {
         textDirection: TextDirection.ltr,
       );
       textPainter.layout();
-      final x = center.dx + (radius - 30) * cos(angle) - textPainter.width / 2;
-      final y = center.dy + (radius - 30) * sin(angle) - textPainter.height / 2;
+      final x = center.dx + (radius - 30) * math.cos(angle) - textPainter.width / 2;
+      final y = center.dy + (radius - 30) * math.sin(angle) - textPainter.height / 2;
       textPainter.paint(canvas, Offset(x, y));
     }
 
     // Draw hour hand
     final hourAngle = ((time.hour % 12) * 30 + time.minute * 0.5 - 90) * 3.14159 / 180;
-    final hourX = center.dx + (radius * 0.5) * cos(hourAngle);
-    final hourY = center.dy + (radius * 0.5) * sin(hourAngle);
+    final hourX = center.dx + (radius * 0.5) * math.cos(hourAngle);
+    final hourY = center.dy + (radius * 0.5) * math.sin(hourAngle);
     canvas.drawLine(
       center,
       Offset(hourX, hourY),
@@ -215,8 +217,8 @@ class _ClockPainter extends CustomPainter {
 
     // Draw minute hand
     final minuteAngle = (time.minute * 6 - 90) * 3.14159 / 180;
-    final minuteX = center.dx + (radius * 0.7) * cos(minuteAngle);
-    final minuteY = center.dy + (radius * 0.7) * sin(minuteAngle);
+    final minuteX = center.dx + (radius * 0.7) * math.cos(minuteAngle);
+    final minuteY = center.dy + (radius * 0.7) * math.sin(minuteAngle);
     canvas.drawLine(
       center,
       Offset(minuteX, minuteY),
@@ -230,6 +232,3 @@ class _ClockPainter extends CustomPainter {
   @override
   bool shouldRepaint(_ClockPainter oldDelegate) => oldDelegate.time != time;
 }
-
-double cos(double angle) => (angle).cos();
-double sin(double angle) => (angle).sin();

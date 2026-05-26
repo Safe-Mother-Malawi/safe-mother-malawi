@@ -956,7 +956,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             style: const TextStyle(fontSize: 13, color: AppColors.g800),
                           ),
                           const Spacer(),
-                          const Icon(Icons.clock_outlined, size: 16, color: AppColors.navy),
+                          const Icon(Icons.access_time_outlined, size: 16, color: AppColors.navy),
                         ],
                       ),
                     ),
