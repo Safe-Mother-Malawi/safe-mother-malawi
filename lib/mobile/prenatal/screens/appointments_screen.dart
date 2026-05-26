@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../services/reminder_service.dart';
+import '../../../widgets/clock_time_picker.dart';
 import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -293,6 +295,23 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     final doctorCtrl = TextEditingController(text: appointment['doctor'] ?? '');
     final notesCtrl = TextEditingController(text: appointment['notes'] ?? '');
     DateTime? picked = DateTime.tryParse(appointment['date'] ?? '');
+    
+    // Parse time from appointment
+    TimeOfDay selectedTime = TimeOfDay.now();
+    if (appointment['time'] != null) {
+      try {
+        final timeParts = (appointment['time'] as String).replaceAll(RegExp(r'[^\d:]'), '').split(':');
+        if (timeParts.length >= 2) {
+          selectedTime = TimeOfDay(
+            hour: int.parse(timeParts[0]),
+            minute: int.parse(timeParts[1]),
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to parse time: $e');
+      }
+    }
+    
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -314,10 +333,51 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     validator: _validateEventTitle,
                   ),
                   const SizedBox(height: 10),
-                  _DialogFieldWithValidation(
-                    hint: 'Time (e.g. 10:00 AM)',
-                    controller: timeCtrl,
-                    validator: _validateTime,
+                  // Time picker with clock widget
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => Dialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: ClockTimePicker(
+                              initialTime: selectedTime,
+                              onTimeChanged: (newTime) {
+                                setS(() {
+                                  selectedTime = newTime;
+                                  timeCtrl.text = newTime.format(context);
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFF5F5F5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
+                          const SizedBox(width: 8),
+                          Text(
+                            timeCtrl.text,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF212121),
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.clock_outlined, size: 16, color: Color(0xFF1A237E)),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _DialogField(hint: 'Location', controller: locationCtrl),
@@ -421,6 +481,31 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                       'notes': (notesCtrl.text.isEmpty ? '' : notesCtrl.text) + 
                                (locationCtrl.text.isEmpty ? '' : '\nLocation: ${locationCtrl.text}'),
                     });
+                    
+                    // Update reminders for the appointment
+                    if (appointment['id'] != null && (appointment['remindersEnabled'] ?? true)) {
+                      final appointmentDateTime = DateTime(
+                        picked!.year,
+                        picked!.month,
+                        picked!.day,
+                        selectedTime.hour,
+                        selectedTime.minute,
+                      );
+                      
+                      // Cancel old reminders
+                      await ReminderService.cancelAppointmentReminders(appointment['id'].toString());
+                      
+                      // Schedule new reminders
+                      await ReminderService.scheduleAppointmentReminders(
+                        appointmentId: appointment['id'].toString(),
+                        patientName: titleCtrl.text,
+                        appointmentDateTime: appointmentDateTime,
+                      );
+                    } else if (appointment['id'] != null && !(appointment['remindersEnabled'] ?? true)) {
+                      // Cancel reminders if disabled
+                      await ReminderService.cancelAppointmentReminders(appointment['id'].toString());
+                    }
+                    
                     setState(() {
                       final idx = _appointments.indexWhere((a) => a['id'] == appointment['id']);
                       if (idx != -1) {
@@ -432,6 +517,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                           'doctor': doctorCtrl.text.isEmpty ? null : doctorCtrl.text,
                           'notes': notesCtrl.text.isEmpty ? null : notesCtrl.text,
                           'date': picked!.toIso8601String().split('T')[0],
+                          'remindersEnabled': appointment['remindersEnabled'] ?? true,
                         };
                       }
                     });
@@ -1032,6 +1118,7 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
   late TextEditingController timeCtrl;
   late TextEditingController locationCtrl;
   late DateTime pickedDate;
+  late TimeOfDay selectedTime;
   
   List<Map<String, dynamic>> clinicians = [];
   String? selectedClinicianId;
@@ -1046,6 +1133,11 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
     timeCtrl = TextEditingController();
     locationCtrl = TextEditingController();
     pickedDate = widget.selectedDay;
+    
+    // Auto-fill current device time
+    selectedTime = TimeOfDay.now();
+    timeCtrl.text = selectedTime.format(context);
+    
     _loadCliniciansAndPatient();
   }
 
@@ -1096,7 +1188,52 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
           children: [
             _DialogField(hint: 'Title', controller: titleCtrl),
             const SizedBox(height: 10),
-            _DialogField(hint: 'Time (e.g. 10:00 AM)', controller: timeCtrl),
+            // Time picker with clock widget
+            GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: ClockTimePicker(
+                        initialTime: selectedTime,
+                        onTimeChanged: (newTime) {
+                          setState(() {
+                            selectedTime = newTime;
+                            timeCtrl.text = newTime.format(context);
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFFF5F5F5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
+                    const SizedBox(width: 8),
+                    Text(
+                      timeCtrl.text,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF212121),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.clock_outlined, size: 16, color: Color(0xFF1A237E)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
             _DialogField(hint: 'Location', controller: locationCtrl),
             const SizedBox(height: 10),
@@ -1166,11 +1303,29 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
                   'notes': locationCtrl.text.isEmpty ? '' : 'Location: ${locationCtrl.text}',
                   'status': 'scheduled',
                 });
+                
+                // Schedule reminders for the appointment
+                if (created['id'] != null) {
+                  final appointmentDateTime = DateTime(
+                    pickedDate.year,
+                    pickedDate.month,
+                    pickedDate.day,
+                    selectedTime.hour,
+                    selectedTime.minute,
+                  );
+                  
+                  await ReminderService.scheduleAppointmentReminders(
+                    appointmentId: created['id'].toString(),
+                    patientName: titleCtrl.text,
+                    appointmentDateTime: appointmentDateTime,
+                  );
+                }
+                
                 widget.onSave(created);
                 if (mounted) {
                   messenger.showSnackBar(
                     const SnackBar(
-                        content: Text('Appointment created successfully'),
+                        content: Text('Appointment created successfully with reminders'),
                         backgroundColor: Colors.green),
                   );
                 }

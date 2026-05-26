@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
+import '../../../services/reminder_service.dart';
+import '../../../widgets/clock_time_picker.dart';
 import 'alerts_page.dart';
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -388,7 +390,12 @@ class _CalendarPageState extends State<CalendarPage> {
     final contactCtrl = TextEditingController(
       text: pending != null ? pending['patientContact'] as String : ''
     );
-    final timeCtrl    = TextEditingController(text: '09:00 AM');
+    
+    // Auto-fill current device time
+    final now = TimeOfDay.now();
+    final timeCtrl    = TextEditingController(text: now.format(context));
+    TimeOfDay selectedTime = now;
+    
     final notesCtrl   = TextEditingController(
       text: pending != null ? 'Alert: ${pending['reason']}' : ''
     );
@@ -439,8 +446,15 @@ class _CalendarPageState extends State<CalendarPage> {
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
+          selectedTime: selectedTime,
           onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
+          onTimeChanged: (t) {
+            setS(() {
+              selectedTime = t;
+              timeCtrl.text = t.format(ctx);
+            });
+          },
           onPatientNameChanged: (query) async {
             setS(() {
               if (query.isEmpty) {
@@ -502,10 +516,28 @@ class _CalendarPageState extends State<CalendarPage> {
                 'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format
                 'status': 'scheduled',
               });
+              
+              // Schedule reminders for the appointment
+              if (created['id'] != null) {
+                final appointmentDateTime = DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+                
+                await ReminderService.scheduleAppointmentReminders(
+                  appointmentId: created['id'].toString(),
+                  patientName: patientCtrl.text.trim(),
+                  appointmentDateTime: appointmentDateTime,
+                );
+              }
+              
               setState(() => _events.add(created));
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Event added successfully'), backgroundColor: AppColors.green),
+                  const SnackBar(content: Text('Event added successfully with reminders'), backgroundColor: AppColors.green),
                 );
               }
             } catch (e) {
@@ -526,6 +558,23 @@ class _CalendarPageState extends State<CalendarPage> {
     final patientCtrl = TextEditingController(text: event['patientName'] ?? '');
     final contactCtrl = TextEditingController(text: event['patientContact'] ?? '');
     final timeCtrl    = TextEditingController(text: event['time'] ?? '09:00 AM');
+    
+    // Parse time from event or use current time
+    TimeOfDay selectedTime = TimeOfDay.now();
+    if (event['time'] != null) {
+      try {
+        final timeParts = (event['time'] as String).replaceAll(RegExp(r'[^\d:]'), '').split(':');
+        if (timeParts.length >= 2) {
+          selectedTime = TimeOfDay(
+            hour: int.parse(timeParts[0]),
+            minute: int.parse(timeParts[1]),
+          );
+        }
+      } catch (e) {
+        debugPrint('Failed to parse time: $e');
+      }
+    }
+    
     final notesCtrl   = TextEditingController(text: event['notes'] ?? '');
     String type       = event['type'] ?? 'prenatal';
     DateTime date     = DateTime.tryParse(event['date'] ?? '') ?? DateTime.now();
@@ -571,8 +620,15 @@ class _CalendarPageState extends State<CalendarPage> {
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
+          selectedTime: selectedTime,
           onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
+          onTimeChanged: (t) {
+            setS(() {
+              selectedTime = t;
+              timeCtrl.text = t.format(ctx);
+            });
+          },
           onPatientNameChanged: (query) async {
             setS(() {
               if (query.isEmpty) {
@@ -633,6 +689,28 @@ class _CalendarPageState extends State<CalendarPage> {
                 'type': type,
                 'date': date.toIso8601String().split('T')[0],
               });
+              
+              // Update reminders for the appointment
+              if (event['id'] != null) {
+                final appointmentDateTime = DateTime(
+                  date.year,
+                  date.month,
+                  date.day,
+                  selectedTime.hour,
+                  selectedTime.minute,
+                );
+                
+                // Cancel old reminders
+                await ReminderService.cancelAppointmentReminders(event['id'].toString());
+                
+                // Schedule new reminders
+                await ReminderService.scheduleAppointmentReminders(
+                  appointmentId: event['id'].toString(),
+                  patientName: patientCtrl.text.trim(),
+                  appointmentDateTime: appointmentDateTime,
+                );
+              }
+              
               setState(() {
                 final idx = _events.indexWhere((e) => e['id'] == event['id']);
                 if (idx != -1) {
@@ -650,7 +728,7 @@ class _CalendarPageState extends State<CalendarPage> {
               });
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Event updated successfully'), backgroundColor: AppColors.green),
+                  const SnackBar(content: Text('Event updated successfully with reminders'), backgroundColor: AppColors.green),
                 );
               }
             } catch (e) {
@@ -673,8 +751,10 @@ class _CalendarPageState extends State<CalendarPage> {
     required List<Map<String, dynamic>> allPatients,
     required List<Map<String, dynamic>> filteredPatients,
     required bool loadingPatients,
+    required TimeOfDay selectedTime,
     required void Function(String) onTypeChanged,
     required void Function(DateTime) onDateChanged,
+    required void Function(TimeOfDay) onTimeChanged,
     required void Function(String) onPatientNameChanged,
     required void Function(Map<String, dynamic>) onPatientSelected,
     required Future<void> Function() onLoadPatients,
@@ -834,7 +914,55 @@ class _CalendarPageState extends State<CalendarPage> {
               const SizedBox(height: 12),
               _dlgField('Contact *', contactCtrl, Icons.phone_outlined, validator: _validatePhone),
               const SizedBox(height: 12),
-              _dlgField('Time (e.g. 09:00 AM) *', timeCtrl, Icons.access_time, validator: _validateTime),
+              // Time picker with clock widget
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Time *', style: TextStyle(fontSize: 12, color: AppColors.g600, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 6),
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => Dialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: ClockTimePicker(
+                              initialTime: selectedTime,
+                              onTimeChanged: (newTime) {
+                                onTimeChanged(newTime);
+                              },
+                            ),
+                          ),
+                        ),
+                      ).then((_) {
+                        // Dialog closed, time is already updated
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.bg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.g200),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 16, color: AppColors.navy),
+                          const SizedBox(width: 10),
+                          Text(
+                            timeCtrl.text,
+                            style: const TextStyle(fontSize: 13, color: AppColors.g800),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.clock_outlined, size: 16, color: AppColors.navy),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
               const SizedBox(height: 12),
               // Date picker
               GestureDetector(
