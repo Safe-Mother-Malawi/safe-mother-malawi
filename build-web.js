@@ -81,7 +81,7 @@ try {
   run(`${quote(flutterBin)} pub get`);
 
   console.log('Building Flutter web release...');
-  run(`${quote(flutterBin)} build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true`);
+  run(`${quote(flutterBin)} build web --release --pwa-strategy=none --dart-define=FLUTTER_WEB_USE_SKIA=true`);
 
   restorePubspec();
   writeBuildStamp();
