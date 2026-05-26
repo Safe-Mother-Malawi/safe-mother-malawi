@@ -6,6 +6,7 @@ import '../../services/api_service.dart';
 
 class _RiskRecord {
   final String id;
+  final String patientId;
   final String patientName;
   final String patientPhone;
   final String riskLevel;
@@ -13,9 +14,11 @@ class _RiskRecord {
   final String message;
   final String role;
   final DateTime submittedAt;
+  final List<Map<String, dynamic>> allAssessments; // All risk assessments for this patient
 
   _RiskRecord({
     required this.id,
+    required this.patientId,
     required this.patientName,
     required this.patientPhone,
     required this.riskLevel,
@@ -23,11 +26,13 @@ class _RiskRecord {
     required this.message,
     required this.role,
     required this.submittedAt,
+    this.allAssessments = const [],
   });
 
   factory _RiskRecord.fromMap(Map<String, dynamic> m) {
     return _RiskRecord(
       id: (m['id'] ?? '').toString(),
+      patientId: (m['patientId'] ?? m['patient']?['id'] ?? '').toString(),
       patientName: (m['patient']?['fullName'] ?? m['patientName'] ?? 'Unknown').toString(),
       patientPhone: (m['patient']?['phone'] ?? m['patientPhone'] ?? '—').toString(),
       riskLevel: (m['riskLevel'] ?? m['risk'] ?? 'Low').toString(),
@@ -35,6 +40,7 @@ class _RiskRecord {
       message: (m['message'] ?? m['recommendation'] ?? '').toString(),
       role: (m['patientType'] ?? m['role'] ?? 'prenatal').toString().toLowerCase(),
       submittedAt: DateTime.tryParse(m['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      allAssessments: [],
     );
   }
 
@@ -68,11 +74,16 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
     setState(() => _loading = true);
     try {
       final data = await ApiService.getRiskAssessments(limit: 100);
-      setState(() {
-        _records = data.map((m) => _RiskRecord.fromMap(m as Map<String, dynamic>)).toList();
-        _loading = false;
-      });
+      if (data is List) {
+        setState(() {
+          _records = data.map((m) => _RiskRecord.fromMap(m as Map<String, dynamic>)).toList();
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
     } catch (e) {
+      print('Error loading risk assessments: $e');
       setState(() => _loading = false);
     }
   }
@@ -334,6 +345,48 @@ class _RecordCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(r.message,
                 style: const TextStyle(fontSize: 12, color: Color(0xFF424242), height: 1.4)),
+            // Risk History Section
+            if (r.allAssessments.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              const Divider(height: 1, color: Color(0xFFEEEEEE)),
+              const SizedBox(height: 12),
+              const Text('Risk History',
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF424242))),
+              const SizedBox(height: 8),
+              ...r.allAssessments.take(5).map((assessment) {
+                final level = assessment['riskLevel']?.toString() ?? 'Unknown';
+                final score = assessment['score']?.toString() ?? '0';
+                final date = assessment['submittedAt']?.toString() ?? assessment['createdAt']?.toString() ?? '';
+                final dateStr = date.length >= 10 ? date.substring(0, 10) : date;
+                
+                Color levelColor = const Color(0xFF2E7D32);
+                if (level.contains('High')) levelColor = const Color(0xFFC62828);
+                else if (level.contains('Moderate') || level.contains('Medium')) levelColor = const Color(0xFFE65100);
+                
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: levelColor.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: levelColor.withOpacity(0.2)),
+                  ),
+                  child: Row(children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: levelColor, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(level, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: levelColor)),
+                    const SizedBox(width: 8),
+                    Text('Score: $score', style: const TextStyle(fontSize: 10, color: Color(0xFF757575))),
+                    const Spacer(),
+                    Text(dateStr, style: const TextStyle(fontSize: 9, color: Color(0xFFBDBDBD))),
+                  ]),
+                );
+              }),
+            ],
           ],
         ),
       ),
