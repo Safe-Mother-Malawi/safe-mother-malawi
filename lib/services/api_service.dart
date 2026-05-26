@@ -42,7 +42,7 @@ class ApiService {
   // ── Rate limiting ─────────────────────────────────────────────────────────
   int _requestCount = 0;
   DateTime _rateLimitResetTime = DateTime.now();
-  static const int _rateLimitPerMinute = 1000; // Increased to 1000 requests per minute
+  static const int _rateLimitPerMinute = 5000; // Increased to 5000 requests per minute
   static const int _rateLimitWindowMs = 60000;
 
   // ── Token management ──────────────────────────────────────────────────────
