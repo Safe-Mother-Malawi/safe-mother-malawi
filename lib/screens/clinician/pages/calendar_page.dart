@@ -404,6 +404,33 @@ class _CalendarPageState extends State<CalendarPage> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        // Load patients when dialog opens
+        if (allPatients.isEmpty && !loadingPatients) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            setS(() => loadingPatients = true);
+            try {
+              final prenatal = await ApiService.instance.get('/patients/prenatal') as List<dynamic>;
+              final neonatal = await ApiService.instance.get('/patients/neonatal') as List<dynamic>;
+              final tempPatients = <Map<String, dynamic>>[];
+              
+              for (final p in prenatal.whereType<Map>()) {
+                tempPatients.add({...Map<String, dynamic>.from(p), '_type': 'prenatal'});
+              }
+              for (final p in neonatal.whereType<Map>()) {
+                tempPatients.add({...Map<String, dynamic>.from(p), '_type': 'neonatal'});
+              }
+              
+              setS(() {
+                allPatients = tempPatients;
+                loadingPatients = false;
+              });
+            } catch (e) {
+              debugPrint('❌ Failed to load patients: $e');
+              setS(() => loadingPatients = false);
+            }
+          });
+        }
+
         return _eventDialog(
           title: 'Add New Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
@@ -416,16 +443,26 @@ class _CalendarPageState extends State<CalendarPage> {
           onDateChanged: (d) => setS(() => date = d),
           onPatientNameChanged: (query) async {
             setS(() {
-              filteredPatients = allPatients.where((p) {
-                final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
-                return name.contains(query.toLowerCase());
-              }).toList();
+              if (query.isEmpty) {
+                filteredPatients = [];
+              } else {
+                filteredPatients = allPatients.where((p) {
+                  final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
+                  final phone = (p['phone'] ?? '').toString().toLowerCase();
+                  final q = query.toLowerCase();
+                  return name.contains(q) || phone.contains(q);
+                }).toList();
+              }
             });
           },
           onPatientSelected: (patient) {
             setS(() {
               patientCtrl.text = (patient['fullName'] ?? patient['motherName'] ?? '').toString();
               contactCtrl.text = (patient['phone'] ?? '').toString();
+              // Update title with patient name
+              titleCtrl.text = 'Checkup — ${patientCtrl.text}';
+              // Update type based on patient type
+              type = (patient['_type'] ?? 'prenatal').toString();
               filteredPatients = [];
             });
           },
@@ -448,6 +485,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 loadingPatients = false;
               });
             } catch (e) {
+              debugPrint('❌ Failed to load patients: $e');
               setS(() => loadingPatients = false);
             }
           },
@@ -498,6 +536,33 @@ class _CalendarPageState extends State<CalendarPage> {
     showDialog(
       context: context,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setS) {
+        // Load patients when dialog opens
+        if (allPatients.isEmpty && !loadingPatients) {
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            setS(() => loadingPatients = true);
+            try {
+              final prenatal = await ApiService.instance.get('/patients/prenatal') as List<dynamic>;
+              final neonatal = await ApiService.instance.get('/patients/neonatal') as List<dynamic>;
+              final tempPatients = <Map<String, dynamic>>[];
+              
+              for (final p in prenatal.whereType<Map>()) {
+                tempPatients.add({...Map<String, dynamic>.from(p), '_type': 'prenatal'});
+              }
+              for (final p in neonatal.whereType<Map>()) {
+                tempPatients.add({...Map<String, dynamic>.from(p), '_type': 'neonatal'});
+              }
+              
+              setS(() {
+                allPatients = tempPatients;
+                loadingPatients = false;
+              });
+            } catch (e) {
+              debugPrint('❌ Failed to load patients: $e');
+              setS(() => loadingPatients = false);
+            }
+          });
+        }
+
         return _eventDialog(
           title: 'Edit Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
@@ -510,16 +575,26 @@ class _CalendarPageState extends State<CalendarPage> {
           onDateChanged: (d) => setS(() => date = d),
           onPatientNameChanged: (query) async {
             setS(() {
-              filteredPatients = allPatients.where((p) {
-                final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
-                return name.contains(query.toLowerCase());
-              }).toList();
+              if (query.isEmpty) {
+                filteredPatients = [];
+              } else {
+                filteredPatients = allPatients.where((p) {
+                  final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
+                  final phone = (p['phone'] ?? '').toString().toLowerCase();
+                  final q = query.toLowerCase();
+                  return name.contains(q) || phone.contains(q);
+                }).toList();
+              }
             });
           },
           onPatientSelected: (patient) {
             setS(() {
               patientCtrl.text = (patient['fullName'] ?? patient['motherName'] ?? '').toString();
               contactCtrl.text = (patient['phone'] ?? '').toString();
+              // Update title with patient name
+              titleCtrl.text = 'Checkup — ${patientCtrl.text}';
+              // Update type based on patient type
+              type = (patient['_type'] ?? 'prenatal').toString();
               filteredPatients = [];
             });
           },
@@ -542,6 +617,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 loadingPatients = false;
               });
             } catch (e) {
+              debugPrint('❌ Failed to load patients: $e');
               setS(() => loadingPatients = false);
             }
           },
@@ -686,17 +762,68 @@ class _CalendarPageState extends State<CalendarPage> {
                         final patient = filteredPatients[i];
                         final name = (patient['fullName'] ?? patient['motherName'] ?? '').toString();
                         final phone = (patient['phone'] ?? '').toString();
+                        final patientType = (patient['_type'] ?? 'unknown').toString();
+                        final facility = (patient['facilityName'] ?? patient['facility'] ?? '').toString();
+                        final district = (patient['district'] ?? '').toString();
+                        
                         return GestureDetector(
                           onTap: () => onPatientSelected(patient),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                             decoration: BoxDecoration(
                               border: Border(bottom: BorderSide(color: AppColors.g200, width: i < filteredPatients.length - 1 ? 0.5 : 0)),
+                              color: i.isEven ? Colors.transparent : AppColors.bg.withOpacity(0.3),
                             ),
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
+                              Row(children: [
+                                Expanded(
+                                  child: Text(name, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: patientType == 'prenatal' ? AppColors.navyL : AppColors.greenL,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    patientType == 'prenatal' ? 'Prenatal' : 'Neonatal',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      fontWeight: FontWeight.bold,
+                                      color: patientType == 'prenatal' ? AppColors.navy : AppColors.green,
+                                    ),
+                                  ),
+                                ),
+                              ]),
+                              const SizedBox(height: 4),
                               if (phone.isNotEmpty)
-                                Text(phone, style: const TextStyle(fontSize: 11, color: AppColors.g400)),
+                                Row(children: [
+                                  const Icon(Icons.phone_outlined, size: 11, color: AppColors.g400),
+                                  const SizedBox(width: 4),
+                                  Text(phone, style: const TextStyle(fontSize: 10, color: AppColors.g600)),
+                                ]),
+                              if (facility.isNotEmpty) ...[
+                                const SizedBox(height: 3),
+                                Row(children: [
+                                  const Icon(Icons.location_on_outlined, size: 11, color: AppColors.g400),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      facility,
+                                      style: const TextStyle(fontSize: 10, color: AppColors.g600),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ]),
+                              ],
+                              if (district.isNotEmpty) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  district,
+                                  style: const TextStyle(fontSize: 9, color: AppColors.g400, fontStyle: FontStyle.italic),
+                                ),
+                              ],
                             ]),
                           ),
                         );
