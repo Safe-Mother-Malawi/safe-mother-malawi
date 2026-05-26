@@ -7,6 +7,9 @@ class ClinicianAlertsPage extends StatefulWidget {
   final void Function(int)? onNavigate;
   const ClinicianAlertsPage({super.key, this.onNavigate});
 
+  // Static variable to pass patient data to calendar
+  static Map<String, dynamic>? pendingAppointmentData;
+
   @override
   State<ClinicianAlertsPage> createState() => _ClinicianAlertsPageState();
 }
@@ -336,6 +339,15 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
                   child: ElevatedButton.icon(
                     onPressed: () async {
                       try {
+                        // Store patient details for calendar to auto-fill
+                        ClinicianAlertsPage.pendingAppointmentData = {
+                          'patientName': name,
+                          'patientContact': contact,
+                          'patientType': status == 'Prenatal' ? 'prenatal' : 'neonatal',
+                          'reason': reason,
+                          'symptoms': symptoms,
+                        };
+                        
                         await ApiService.createAppointment({
                           'title': 'Checkup — $name',
                           'patientName': name,

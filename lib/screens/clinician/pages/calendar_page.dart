@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
+import 'alerts_page.dart';
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -375,16 +376,30 @@ class _CalendarPageState extends State<CalendarPage> {
   // ── Add dialog ────────────────────────────────────────────────────────────────
 
   void _showAddDialog() {
-    final titleCtrl   = TextEditingController();
-    final patientCtrl = TextEditingController();
-    final contactCtrl = TextEditingController();
+    // Get pending appointment data from alerts page if available
+    final pending = ClinicianAlertsPage.pendingAppointmentData;
+    
+    final titleCtrl   = TextEditingController(
+      text: pending != null ? 'Checkup — ${pending['patientName']}' : ''
+    );
+    final patientCtrl = TextEditingController(
+      text: pending != null ? pending['patientName'] as String : ''
+    );
+    final contactCtrl = TextEditingController(
+      text: pending != null ? pending['patientContact'] as String : ''
+    );
     final timeCtrl    = TextEditingController(text: '09:00 AM');
-    final notesCtrl   = TextEditingController();
-    String type       = 'prenatal';
+    final notesCtrl   = TextEditingController(
+      text: pending != null ? 'Alert: ${pending['reason']}' : ''
+    );
+    String type       = pending != null ? (pending['patientType'] as String) : 'prenatal';
     DateTime date     = _selected ?? DateTime.now();
     List<Map<String, dynamic>> allPatients = [];
     List<Map<String, dynamic>> filteredPatients = [];
     bool loadingPatients = false;
+
+    // Clear pending data after using it
+    ClinicianAlertsPage.pendingAppointmentData = null;
 
     showDialog(
       context: context,
