@@ -443,12 +443,11 @@ class _CalendarPageState extends State<CalendarPage> {
           title: 'Add New Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
           contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
-          type: type, date: date,
+          date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
           selectedTime: selectedTime,
-          onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
           onTimeChanged: (t) {
             setS(() {
@@ -631,12 +630,11 @@ class _CalendarPageState extends State<CalendarPage> {
           title: 'Edit Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
           contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
-          type: type, date: date,
+          date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
           selectedTime: selectedTime,
-          onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
           onTimeChanged: (t) {
             setS(() {
@@ -777,12 +775,11 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _eventDialog({
     required String title,
     required TextEditingController titleCtrl, patientCtrl, contactCtrl, timeCtrl, notesCtrl,
-    required String type, required DateTime date,
+    required DateTime date,
     required List<Map<String, dynamic>> allPatients,
     required List<Map<String, dynamic>> filteredPatients,
     required bool loadingPatients,
     required TimeOfDay selectedTime,
-    required void Function(String) onTypeChanged,
     required void Function(DateTime) onDateChanged,
     required void Function(TimeOfDay) onTimeChanged,
     required void Function(String) onPatientNameChanged,
@@ -812,15 +809,6 @@ class _CalendarPageState extends State<CalendarPage> {
                     padding: EdgeInsets.zero, constraints: const BoxConstraints()),
               ]),
               const SizedBox(height: 20),
-              // Type toggle
-              Row(children: [
-                _typeBtn('Prenatal', 'prenatal', type, onTypeChanged),
-                const SizedBox(width: 8),
-                _typeBtn('Neonatal', 'neonatal', type, onTypeChanged),
-                const SizedBox(width: 8),
-                _typeBtn('Other', 'other', type, onTypeChanged),
-              ]),
-              const SizedBox(height: 16),
               _dlgField('Event Title *', titleCtrl, Icons.title, validator: _validateEventTitle),
               const SizedBox(height: 12),
               // Patient name field with autocomplete
@@ -1051,23 +1039,6 @@ class _CalendarPageState extends State<CalendarPage> {
             ]),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _typeBtn(String label, String t, String current, void Function(String) onChanged) {
-    final sel = current == t;
-    return GestureDetector(
-      onTap: () => onChanged(t),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: sel ? AppColors.navy : AppColors.g100,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-            color: sel ? Colors.white : AppColors.g600)),
       ),
     );
   }
