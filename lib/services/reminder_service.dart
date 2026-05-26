@@ -1,11 +1,17 @@
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'dart:async';
 
-/// Service for managing appointment reminders and notifications
+import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:timezone/data/latest.dart' as tz_data;
+import 'package:timezone/timezone.dart' as tz;
+
+/// Service for managing appointment reminders and notifications.
 class ReminderService {
   static final ReminderService _instance = ReminderService._internal();
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  static bool _initialized = false;
 
   factory ReminderService() {
     return _instance;
@@ -13,8 +19,21 @@ class ReminderService {
 
   ReminderService._internal();
 
-  /// Initialize the reminder service
   static Future<void> initialize() async {
+    if (_initialized) return;
+
+    if (kIsWeb) {
+      _initialized = true;
+      return;
+    }
+
+    tz_data.initializeTimeZones();
+    try {
+      tz.setLocalLocation(tz.getLocation('Africa/Blantyre'));
+    } catch (_) {
+      tz.setLocalLocation(tz.UTC);
+    }
+
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const DarwinInitializationSettings iosSettings =
@@ -30,53 +49,56 @@ class ReminderService {
     );
 
     await _notificationsPlugin.initialize(initSettings);
+
+    await Permission.notification.request();
+
+    _initialized = true;
   }
 
-  /// Schedule reminders for an appointment
-  /// Schedules notifications at:
-  /// - 24 hours before the event
-  /// - 1 hour before the event
+  /// Schedule reminders at 24 hours and 1 hour before an appointment.
   static Future<void> scheduleAppointmentReminders({
     required String appointmentId,
     required String patientName,
     required DateTime appointmentDateTime,
   }) async {
+    if (kIsWeb) return;
+
     try {
+      await initialize();
       final now = DateTime.now();
 
-      // 24 hours before reminder
       final reminder24h = appointmentDateTime.subtract(const Duration(hours: 24));
       if (reminder24h.isAfter(now)) {
         await _scheduleNotification(
-          id: appointmentId.hashCode,
+          id: _notificationId(appointmentId, 0),
           title: 'Appointment Reminder',
           body: 'Appointment with $patientName is in 24 hours',
           scheduledDate: reminder24h,
         );
       }
 
-      // 1 hour before reminder
       final reminder1h = appointmentDateTime.subtract(const Duration(hours: 1));
       if (reminder1h.isAfter(now)) {
         await _scheduleNotification(
-          id: appointmentId.hashCode + 1,
+          id: _notificationId(appointmentId, 1),
           title: 'Appointment Reminder',
           body: 'Appointment with $patientName is in 1 hour',
           scheduledDate: reminder1h,
         );
       }
     } catch (e) {
-      print('❌ Error scheduling reminders: $e');
+      debugPrint('Error scheduling reminders: $e');
     }
   }
 
-  /// Schedule a single notification
   static Future<void> _scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
+    if (kIsWeb) return;
+
     try {
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
@@ -107,31 +129,35 @@ class ReminderService {
         body,
         _convertToTZDateTime(scheduledDate),
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
       );
     } catch (e) {
-      print('❌ Error scheduling notification: $e');
+      debugPrint('Error scheduling notification: $e');
     }
   }
 
-  /// Cancel reminders for an appointment
   static Future<void> cancelAppointmentReminders(String appointmentId) async {
+    if (kIsWeb) return;
+
     try {
-      await _notificationsPlugin.cancel(appointmentId.hashCode);
-      await _notificationsPlugin.cancel(appointmentId.hashCode + 1);
+      await initialize();
+      await _notificationsPlugin.cancel(_notificationId(appointmentId, 0));
+      await _notificationsPlugin.cancel(_notificationId(appointmentId, 1));
     } catch (e) {
-      print('❌ Error canceling reminders: $e');
+      debugPrint('Error canceling reminders: $e');
     }
   }
 
-  /// Show an immediate notification
   static Future<void> showNotification({
     required String title,
     required String body,
   }) async {
+    if (kIsWeb) return;
+
     try {
+      await initialize();
       const AndroidNotificationDetails androidDetails =
           AndroidNotificationDetails(
         'general_notifications',
@@ -159,14 +185,19 @@ class ReminderService {
         details,
       );
     } catch (e) {
-      print('❌ Error showing notification: $e');
+      debugPrint('Error showing notification: $e');
     }
   }
 
-  /// Convert DateTime to TZDateTime for scheduling
-  static dynamic _convertToTZDateTime(DateTime dateTime) {
-    // For simplicity, using the DateTime directly
-    // In production, you might want to use timezone package
-    return dateTime;
+  static int _notificationId(String appointmentId, int offset) {
+    var hash = 0;
+    for (final unit in appointmentId.codeUnits) {
+      hash = (hash * 31 + unit) & 0x7fffffff;
+    }
+    return (hash + offset) & 0x7fffffff;
+  }
+
+  static tz.TZDateTime _convertToTZDateTime(DateTime dateTime) {
+    return tz.TZDateTime.from(dateTime, tz.local);
   }
 }
