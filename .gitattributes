@@ -1,0 +1,8 @@
+# Merge strategy: always prefer our (local) version on conflict
+# This applies to all Dart source files and key config files
+
+lib/**/*.dart merge=ours
+pubspec.yaml merge=ours
+pubspec.lock merge=ours
+android/**/* merge=ours
+ios/**/* merge=ours
