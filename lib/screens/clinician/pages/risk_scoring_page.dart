@@ -70,10 +70,32 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
     }).toList();
   }
 
+  String _display(dynamic value, {String fallback = 'N/A'}) {
+    final text = (value ?? '').toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  String _dateDisplay(dynamic value, {String fallback = 'N/A'}) {
+    final text = _display(value, fallback: '');
+    if (text.isEmpty) return fallback;
+
+    final parsed = DateTime.tryParse(text);
+    if (parsed != null) {
+      return parsed.toIso8601String().split('T').first;
+    }
+
+    return text.length >= 10 ? text.substring(0, 10) : text;
+  }
+
+  String _initial(Map<String, dynamic> p) {
+    final name = _patientName(p);
+    return name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
+  }
+
   String _patientName(Map<String, dynamic> p) =>
       p['_type'] == 'prenatal'
-          ? (p['fullName'] ?? 'Unknown').toString()
-          : (p['motherName'] ?? 'Unknown').toString();
+          ? _display(p['fullName'], fallback: 'Unknown')
+          : _display(p['motherName'], fallback: 'Unknown');
 
   String _patientSub(Map<String, dynamic> p) =>
       p['_type'] == 'prenatal'
@@ -283,7 +305,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 10),
               decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle)),
           CircleAvatar(radius: 16, backgroundColor: AppColors.navyL,
-              child: Text(_patientName(p)[0],
+              child: Text(_initial(p),
                   style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -341,7 +363,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           decoration: const BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
           child: Row(children: [
             CircleAvatar(radius: 22, backgroundColor: Colors.white,
-                child: Text(_patientName(p)[0],
+                child: Text(_initial(p),
                     style: const TextStyle(color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.bold))),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -372,28 +394,28 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
             // Contact info
             _section('Contact', [
               if (type == 'prenatal') ...[
-                _row(Icons.phone, 'Phone', p['phone'] ?? 'N/A'),
-                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
-                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+                _row(Icons.phone, 'Phone', _display(p['phone'])),
+                _row(Icons.location_on_outlined, 'District', _display(p['district'])),
+                _row(Icons.local_hospital_outlined, 'Health Centre', _display(p['facilityName'])),
               ] else ...[
-                _row(Icons.phone, 'Mother Phone', p['motherPhone'] ?? 'N/A'),
-                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
-                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+                _row(Icons.phone, 'Mother Phone', _display(p['motherPhone'])),
+                _row(Icons.location_on_outlined, 'District', _display(p['district'])),
+                _row(Icons.local_hospital_outlined, 'Health Centre', _display(p['facilityName'])),
               ],
             ]),
             const SizedBox(height: 16),
 
             if (type == 'prenatal')
               _section('Pregnancy', [
-                _row(Icons.pregnant_woman, 'Duration', '${p['pregnancyMonths'] ?? '?'} months'),
-                if (p['expectedDeliveryDate'] != null)
-                  _row(Icons.calendar_today_outlined, 'EDD', p['expectedDeliveryDate'].toString().substring(0, 10)),
+                _row(Icons.pregnant_woman, 'Duration', '${_display(p['pregnancyMonths'], fallback: '?')} months'),
+                if (_display(p['expectedDeliveryDate'], fallback: '').isNotEmpty)
+                  _row(Icons.calendar_today_outlined, 'EDD', _dateDisplay(p['expectedDeliveryDate'])),
               ])
             else
               _section('Baby Details', [
-                _row(Icons.child_friendly_outlined, 'Baby Name', p['babyName'] ?? 'N/A'),
-                _row(Icons.cake_outlined, 'Date of Birth', (p['babyDob'] ?? 'N/A').toString().substring(0, 10)),
-                _row(Icons.wc_outlined, 'Gender', p['babyGender'] ?? 'N/A'),
+                _row(Icons.child_friendly_outlined, 'Baby Name', _display(p['babyName'])),
+                _row(Icons.cake_outlined, 'Date of Birth', _dateDisplay(p['babyDob'])),
+                _row(Icons.wc_outlined, 'Gender', _display(p['babyGender'])),
               ]),
 
             const SizedBox(height: 16),
