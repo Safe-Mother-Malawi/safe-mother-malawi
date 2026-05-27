@@ -180,7 +180,9 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
   
   String _type = 'info';
   String _targetType = 'all';
-  String? _targetRole;
+  String? _selectedRole; // 'staff', 'mobile-users', 'dho', 'clinician'
+  String? _roleSelection; // 'all' or 'specific'
+  String? _specificRole; // for DHO or Clinician selection
   String? _targetDistrict;
   
   bool _inApp = true;
@@ -242,7 +244,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
         'body': _bodyCtrl.text,
         'type': _type,
         'broadcastType': _targetType,
-        if (_targetRole != null && _targetType == 'role') 'targetRole': _targetRole,
+        if (_targetType == 'role' && _selectedRole != null) 'targetRole': _buildRoleString(),
         if (_targetDistrict != null && _targetType == 'district') 'targetDistrict': _targetDistrict,
         'deliveryChannels': channels,
         if (scheduledAt != null) 'scheduledAt': scheduledAt.toIso8601String(),
@@ -261,6 +263,19 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  String _buildRoleString() {
+    if (_selectedRole == 'staff') {
+      return _roleSelection == 'all' ? 'all-staff' : _specificRole ?? 'clinician';
+    } else if (_selectedRole == 'mobile-users') {
+      return 'mobile-users';
+    } else if (_selectedRole == 'dho') {
+      return _roleSelection == 'all' ? 'dho' : 'dho';
+    } else if (_selectedRole == 'clinician') {
+      return _roleSelection == 'all' ? 'clinician' : 'clinician';
+    }
+    return 'all';
   }
 
   @override
@@ -314,27 +329,93 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                   onChanged: (v) {
                     setState(() {
                       _targetType = v!;
-                      if (v == 'role') _targetRole = 'prenatal';
+                      if (v == 'role') {
+                        _selectedRole = 'staff';
+                        _roleSelection = 'all';
+                      }
                       if (v == 'district') _targetDistrict = null;
                     });
                   },
                 ),
                 if (_targetType == 'role') ...[
                   const SizedBox(height: 16),
+                  const Text('Select Role Category', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                  const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
-                    value: _targetRole,
-                    decoration: const InputDecoration(labelText: 'Select Role', border: OutlineInputBorder()),
+                    value: _selectedRole,
+                    decoration: const InputDecoration(labelText: 'Role Category', border: OutlineInputBorder()),
                     items: const [
-                      DropdownMenuItem(value: 'prenatal', child: Text('Prenatal Mothers')),
-                      DropdownMenuItem(value: 'neonatal', child: Text('Neonatal Mothers')),
-                      DropdownMenuItem(value: 'mobile-users', child: Text('Mobile Users (All)')),
-                      DropdownMenuItem(value: 'clinician', child: Text('Clinicians')),
-                      DropdownMenuItem(value: 'dho', child: Text('DHOs')),
-                      DropdownMenuItem(value: 'admin', child: Text('Administrators')),
-                      DropdownMenuItem(value: 'all-staff', child: Text('All Staff')),
+                      DropdownMenuItem(value: 'staff', child: Text('Staff (Clinicians & DHOs)')),
+                      DropdownMenuItem(value: 'mobile-users', child: Text('Mobile Users (Prenatal & Neonatal)')),
+                      DropdownMenuItem(value: 'dho', child: Text('DHOs Only')),
+                      DropdownMenuItem(value: 'clinician', child: Text('Clinicians Only')),
                     ],
-                    onChanged: (v) => setState(() => _targetRole = v!),
+                    onChanged: (v) => setState(() {
+                      _selectedRole = v!;
+                      _roleSelection = 'all';
+                      _specificRole = null;
+                    }),
                   ),
+                  if (_selectedRole == 'staff' || _selectedRole == 'dho' || _selectedRole == 'clinician') ...[
+                    const SizedBox(height: 12),
+                    const Text('Selection Type', style: TextStyle(fontWeight: FontWeight.w500, fontSize: 13)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('All', style: TextStyle(fontSize: 13)),
+                            value: 'all',
+                            groupValue: _roleSelection,
+                            onChanged: (v) => setState(() {
+                              _roleSelection = v!;
+                              _specificRole = null;
+                            }),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                        Expanded(
+                          child: RadioListTile<String>(
+                            title: const Text('Specific', style: TextStyle(fontSize: 13)),
+                            value: 'specific',
+                            groupValue: _roleSelection,
+                            onChanged: (v) => setState(() {
+                              _roleSelection = v!;
+                              if (_selectedRole == 'staff') _specificRole = 'clinician';
+                              if (_selectedRole == 'dho') _specificRole = 'dho';
+                              if (_selectedRole == 'clinician') _specificRole = 'clinician';
+                            }),
+                            contentPadding: EdgeInsets.zero,
+                            dense: true,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_roleSelection == 'specific') ...[
+                      const SizedBox(height: 12),
+                      if (_selectedRole == 'staff')
+                        DropdownButtonFormField<String>(
+                          value: _specificRole,
+                          decoration: const InputDecoration(labelText: 'Select Staff Type', border: OutlineInputBorder()),
+                          items: const [
+                            DropdownMenuItem(value: 'clinician', child: Text('Clinicians')),
+                            DropdownMenuItem(value: 'dho', child: Text('DHOs')),
+                          ],
+                          onChanged: (v) => setState(() => _specificRole = v!),
+                        )
+                      else if (_selectedRole == 'dho')
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('All DHOs will be selected', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        )
+                      else if (_selectedRole == 'clinician')
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text('All Clinicians will be selected', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                        ),
+                    ],
+                  ],
                 ],
                 if (_targetType == 'district') ...[
                   const SizedBox(height: 16),
