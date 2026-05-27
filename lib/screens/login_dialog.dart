@@ -90,12 +90,12 @@ class _LoginDialogState extends State<LoginDialog> {
         _loading = false;
         _error = e.statusCode == 401
             ? 'Invalid email or password.'
-            : 'Login failed: ${e.message}';
+            : 'Login failed (${e.statusCode}): ${e.message}';
       });
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = 'Could not connect to server. Please check your connection.';
+        _error = 'Error: $e';
       });
     }
   }
