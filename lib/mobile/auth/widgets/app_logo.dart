@@ -16,7 +16,7 @@ class AppLogo extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
-      errorBuilder: (_, _, _) =>
+      errorBuilder: (_, __, ___) =>
           _TextLogo(size: size, darkBackground: darkBackground),
     );
   }
@@ -77,4 +77,3 @@ class _TextLogo extends StatelessWidget {
     );
   }
 }
-
