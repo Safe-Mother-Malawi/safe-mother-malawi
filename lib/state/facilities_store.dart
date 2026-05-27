@@ -1,4 +1,5 @@
 import '../services/api_service.dart';
+import 'package:flutter/foundation.dart';
 
 class HealthFacility {
   final String id;
@@ -108,16 +109,19 @@ class FacilitiesStore {
       final regionsData = await ApiService.getRegions();
       _regions.clear();
       _regions.addAll(regionsData);
+      debugPrint('✅ Loaded ${_regions.length} regions');
 
       // Load facility types
       final typesData = await ApiService.getFacilityTypes();
       _facilityTypes.clear();
       _facilityTypes.addAll(typesData);
+      debugPrint('✅ Loaded ${_facilityTypes.length} facility types');
 
       // Load managing authorities
       final authoritiesData = await ApiService.getManagingAuthorities();
       _managingAuthorities.clear();
       _managingAuthorities.addAll(authoritiesData);
+      debugPrint('✅ Loaded ${_managingAuthorities.length} managing authorities');
 
       // Load all facilities (with high limit to get all records)
       final facilitiesData = await ApiService.getHealthFacilities() as List<dynamic>;
@@ -125,6 +129,7 @@ class FacilitiesStore {
       _allFacilities.addAll(
         facilitiesData.cast<Map<String, dynamic>>().map(HealthFacility.fromJson),
       );
+      debugPrint('✅ Loaded ${_allFacilities.length} facilities');
 
       // Extract all unique zones and districts from facilities
       final allZones = <String>{};
@@ -137,11 +142,14 @@ class FacilitiesStore {
       // Store them for reference (not filtered by region/zone yet)
       _allZonesCache = allZones.toList()..sort();
       _allDistrictsCache = allDistricts.toList()..sort();
+      
+      debugPrint('✅ Extracted ${_allZonesCache.length} zones and ${_allDistrictsCache.length} districts');
 
       _loaded = true;
       _applyFilters();
     } catch (e) {
       _error = e.toString();
+      debugPrint('❌ Error loading facilities: $e');
     } finally {
       _loading = false;
       _notify();

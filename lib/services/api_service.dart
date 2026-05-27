@@ -381,7 +381,7 @@ class ApiService {
 
   // ── Health facilities ─────────────────────────────────────────────────────
 
-  static Future<List<dynamic>> getHealthFacilities() => instance.get('/health-facilities?limit=10000&page=1').then(_asList);
+  static Future<List<dynamic>> getHealthFacilities() => instance.get('/health-facilities?limit=50000&page=1').then(_asList);
 
   static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
       instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
