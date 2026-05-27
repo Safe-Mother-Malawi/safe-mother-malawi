@@ -192,6 +192,31 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
   TimeOfDay? _scheduledTime;
   
   bool _isSubmitting = false;
+  bool _isLoadingDistricts = false;
+  List<String> _availableDistricts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDistricts();
+  }
+
+  Future<void> _loadDistricts() async {
+    setState(() => _isLoadingDistricts = true);
+    try {
+      final res = await ApiService.instance.get('/notifications/broadcasts/districts/available');
+      if (mounted) {
+        setState(() {
+          _availableDistricts = List<String>.from(res['districts'] ?? []);
+          _isLoadingDistricts = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingDistricts = false);
+      }
+    }
+  }
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -289,7 +314,8 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                   onChanged: (v) {
                     setState(() {
                       _targetType = v!;
-                      if (v == 'role') _targetRole = 'clinician';
+                      if (v == 'role') _targetRole = 'prenatal';
+                      if (v == 'district') _targetDistrict = null;
                     });
                   },
                 ),
@@ -299,12 +325,37 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                     value: _targetRole,
                     decoration: const InputDecoration(labelText: 'Select Role', border: OutlineInputBorder()),
                     items: const [
+                      DropdownMenuItem(value: 'prenatal', child: Text('Prenatal Mothers')),
+                      DropdownMenuItem(value: 'neonatal', child: Text('Neonatal Mothers')),
+                      DropdownMenuItem(value: 'mobile-users', child: Text('Mobile Users (All)')),
                       DropdownMenuItem(value: 'clinician', child: Text('Clinicians')),
                       DropdownMenuItem(value: 'dho', child: Text('DHOs')),
-                      DropdownMenuItem(value: 'prenatal', child: Text('Prenatal Mothers')),
+                      DropdownMenuItem(value: 'admin', child: Text('Administrators')),
+                      DropdownMenuItem(value: 'all-staff', child: Text('All Staff')),
                     ],
                     onChanged: (v) => setState(() => _targetRole = v!),
                   ),
+                ],
+                if (_targetType == 'district') ...[
+                  const SizedBox(height: 16),
+                  if (_isLoadingDistricts)
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
+                    )
+                  else if (_availableDistricts.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text('No districts available', style: TextStyle(color: Colors.red)),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      value: _targetDistrict,
+                      decoration: const InputDecoration(labelText: 'Select District', border: OutlineInputBorder()),
+                      items: _availableDistricts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                      onChanged: (v) => setState(() => _targetDistrict = v!),
+                      validator: (v) => v == null ? 'Please select a district' : null,
+                    ),
                 ],
                 const SizedBox(height: 16),
                 const Text('Delivery Channels', style: TextStyle(fontWeight: FontWeight.bold)),
