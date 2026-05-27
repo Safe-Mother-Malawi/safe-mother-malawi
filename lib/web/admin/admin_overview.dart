@@ -13,6 +13,7 @@ import 'question_insights.dart';
 import 'insights_screen.dart';
 import 'facilities_management.dart';
 import 'system_logs.dart';
+import 'broadcast_messages_screen.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
@@ -53,6 +54,7 @@ class _AdminOverviewState extends State<AdminOverview> {
       case '/reports':           return const ReportsScreen();
       case '/facilities':        return const FacilitiesManagementScreen();
       case '/logs':              return const SystemLogs();
+      case '/broadcasts':        return const BroadcastMessagesScreen();
       default:                   return const _OverviewBody();
     }
   }
@@ -67,6 +69,7 @@ class _AdminOverviewState extends State<AdminOverview> {
       '/reports':           'Reports',
       '/facilities':        'Health Facilities',
       '/logs':              'Audit Logs',
+      '/broadcasts':        'Broadcast Messages',
     };
     return titles[_currentRoute] ?? 'Admin Dashboard';
   }
@@ -115,6 +118,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
   List<Map<String, dynamic>> _systemAlerts = [];
   List<Map<String, dynamic>> _activityLogs = [];
   List<Map<String, dynamic>> _ancTrends = [];
+  List<Map<String, dynamic>> _clinicianActivity = [];
+  List<Map<String, dynamic>> _appointmentStatuses = [];
 
   @override
   void initState() {
@@ -139,6 +144,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _safeGet('/activity-logs'),
         _safeGet('/analytics/anc-analytics'),
         _safeGet('/analytics/anc-compliance'),
+        _safeGet('/analytics/clinician-activity'),
+        _safeGet('/analytics/appointment-statuses'),
       ]);
       final overview      = _asMap(results[0]);
       final regTrends     = _asMap(results[1]);
@@ -147,6 +154,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       final actLogs       = _asList(results[4]);
       final ancAnalytics  = _asMap(results[5]);
       final ancCompliance = _asMap(results[6]);
+      final clinAct       = _asList(results[7]);
+      final apptStatus    = _asList(results[8]);
       final prenatalMonths = _asList(regTrends['prenatal']);
       final spots = <FlSpot>[];
       for (int i = 0; i < prenatalMonths.length && i < 6; i++) {
@@ -172,6 +181,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _systemAlerts           = alertsList;
         _activityLogs           = actLogsList;
         _ancTrends              = ancTrendsList;
+        _clinicianActivity      = clinAct.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _appointmentStatuses    = apptStatus.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
       });
     } catch (_) {}
   }
@@ -195,6 +206,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _safeGet('/activity-logs'),
         _safeGet('/analytics/anc-analytics'),
         _safeGet('/analytics/anc-compliance'),
+        _safeGet('/analytics/clinician-activity'),
+        _safeGet('/analytics/appointment-statuses'),
       ]);
 
       final overview  = _asMap(results[0]);
@@ -204,6 +217,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       final actLogs   = _asList(results[4]);
       final ancAnalytics = _asMap(results[5]);
       final ancCompliance = _asMap(results[6]);
+      final clinAct = _asList(results[7]);
+      final apptStatus = _asList(results[8]);
 
       // Build registration spots from prenatal monthly data
       final prenatalMonths = _asList(regTrends['prenatal']);
@@ -249,6 +264,8 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _systemAlerts      = alertsList;
         _activityLogs      = actLogsList;
         _ancTrends         = ancTrendsList;
+        _clinicianActivity = clinAct.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _appointmentStatuses = apptStatus.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
         _loading           = false;
       });
     } catch (e) {
@@ -320,17 +337,16 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
 
           const SizedBox(height: 28),
 
-          // Charts row
+          // Charts Row 1: Line Chart (Full Width)
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                flex: 2,
                 child: ChartCard(
                   title: 'Monthly Registrations',
                   subtitle: 'Mothers registered over the last 6 months',
                   chart: SizedBox(
-                    height: 200,
+                    height: 250, // Slightly taller since it's full width
                     child: _registrationSpots.length < 2
                         ? const Center(child: Text('No data yet'))
                         : LineChart(LineChartData(
@@ -352,71 +368,75 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
                             ),
                             lineBarsData: [LineChartBarData(
                               spots: _registrationSpots,
-                              isCurved: true, color: AppColors.primary, barWidth: 3,
+                              isCurved: true, 
+                              curveSmoothness: 0.35,
+                              gradient: LinearGradient(
+                                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              barWidth: 4,
+                              isStrokeCapRound: true,
                               dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
+                              belowBarData: BarAreaData(
+                                show: true, 
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.primary.withValues(alpha: 0.25),
+                                    AppColors.primary.withValues(alpha: 0.02),
+                                  ],
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                ),
+                              ),
+                              shadow: Shadow(
+                                color: AppColors.primary.withValues(alpha: 0.2),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
                             )],
                           )),
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
-              Expanded(
-                flex: 2,
-                child: ChartCard(
-                  title: 'ANC Attendance Trends',
-                  subtitle: 'Monthly attendance vs missed appointments',
-                  chart: SizedBox(
-                    height: 200,
-                    child: _ancTrends.isEmpty
-                        ? const Center(child: Text('No ANC data yet'))
-                        : LineChart(LineChartData(
-                            gridData: const FlGridData(show: false),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              bottomTitles: AxisTitles(sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (val, meta) {
-                                  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                                  final idx = val.toInt();
-                                  if (idx < 0 || idx >= months.length) return const SizedBox();
-                                  return Text(months[idx], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
-                                },
-                              )),
-                            ),
-                            lineBarsData: [
-                              LineChartBarData(
-                                spots: _buildANCAttendanceSpots(),
-                                isCurved: true, color: AppColors.successText, barWidth: 3,
-                                dotData: const FlDotData(show: false),
-                                belowBarData: BarAreaData(show: true, color: AppColors.successText.withOpacity(0.08)),
-                              ),
-                              LineChartBarData(
-                                spots: _buildANCMissedSpots(),
-                                isCurved: true, color: AppColors.criticalText, barWidth: 3,
-                                dotData: const FlDotData(show: false),
-                              ),
-                            ],
-                          )),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 20),
+            ],
+          ),
+
+          const SizedBox(height: 28),
+
+          // Charts Row 2: Pie Charts
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Expanded(
                 flex: 1,
                 child: ChartCard(
                   title: 'Risk Distribution',
                   subtitle: 'Current case breakdown',
                   chart: SizedBox(
-                    height: 200,
+                    height: 220,
                     child: _riskDistribution.isEmpty
                         ? const Center(child: Text('No data yet'))
                         : PieChart(PieChartData(
-                            sectionsSpace: 3, centerSpaceRadius: 48,
+                            sectionsSpace: 3, centerSpaceRadius: 55,
                             sections: _buildRiskSections(),
+                          )),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 28),
+              Expanded(
+                flex: 1,
+                child: ChartCard(
+                  title: 'Appointment Statuses',
+                  subtitle: 'Overall breakdown',
+                  chart: SizedBox(
+                    height: 220,
+                    child: _appointmentStatuses.isEmpty
+                        ? const Center(child: Text('No data yet'))
+                        : PieChart(PieChartData(
+                            sectionsSpace: 3, centerSpaceRadius: 55,
+                            sections: _buildAppointmentStatusSections(),
                           )),
                   ),
                 ),
@@ -440,26 +460,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
     );
   }
 
-  List<FlSpot> _buildANCAttendanceSpots() {
-    final spots = <FlSpot>[];
-    for (int i = 0; i < _ancTrends.length && i < 6; i++) {
-      final item = _ancTrends[i];
-      final attended = double.tryParse(item['attended']?.toString() ?? '0') ?? 0;
-      spots.add(FlSpot(i.toDouble(), attended));
-    }
-    return spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
-  }
-
-  List<FlSpot> _buildANCMissedSpots() {
-    final spots = <FlSpot>[];
-    for (int i = 0; i < _ancTrends.length && i < 6; i++) {
-      final item = _ancTrends[i];
-      final missed = double.tryParse(item['missed']?.toString() ?? '0') ?? 0;
-      spots.add(FlSpot(i.toDouble(), missed));
-    }
-    return spots.isEmpty ? [const FlSpot(0, 0), const FlSpot(1, 0)] : spots;
-  }
-
   List<PieChartSectionData> _buildRiskSections() {
     final colorMap = {
       'Low Risk': AppColors.successText,
@@ -480,6 +480,29 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         color: colorMap[label] ?? AppColors.mutedText,
         title: '$shortLabel\n$pct%',
         titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+        radius: 55,
+      );
+    }).toList();
+  }
+
+  List<PieChartSectionData> _buildAppointmentStatusSections() {
+    final colors = [AppColors.primary, AppColors.successText, AppColors.warningText, AppColors.criticalText, AppColors.infoText, Colors.teal, Colors.orange];
+    final total = _appointmentStatuses.fold<double>(0, (s, r) => s + (double.tryParse(r['count']?.toString() ?? '0') ?? 0));
+    if (total == 0) return [];
+    int i = 0;
+    return _appointmentStatuses.map((r) {
+      final count = double.tryParse(r['count']?.toString() ?? '0') ?? 0;
+      final pct = (count / total * 100).toStringAsFixed(0);
+      String label = r['status'] as String? ?? 'Unknown';
+      label = label.replaceAll('_', ' ');
+      final shortLabel = label.length > 10 ? label.substring(0, 10) : label;
+      final color = colors[i % colors.length];
+      i++;
+      return PieChartSectionData(
+        value: count,
+        color: color,
+        title: '$shortLabel\n$pct%',
+        titleStyle: TextStyle(fontFamily: 'Roboto', fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
         radius: 55,
       );
     }).toList();

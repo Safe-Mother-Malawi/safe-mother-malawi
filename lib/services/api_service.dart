@@ -339,6 +339,20 @@ class ApiService {
     return (data as Map<String, dynamic>?) ?? {};
   }
 
+  static Future<Map<String, dynamic>> updateAppointmentStatus(
+    String id,
+    String status, {
+    String? preferredTimeSelection,
+    String? customDateTime,
+  }) async {
+    final data = await instance.patch('/appointments/$id/status', {
+      'status': status,
+      if (preferredTimeSelection != null) 'preferredTimeSelection': preferredTimeSelection,
+      if (customDateTime != null) 'customDateTime': customDateTime,
+    });
+    return (data as Map<String, dynamic>?) ?? {};
+  }
+
   static Future<void> deleteAppointment(String id) =>
       instance.delete('/appointments/$id');
 

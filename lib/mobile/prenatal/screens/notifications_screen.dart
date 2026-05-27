@@ -224,22 +224,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   IconData _iconData(String type) {
-    if (type.contains('appointment')) return Icons.event;
-    if (type.contains('alert')) return Icons.warning_amber;
+    if (type.contains('appointment') || type.contains('reminder')) return Icons.event;
+    if (type.contains('alert') || type.contains('emergency')) return Icons.warning_amber;
+    if (type.contains('system_update')) return Icons.system_update;
     if (type.contains('milestone')) return Icons.star;
-    return Icons.lightbulb_outline;
+    return Icons.lightbulb_outline; // info or tip
   }
 
   Color _iconBg(String type) {
-    if (type.contains('appointment')) return const Color(0xFFE3F2FD);
-    if (type.contains('alert')) return const Color(0xFFFFEBEE);
+    if (type.contains('appointment') || type.contains('reminder')) return const Color(0xFFE3F2FD);
+    if (type.contains('alert') || type.contains('emergency')) return const Color(0xFFFFEBEE);
+    if (type.contains('system_update')) return const Color(0xFFEDE7F6);
     if (type.contains('milestone')) return const Color(0xFFFFF8E1);
     return const Color(0xFFE8F5E9);
   }
 
   Color _iconColor(String type) {
-    if (type.contains('appointment')) return const Color(0xFF1A237E);
-    if (type.contains('alert')) return const Color(0xFFC62828);
+    if (type.contains('appointment') || type.contains('reminder')) return const Color(0xFF1A237E);
+    if (type.contains('alert') || type.contains('emergency')) return const Color(0xFFC62828);
+    if (type.contains('system_update')) return const Color(0xFF512DA8);
     if (type.contains('milestone')) return const Color(0xFFF9A825);
     return const Color(0xFF2E7D32);
   }

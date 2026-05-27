@@ -89,6 +89,38 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     );
   }
 
+  Future<void> _handleUpdateStatus(
+    Map<String, dynamic> appointment,
+    String status, {
+    String? preferredTime,
+    String? customDateTime,
+  }) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await ApiService.updateAppointmentStatus(
+        appointment['id'].toString(),
+        status,
+        preferredTimeSelection: preferredTime,
+        customDateTime: customDateTime,
+      );
+      
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Status updated to ${status.replaceAll('_', ' ')}'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      _load();
+    } catch (e) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to update status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -150,6 +182,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                                     onView: () => _showViewDialog(context, a),
                                     onEdit: () => _showEditDialog(context, a),
                                     onDelete: () => _showDeleteDialog(context, a),
+                                    onUpdateStatus: (status, {preferredTime, customDateTime}) =>
+                                        _handleUpdateStatus(a, status, preferredTime: preferredTime, customDateTime: customDateTime),
                                   )),
                               const SizedBox(height: 24),
                             ],
@@ -792,18 +826,92 @@ class _AppointmentCard extends StatelessWidget {
   final VoidCallback onView;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final Function(String, {String? preferredTime, String? customDateTime})? onUpdateStatus;
   
   const _AppointmentCard({
     required this.appointment,
     required this.onView,
     required this.onEdit,
     required this.onDelete,
+    this.onUpdateStatus,
   });
 
   static const _months = [
     'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
     'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
   ];
+
+  void _showRescheduleOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'When will you be available?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
+              ),
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.flash_on, color: Color(0xFFFB8C00)),
+                title: const Text('Later today (+4 hours)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'later_today');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.today, color: Color(0xFF1E88E5)),
+                title: const Text('Tomorrow'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'tomorrow');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.date_range, color: Color(0xFF2E7D32)),
+                title: const Text('This week (in 3 days)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'this_week');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.event, color: Color(0xFF8E24AA)),
+                title: const Text('Select a custom date & time'),
+                onTap: () async {
+                  Navigator.pop(ctx);
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().add(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                  );
+                  if (date != null) {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                      onUpdateStatus?.call('patient_unavailable', preferredTime: 'custom', customDateTime: dt.toIso8601String());
+                    }
+                  }
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -816,6 +924,7 @@ class _AppointmentCard extends StatelessWidget {
     final status = (a['status'] ?? 'Pending').toString();
 
     final badgeData = _statusBadge(status, date);
+    final statusLower = status.toLowerCase();
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -903,35 +1012,93 @@ class _AppointmentCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(doctor,
                     style: const TextStyle(fontSize: 12, color: Color(0xFF757575))),
-                const SizedBox(height: 8),
-                // Action buttons
-                Row(
-                  children: [
-                    // View button
-                    _ActionButton(
-                      icon: Icons.visibility_outlined,
-                      label: 'View',
-                      color: const Color(0xFF1A237E),
-                      onTap: onView,
-                    ),
-                    const SizedBox(width: 8),
-                    // Edit button
-                    _ActionButton(
-                      icon: Icons.edit_outlined,
-                      label: 'Edit',
-                      color: const Color(0xFF1A237E),
-                      onTap: onEdit,
-                    ),
-                    const SizedBox(width: 8),
-                    // Delete button
-                    _ActionButton(
-                      icon: Icons.delete_outline,
-                      label: 'Delete',
-                      color: Colors.red,
-                      onTap: onDelete,
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 10),
+                
+                // Render action buttons based on status
+                if (statusLower == 'pending_confirmation') ...[
+                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Please confirm your availability for this checkup:',
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF616161)),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ActionButton(
+                        icon: Icons.check_circle_outline,
+                        label: 'Confirm',
+                        color: const Color(0xFF2E7D32),
+                        onTap: () => onUpdateStatus?.call('confirmed'),
+                      ),
+                      _ActionButton(
+                        icon: Icons.access_time,
+                        label: 'Busy / Later',
+                        color: const Color(0xFFFB8C00),
+                        onTap: () => _showRescheduleOptions(context),
+                      ),
+                      _ActionButton(
+                        icon: Icons.warning_amber_outlined,
+                        label: 'Emergency',
+                        color: const Color(0xFFD32F2F),
+                        onTap: () => onUpdateStatus?.call('urgent_attention_required'),
+                      ),
+                    ],
+                  ),
+                ] else if (statusLower == 'reschedule_requested') ...[
+                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Proposed Reschedule: ${a['date']} at ${a['time']}',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF1E88E5)),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ActionButton(
+                        icon: Icons.check_circle_outline,
+                        label: 'Accept Slot',
+                        color: const Color(0xFF2E7D32),
+                        onTap: () => onUpdateStatus?.call('confirmed'),
+                      ),
+                      _ActionButton(
+                        icon: Icons.close_outlined,
+                        label: 'Reject / Busy',
+                        color: Colors.red,
+                        onTap: () => _showRescheduleOptions(context),
+                      ),
+                    ],
+                  ),
+                ] else ...[
+                  Row(
+                    children: [
+                      _ActionButton(
+                        icon: Icons.visibility_outlined,
+                        label: 'View',
+                        color: const Color(0xFF1A237E),
+                        onTap: onView,
+                      ),
+                      const SizedBox(width: 8),
+                      _ActionButton(
+                        icon: Icons.edit_outlined,
+                        label: 'Edit',
+                        color: const Color(0xFF1A237E),
+                        onTap: onEdit,
+                      ),
+                      const SizedBox(width: 8),
+                      _ActionButton(
+                        icon: Icons.delete_outline,
+                        label: 'Delete',
+                        color: Colors.red,
+                        onTap: onDelete,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -944,6 +1111,8 @@ class _AppointmentCard extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'confirmed': return const Color(0xFFE8F5E9);
       case 'completed': return const Color(0xFFE8F5E9);
+      case 'urgent_attention_required': return const Color(0xFFFFEBEE);
+      case 'follow_up_required': return const Color(0xFFFFF3E0);
       default: return const Color(0xFFE8EAF6);
     }
   }
@@ -952,18 +1121,34 @@ class _AppointmentCard extends StatelessWidget {
     switch (status.toLowerCase()) {
       case 'confirmed':
       case 'completed': return const Color(0xFF2E7D32);
+      case 'urgent_attention_required': return const Color(0xFFC62828);
+      case 'follow_up_required': return const Color(0xFFE65100);
       default: return const Color(0xFF1A237E);
     }
   }
 
   Map<String, dynamic> _statusBadge(String status, DateTime date) {
     switch (status.toLowerCase()) {
+      case 'pending_confirmation':
+        return {'label': 'Pending Confirm', 'color': const Color(0xFF1E88E5), 'bg': const Color(0xFFE3F2FD)};
       case 'confirmed':
         return {'label': 'Confirmed', 'color': const Color(0xFF2E7D32), 'bg': const Color(0xFFE8F5E9)};
-      case 'completed':
-        return {'label': 'Completed', 'color': const Color(0xFF2E7D32), 'bg': const Color(0xFFE8F5E9)};
+      case 'patient_unavailable':
+        return {'label': 'Unavailable', 'color': const Color(0xFF757575), 'bg': const Color(0xFFEEEEEE)};
+      case 'reschedule_requested':
+        return {'label': 'Reschedule Proposed', 'color': const Color(0xFFF9A825), 'bg': const Color(0xFFFFF8E1)};
       case 'missed':
         return {'label': 'Missed', 'color': const Color(0xFFC62828), 'bg': const Color(0xFFFFEBEE)};
+      case 'follow_up_required':
+        return {'label': 'Follow Up Req', 'color': const Color(0xFFFB8C00), 'bg': const Color(0xFFFFF3E0)};
+      case 'urgent_attention_required':
+        return {'label': 'URGENT ATTN', 'color': const Color(0xFFD32F2F), 'bg': const Color(0xFFFFEBEE)};
+      case 'completed':
+        return {'label': 'Completed', 'color': const Color(0xFF2E7D32), 'bg': const Color(0xFFE8F5E9)};
+      case 'no_response':
+        return {'label': 'No Response', 'color': const Color(0xFF8E24AA), 'bg': const Color(0xFFF3E5F5)};
+      case 'at_risk_non_responsive':
+        return {'label': 'High Risk Non-Resp', 'color': const Color(0xFFE64A19), 'bg': const Color(0xFFFBE9E7)};
       default:
         final diff = date.difference(DateTime.now()).inDays;
         if (diff == 0) return {'label': 'Today', 'color': const Color(0xFFC62828), 'bg': const Color(0xFFFFEBEE)};

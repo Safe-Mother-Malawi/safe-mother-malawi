@@ -35,6 +35,8 @@ const List<NavItem> _flatItems = [
       allowedRoles: [UserRole.admin]),
   NavItem(label: 'Reports', icon: Icons.summarize_rounded, route: '/reports',
       allowedRoles: [UserRole.admin]),
+  NavItem(label: 'Broadcast Messages', icon: Icons.campaign_rounded, route: '/broadcasts',
+      allowedRoles: [UserRole.admin]),
 
   // ── DHO only ──────────────────────────────────────────────────────────────
   NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians',
@@ -89,7 +91,7 @@ class _AppSidebarState extends State<AppSidebar> {
       'Overview', 'System Users', 'Clinician Management',
       'Analytics Dashboard', 'Generate Analytics', 'Task Analytics',
       'Activity Logs', 'Question Insights', 'Reports', 'Audit Export',
-      'Health Facilities', 'Audit Logs'
+      'Health Facilities', 'Audit Logs', 'Broadcast Messages'
     };
 
     final sidebarWidth = widget.isCollapsed ? 70.0 : 240.0;

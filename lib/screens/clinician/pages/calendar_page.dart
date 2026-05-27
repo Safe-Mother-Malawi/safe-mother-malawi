@@ -229,6 +229,79 @@ class _CalendarPageState extends State<CalendarPage> {
     ]);
   }
 
+  Widget _buildStatusBadge(String status) {
+    Color bg = AppColors.navyL;
+    Color fg = AppColors.navy;
+    String label = status;
+
+    switch (status.toLowerCase()) {
+      case 'pending_confirmation':
+        bg = const Color(0xFFE3F2FD);
+        fg = const Color(0xFF1E88E5);
+        label = 'Pending Confirm';
+        break;
+      case 'confirmed':
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        label = 'Confirmed';
+        break;
+      case 'patient_unavailable':
+        bg = const Color(0xFFEEEEEE);
+        fg = const Color(0xFF757575);
+        label = 'Unavailable';
+        break;
+      case 'reschedule_requested':
+        bg = const Color(0xFFFFF8E1);
+        fg = const Color(0xFFF9A825);
+        label = 'Reschedule Req';
+        break;
+      case 'missed':
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        label = 'Missed';
+        break;
+      case 'follow_up_required':
+        bg = const Color(0xFFFFF3E0);
+        fg = const Color(0xFFFB8C00);
+        label = 'Follow Up Req';
+        break;
+      case 'urgent_attention_required':
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFD32F2F);
+        label = 'URGENT ATTN';
+        break;
+      case 'completed':
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        label = 'Completed';
+        break;
+      case 'no_response':
+        bg = const Color(0xFFF3E5F5);
+        fg = const Color(0xFF8E24AA);
+        label = 'No Response';
+        break;
+      case 'at_risk_non_responsive':
+        bg = const Color(0xFFFBE9E7);
+        fg = const Color(0xFFE64A19);
+        label = 'At Risk Non-Resp';
+        break;
+      case 'scheduled':
+        bg = const Color(0xFFE8EAF6);
+        fg = const Color(0xFF1A237E);
+        label = 'Scheduled';
+        break;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: fg),
+      ),
+    );
+  }
+
   // ── Day panel ─────────────────────────────────────────────────────────────────
 
   Widget _buildDayPanel() {
@@ -294,12 +367,7 @@ class _CalendarPageState extends State<CalendarPage> {
             Expanded(child: Text(title,
                 style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold,
                     color: AppColors.g800))),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.circular(8)),
-              child: Text(status,
-                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.navy)),
-            ),
+            _buildStatusBadge(status),
             const SizedBox(width: 4),
             // Edit button
             GestureDetector(
