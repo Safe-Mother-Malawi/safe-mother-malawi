@@ -181,7 +181,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
   String _type = 'info';
   String _targetType = 'all';
   String? _targetRole;
-  String? _targetDistrict;
+  List<String> _selectedDistricts = [];
   
   bool _inApp = true;
   bool _push = true;
@@ -192,29 +192,64 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
   TimeOfDay? _scheduledTime;
   
   bool _isSubmitting = false;
-  bool _isLoadingDistricts = false;
+  bool _isLoadingData = false;
+  
+  // Hierarchical data
+  List<String> _regions = [];
+  String? _selectedRegion;
+  List<String> _zones = [];
+  String? _selectedZone;
+  List<String> _districts = [];
   List<String> _availableDistricts = [];
 
   @override
   void initState() {
     super.initState();
-    _loadDistricts();
+    _loadHierarchicalData();
   }
 
-  Future<void> _loadDistricts() async {
-    setState(() => _isLoadingDistricts = true);
+  Future<void> _loadHierarchicalData() async {
+    setState(() => _isLoadingData = true);
     try {
-      final res = await ApiService.instance.get('/notifications/broadcasts/districts/available');
+      final res = await ApiService.instance.get('/health-facilities/regions');
       if (mounted) {
         setState(() {
-          _availableDistricts = List<String>.from(res['districts'] ?? []);
-          _isLoadingDistricts = false;
+          _regions = List<String>.from(res['regions'] ?? []);
+          _isLoadingData = false;
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _isLoadingDistricts = false);
+        setState(() => _isLoadingData = false);
       }
+    }
+  }
+
+  Future<void> _loadZones(String region) async {
+    try {
+      final res = await ApiService.instance.get('/health-facilities/zones?region=$region');
+      if (mounted) {
+        setState(() {
+          _zones = List<String>.from(res['zones'] ?? []);
+          _selectedZone = null;
+          _districts = [];
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading zones: $e');
+    }
+  }
+
+  Future<void> _loadDistricts(String region, String zone) async {
+    try {
+      final res = await ApiService.instance.get('/health-facilities/districts?region=$region&zone=$zone');
+      if (mounted) {
+        setState(() {
+          _districts = List<String>.from(res['districts'] ?? []);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading districts: $e');
     }
   }
 
@@ -243,7 +278,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
         'type': _type,
         'broadcastType': _targetType,
         if (_targetRole != null && _targetType == 'role') 'targetRole': _targetRole,
-        if (_targetDistrict != null && _targetType == 'district') 'targetDistrict': _targetDistrict,
+        if (_selectedDistricts.isNotEmpty && _targetType == 'district') 'targetDistricts': _selectedDistricts,
         'deliveryChannels': channels,
         if (scheduledAt != null) 'scheduledAt': scheduledAt.toIso8601String(),
       };
@@ -338,23 +373,90 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                 ],
                 if (_targetType == 'district') ...[
                   const SizedBox(height: 16),
-                  if (_isLoadingDistricts)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)),
-                    )
-                  else if (_availableDistricts.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Text('No districts available', style: TextStyle(color: Colors.red)),
-                    )
-                  else
+                  const Text('Select Districts by Region → Zone → District', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
+                  const SizedBox(height: 12),
+                  // Region dropdown
+                  DropdownButtonFormField<String>(
+                    value: _selectedRegion,
+                    decoration: const InputDecoration(labelText: 'Region', border: OutlineInputBorder()),
+                    items: _regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
+                    onChanged: (v) {
+                      if (v != null) {
+                        setState(() {
+                          _selectedRegion = v;
+                          _selectedZone = null;
+                          _zones = [];
+                          _districts = [];
+                        });
+                        _loadZones(v);
+                      }
+                    },
+                    validator: _targetType == 'district' ? (v) => v == null ? 'Select region' : null : null,
+                  ),
+                  const SizedBox(height: 12),
+                  // Zone dropdown
+                  if (_selectedRegion != null)
                     DropdownButtonFormField<String>(
-                      value: _targetDistrict,
-                      decoration: const InputDecoration(labelText: 'Select District', border: OutlineInputBorder()),
-                      items: _availableDistricts.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
-                      onChanged: (v) => setState(() => _targetDistrict = v!),
-                      validator: (v) => v == null ? 'Please select a district' : null,
+                      value: _selectedZone,
+                      decoration: const InputDecoration(labelText: 'Zone', border: OutlineInputBorder()),
+                      items: _zones.map((z) => DropdownMenuItem(value: z, child: Text(z))).toList(),
+                      onChanged: (v) {
+                        if (v != null && _selectedRegion != null) {
+                          setState(() => _selectedZone = v);
+                          _loadDistricts(_selectedRegion!, v);
+                        }
+                      },
+                      validator: _targetType == 'district' ? (v) => v == null ? 'Select zone' : null : null,
+                    ),
+                  const SizedBox(height: 12),
+                  // Districts multi-select
+                  if (_selectedZone != null)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('Districts (select one or more)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 8),
+                        if (_districts.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text('No districts available', style: TextStyle(color: Colors.red, fontSize: 12)),
+                          )
+                        else
+                          Container(
+                            decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                            child: ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _districts.length,
+                              itemBuilder: (context, index) {
+                                final district = _districts[index];
+                                final isSelected = _selectedDistricts.contains(district);
+                                return CheckboxListTile(
+                                  value: isSelected,
+                                  title: Text(district, style: const TextStyle(fontSize: 13)),
+                                  onChanged: (v) {
+                                    setState(() {
+                                      if (v == true) {
+                                        _selectedDistricts.add(district);
+                                      } else {
+                                        _selectedDistricts.remove(district);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+                        if (_selectedDistricts.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8.0),
+                            child: Wrap(
+                              spacing: 8,
+                              children: _selectedDistricts.map((d) => Chip(label: Text(d), onDeleted: () {
+                                setState(() => _selectedDistricts.remove(d));
+                              })).toList(),
+                            ),
+                          ),
+                      ],
                     ),
                 ],
                 const SizedBox(height: 16),
