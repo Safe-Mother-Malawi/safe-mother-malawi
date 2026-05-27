@@ -738,12 +738,93 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
               onChanged: (v) => setState(() {
                 _region = v!;
                 _zone = _kZones[_region]!.first;
+                _loadFacilities(_kDistricts.first);
               })),
           _DD(label: 'Zone', value: _zone, items: _zonesForRegion,
               onChanged: (v) => setState(() => _zone = v!)),
           _DD(label: 'District', value: _district, items: _kDistricts,
-              onChanged: (v) => setState(() => _district = v!)),
+              onChanged: (v) => setState(() {
+                _district = v!;
+                _loadFacilities(v!);
+              })),
         ]),
+        const SizedBox(height: 20),
+
+        _SectionLabel('Health Facility Assignment'),
+        const SizedBox(height: 10),
+        if (_loadingFacilities)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Row(children: [
+              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+              SizedBox(width: 10),
+              Text('Loading facilities...'),
+            ]),
+          )
+        else if (_facilities.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.warningBg,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(children: [
+              const Icon(Icons.warning_amber_rounded, size: 16, color: AppColors.warningText),
+              const SizedBox(width: 8),
+              Text('No facilities found for $_district district.',
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.warningText)),
+              const SizedBox(width: 8),
+              TextButton(
+                onPressed: () => _loadFacilities(_district),
+                child: Text('Retry', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.primary)),
+              ),
+            ]),
+          )
+        else ...[
+          SizedBox(
+            width: 460,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('SELECT FACILITY',
+                  style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600,
+                      color: AppColors.mutedText, letterSpacing: 0.8)),
+              const SizedBox(height: 6),
+              DropdownButtonFormField<Map<String, dynamic>>(
+                value: _selectedFacility,
+                hint: Text('Choose a facility in $_district',
+                    style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
+                onChanged: (v) => setState(() => _selectedFacility = v),
+                style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface),
+                decoration: InputDecoration(
+                  filled: true, fillColor: AppColors.surfaceContainerHighest,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                ),
+                items: _facilities.map((f) {
+                  final name = f['facilityName']?.toString() ?? '—';
+                  final type = f['facilityType']?.toString() ?? '';
+                  final ur   = f['urbanRural']?.toString() ?? '';
+                  return DropdownMenuItem<Map<String, dynamic>>(
+                    value: f,
+                    child: Text('$name${type.isNotEmpty ? ' ($type)' : ''}${ur.isNotEmpty ? ' · $ur' : ''}',
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 13)),
+                  );
+                }).toList(),
+              ),
+            ]),
+          ),
+          // Auto-filled read-only fields
+          if (_selectedFacility != null) ...[
+            const SizedBox(height: 16),
+            Wrap(spacing: 16, runSpacing: 12, children: [
+              _ReadOnly(label: 'Facility Name', value: _selectedFacility!['facilityName']?.toString() ?? ''),
+              _ReadOnly(label: 'Urban / Rural', value: _selectedFacility!['urbanRural']?.toString() ?? ''),
+              _ReadOnly(label: 'Facility Type', value: _selectedFacility!['facilityType']?.toString() ?? ''),
+              _ReadOnly(label: 'District', value: _district),
+            ]),
+          ],
+        ],
         const SizedBox(height: 24),
 
         Row(children: [
@@ -757,6 +838,11 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
               'region':   _region,
               'zone':     _zone,
               'district': _district,
+              if (_selectedFacility != null) ...{
+                'facilityName': _selectedFacility!['facilityName']?.toString() ?? '',
+                'urbanRural': _selectedFacility!['urbanRural']?.toString() ?? '',
+                'facilityType': _selectedFacility!['facilityType']?.toString() ?? '',
+              },
             }),
           ),
           const SizedBox(width: 12),
