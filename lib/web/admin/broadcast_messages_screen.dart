@@ -179,8 +179,8 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
   final _bodyCtrl = TextEditingController();
   
   String _type = 'info';
-  String _targetType = 'all';
-  String? _targetRole;
+  String _targetType = 'all'; // 'all', 'role', 'district'
+  String? _selectedRole; // 'staff', 'mobile-users', 'dho', 'clinician'
   String? _targetDistrict;
   
   bool _inApp = true;
@@ -242,7 +242,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
         'body': _bodyCtrl.text,
         'type': _type,
         'broadcastType': _targetType,
-        if (_targetRole != null && _targetType == 'role') 'targetRole': _targetRole,
+        if (_targetType == 'role' && _selectedRole != null) 'targetRole': _selectedRole,
         if (_targetDistrict != null && _targetType == 'district') 'targetDistrict': _targetDistrict,
         'deliveryChannels': channels,
         if (scheduledAt != null) 'scheduledAt': scheduledAt.toIso8601String(),
@@ -314,26 +314,24 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                   onChanged: (v) {
                     setState(() {
                       _targetType = v!;
-                      if (v == 'role') _targetRole = 'prenatal';
+                      if (v == 'role') _selectedRole = 'staff';
                       if (v == 'district') _targetDistrict = null;
                     });
                   },
                 ),
                 if (_targetType == 'role') ...[
                   const SizedBox(height: 16),
+                  const Text('Select Role', style: TextStyle(fontWeight: FontWeight.bold)),
                   DropdownButtonFormField<String>(
-                    value: _targetRole,
-                    decoration: const InputDecoration(labelText: 'Select Role', border: OutlineInputBorder()),
+                    value: _selectedRole,
+                    decoration: const InputDecoration(border: OutlineInputBorder()),
                     items: const [
-                      DropdownMenuItem(value: 'prenatal', child: Text('Prenatal Mothers')),
-                      DropdownMenuItem(value: 'neonatal', child: Text('Neonatal Mothers')),
-                      DropdownMenuItem(value: 'mobile-users', child: Text('Mobile Users (All)')),
+                      DropdownMenuItem(value: 'staff', child: Text('Staff')),
+                      DropdownMenuItem(value: 'mobile-users', child: Text('Mobile Users')),
+                      DropdownMenuItem(value: 'dho', child: Text('DHO')),
                       DropdownMenuItem(value: 'clinician', child: Text('Clinicians')),
-                      DropdownMenuItem(value: 'dho', child: Text('DHOs')),
-                      DropdownMenuItem(value: 'admin', child: Text('Administrators')),
-                      DropdownMenuItem(value: 'all-staff', child: Text('All Staff')),
                     ],
-                    onChanged: (v) => setState(() => _targetRole = v!),
+                    onChanged: (v) => setState(() => _selectedRole = v!),
                   ),
                 ],
                 if (_targetType == 'district') ...[
