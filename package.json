@@ -1,0 +1,11 @@
+{
+  "name": "safe-mother-malawi-web",
+  "version": "1.0.0",
+  "description": "Safe Mother Malawi - Staff Portal Web",
+  "scripts": {
+    "build": "node build-web.js"
+  },
+  "engines": {
+    "node": "24.x"
+  }
+}
