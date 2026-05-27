@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create App Icon</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <br>
+    <button onclick="downloadIcon()">Download Icon</button>
+    
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Background
+        ctx.fillStyle = '#2196F3'; // Material Blue
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // Woman silhouette
+        ctx.fillStyle = 'white';
+        
+        // Head (circle)
+        ctx.beginPath();
+        ctx.arc(256, 180, 50, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Body (rounded rectangle)
+        ctx.beginPath();
+        ctx.roundRect(216, 220, 80, 120, 20);
+        ctx.fill();
+        
+        // Arms
+        ctx.beginPath();
+        ctx.roundRect(186, 240, 20, 70, 10);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.roundRect(306, 240, 20, 70, 10);
+        ctx.fill();
+        
+        // Baby (small circle)
+        ctx.fillStyle = '#FFB74D'; // Light orange
+        ctx.beginPath();
+        ctx.arc(276, 270, 18, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Heart symbol
+        ctx.fillStyle = '#E91E63'; // Pink
+        ctx.beginPath();
+        ctx.arc(230, 260, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.arc(242, 260, 8, 0, 2 * Math.PI);
+        ctx.fill();
+        
+        // Heart bottom
+        ctx.beginPath();
+        ctx.moveTo(222, 265);
+        ctx.lineTo(250, 265);
+        ctx.lineTo(236, 280);
+        ctx.closePath();
+        ctx.fill();
+        
+        function downloadIcon() {
+            const link = document.createElement('a');
+            link.download = 'app_icon.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+    </script>
+</body>
+</html>

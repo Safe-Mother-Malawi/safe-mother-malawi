@@ -1,0 +1,41 @@
+name: safemothermalawi_frontend
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  url_launcher: ^6.3.0
+  image_picker: ^1.1.2
+  fl_chart: ^0.68.0
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  shared_preferences: ^2.2.3
+  http: ^1.2.1
+  socket_io_client: ^3.1.4
+  provider: ^6.1.0
+  flutter_tts: ^4.2.5
+  permission_handler: ^11.0.1
+  connectivity_plus: ^5.0.0
+  firebase_core: ^2.24.0
+  flutter_local_notifications: ^16.1.0
+  timezone: ^0.9.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/baby/
+    - assets/logo/

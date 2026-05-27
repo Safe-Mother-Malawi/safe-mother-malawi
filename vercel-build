@@ -1,0 +1,29 @@
+#!/bin/bash
+set -e
+
+echo "🔨 Building Safe Mother Malawi for Web..."
+
+# Install Flutter if not already installed
+if [ ! -d "flutter" ]; then
+  echo "📥 Installing Flutter..."
+  git clone https://github.com/flutter/flutter.git -b stable --depth 1
+  flutter/bin/flutter config --no-analytics
+fi
+
+# Use web-specific pubspec.yaml without firebase_messaging
+echo "📦 Using web-specific pubspec.yaml..."
+cp pubspec.yaml pubspec.yaml.bak
+cp pubspec_web.yaml pubspec.yaml
+
+# Run flutter pub get
+echo "📦 Running flutter pub get..."
+flutter/bin/flutter pub get
+
+# Build for web
+echo "🌐 Building Flutter web app..."
+flutter/bin/flutter build web --release --dart-define=FLUTTER_WEB_USE_SKIA=true
+
+# Restore original pubspec.yaml
+mv pubspec.yaml.bak pubspec.yaml
+
+echo "✅ Web build completed successfully!"
