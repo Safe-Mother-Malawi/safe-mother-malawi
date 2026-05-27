@@ -426,7 +426,7 @@ class _PrenatalFormState extends State<_PrenatalForm> {
     return Form(
       key: _formKey,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle('Mother Information'),
+        _sectionTitle('Pregnant Woman Details'),
         _twoCol(_field('Full Name', _name, customValidator: _validateFullName), _field('Age', _age, keyboard: TextInputType.number, numericOnly: true)),
         const SizedBox(height: 16),
         _twoCol(_field('Phone Number', _phone, keyboard: TextInputType.phone, customValidator: _validatePhone),
@@ -836,7 +836,7 @@ class _NeonatalFormState extends State<_NeonatalForm> {
     return Form(
       key: _formKey,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        _sectionTitle('Mother Details'),
+        _sectionTitle('Guardian Details'),
         _twoCol(_field('Full Name', _mName, customValidator: _validateFullName), _field('Age', _mAge, keyboard: TextInputType.number, numericOnly: true)),
         const SizedBox(height: 16),
         _twoCol(_field('Phone Number', _mPhone, keyboard: TextInputType.phone, customValidator: _validatePhone),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/animated_pulse_dot.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class ClinicianAlertsPage extends StatefulWidget {
   final void Function(int)? onNavigate;
@@ -15,7 +16,7 @@ class ClinicianAlertsPage extends StatefulWidget {
 }
 
 class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, LiveDataMixin<ClinicianAlertsPage> {
   late TabController _tabCtrl;
   final _search = TextEditingController();
   String _filter = 'All';
@@ -29,10 +30,12 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _load();
+    startLive(_load);
   }
 
   @override
   void dispose() {
+    stopLive();
     _tabCtrl.dispose();
     _search.dispose();
     super.dispose();
@@ -42,11 +45,14 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     try {
       final raw = await ApiService.instance.get('/alerts');
       final list = raw is List ? raw : (raw is Map ? (raw['data'] as List? ?? []) : []);
+      if (!mounted) return;
       setState(() {
         _alerts  = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
         _loading = false;
+        _error = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
   }

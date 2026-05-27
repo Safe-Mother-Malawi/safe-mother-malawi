@@ -3,6 +3,7 @@ import 'dart:async';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
+import '../../../utils/live_data_mixin.dart';
 
 class ClinicianDashboardPage extends StatefulWidget {
   final VoidCallback? onRegisterPatient;
@@ -12,7 +13,7 @@ class ClinicianDashboardPage extends StatefulWidget {
   State<ClinicianDashboardPage> createState() => _ClinicianDashboardPageState();
 }
 
-class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
+class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> with LiveDataMixin<ClinicianDashboardPage> {
   bool _loading = true;
   String? _error;
 
@@ -31,6 +32,7 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
     super.initState();
     _userName = AuthServiceWeb.instance.userName;
     _load();
+    startLive(_load);
     // Refresh appointments every 10 seconds to catch updates/deletions
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _loadTodayAppointments();
@@ -39,6 +41,7 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> {
 
   @override
   void dispose() {
+    stopLive();
     _refreshTimer.cancel();
     super.dispose();
   }

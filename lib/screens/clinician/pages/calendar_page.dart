@@ -472,6 +472,7 @@ class _CalendarPageState extends State<CalendarPage> {
     List<Map<String, dynamic>> allPatients = [];
     List<Map<String, dynamic>> filteredPatients = [];
     bool loadingPatients = false;
+    Map<String, dynamic>? selectedPatient;
 
     // Clear pending data after using it
     ClinicianAlertsPage.pendingAppointmentData = null;
@@ -510,12 +511,11 @@ class _CalendarPageState extends State<CalendarPage> {
           title: 'Add New Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
           contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
-          type: type, date: date,
+          date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
           selectedTime: selectedTime,
-          onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
           onTimeChanged: (t) {
             setS(() {
@@ -530,7 +530,7 @@ class _CalendarPageState extends State<CalendarPage> {
               } else {
                 filteredPatients = allPatients.where((p) {
                   final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
-                  final phone = (p['phone'] ?? '').toString().toLowerCase();
+                  final phone = (p['phone'] ?? p['motherPhone'] ?? '').toString().toLowerCase();
                   final q = query.toLowerCase();
                   return name.contains(q) || phone.contains(q);
                 }).toList();
@@ -540,7 +540,8 @@ class _CalendarPageState extends State<CalendarPage> {
           onPatientSelected: (patient) {
             setS(() {
               patientCtrl.text = (patient['fullName'] ?? patient['motherName'] ?? '').toString();
-              contactCtrl.text = (patient['phone'] ?? '').toString();
+              contactCtrl.text = (patient['phone'] ?? patient['motherPhone'] ?? '').toString();
+              selectedPatient = patient;
               // Update title with patient name
               titleCtrl.text = 'Checkup — ${patientCtrl.text}';
               // Update type based on patient type
@@ -574,7 +575,7 @@ class _CalendarPageState extends State<CalendarPage> {
           onSave: () async {
             Navigator.pop(ctx);
             try {
-              final created = await ApiService.createAppointment({
+              final appointmentBody = <String, dynamic>{
                 'title': titleCtrl.text.trim(),
                 'patientName': patientCtrl.text.trim(),
                 'patientContact': contactCtrl.text.trim(),
@@ -583,7 +584,19 @@ class _CalendarPageState extends State<CalendarPage> {
                 'type': type,
                 'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format
                 'status': 'scheduled',
-              });
+              };
+
+              final selectedPatientId = selectedPatient?['id']?.toString();
+              final selectedPatientType = (selectedPatient?['_type'] ?? type).toString();
+              if (selectedPatientId != null && selectedPatientId.isNotEmpty) {
+                if (selectedPatientType == 'neonatal') {
+                  appointmentBody['neonatalPatientId'] = selectedPatientId;
+                } else {
+                  appointmentBody['prenatalPatientId'] = selectedPatientId;
+                }
+              }
+
+              final created = await ApiService.createAppointment(appointmentBody);
               
               // Schedule reminders for the appointment
               if (created['id'] != null) {
@@ -649,6 +662,7 @@ class _CalendarPageState extends State<CalendarPage> {
     List<Map<String, dynamic>> allPatients = [];
     List<Map<String, dynamic>> filteredPatients = [];
     bool loadingPatients = false;
+    Map<String, dynamic>? selectedPatient;
 
     showDialog(
       context: context,
@@ -684,12 +698,11 @@ class _CalendarPageState extends State<CalendarPage> {
           title: 'Edit Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
           contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
-          type: type, date: date,
+          date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
           loadingPatients: loadingPatients,
           selectedTime: selectedTime,
-          onTypeChanged: (t) => setS(() => type = t),
           onDateChanged: (d) => setS(() => date = d),
           onTimeChanged: (t) {
             setS(() {
@@ -704,7 +717,7 @@ class _CalendarPageState extends State<CalendarPage> {
               } else {
                 filteredPatients = allPatients.where((p) {
                   final name = (p['fullName'] ?? p['motherName'] ?? '').toString().toLowerCase();
-                  final phone = (p['phone'] ?? '').toString().toLowerCase();
+                  final phone = (p['phone'] ?? p['motherPhone'] ?? '').toString().toLowerCase();
                   final q = query.toLowerCase();
                   return name.contains(q) || phone.contains(q);
                 }).toList();
@@ -714,7 +727,8 @@ class _CalendarPageState extends State<CalendarPage> {
           onPatientSelected: (patient) {
             setS(() {
               patientCtrl.text = (patient['fullName'] ?? patient['motherName'] ?? '').toString();
-              contactCtrl.text = (patient['phone'] ?? '').toString();
+              contactCtrl.text = (patient['phone'] ?? patient['motherPhone'] ?? '').toString();
+              selectedPatient = patient;
               // Update title with patient name
               titleCtrl.text = 'Checkup — ${patientCtrl.text}';
               // Update type based on patient type
@@ -748,7 +762,7 @@ class _CalendarPageState extends State<CalendarPage> {
           onSave: () async {
             Navigator.pop(ctx);
             try {
-              await ApiService.updateAppointment(event['id'].toString(), {
+              final appointmentBody = <String, dynamic>{
                 'title': titleCtrl.text.trim(),
                 'patientName': patientCtrl.text.trim(),
                 'patientContact': contactCtrl.text.trim(),
@@ -756,7 +770,21 @@ class _CalendarPageState extends State<CalendarPage> {
                 'notes': notesCtrl.text.trim(),
                 'type': type,
                 'date': date.toIso8601String().split('T')[0],
-              });
+              };
+
+              final selectedPatientId = selectedPatient?['id']?.toString();
+              final selectedPatientType = (selectedPatient?['_type'] ?? type).toString();
+              if (selectedPatientId != null && selectedPatientId.isNotEmpty) {
+                if (selectedPatientType == 'neonatal') {
+                  appointmentBody['neonatalPatientId'] = selectedPatientId;
+                  appointmentBody['prenatalPatientId'] = null;
+                } else {
+                  appointmentBody['prenatalPatientId'] = selectedPatientId;
+                  appointmentBody['neonatalPatientId'] = null;
+                }
+              }
+
+              await ApiService.updateAppointment(event['id'].toString(), appointmentBody);
               
               // Update reminders for the appointment
               if (event['id'] != null) {
@@ -815,12 +843,11 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget _eventDialog({
     required String title,
     required TextEditingController titleCtrl, patientCtrl, contactCtrl, timeCtrl, notesCtrl,
-    required String type, required DateTime date,
+    required DateTime date,
     required List<Map<String, dynamic>> allPatients,
     required List<Map<String, dynamic>> filteredPatients,
     required bool loadingPatients,
     required TimeOfDay selectedTime,
-    required void Function(String) onTypeChanged,
     required void Function(DateTime) onDateChanged,
     required void Function(TimeOfDay) onTimeChanged,
     required void Function(String) onPatientNameChanged,
@@ -850,15 +877,6 @@ class _CalendarPageState extends State<CalendarPage> {
                     padding: EdgeInsets.zero, constraints: const BoxConstraints()),
               ]),
               const SizedBox(height: 20),
-              // Type toggle
-              Row(children: [
-                _typeBtn('Prenatal', 'prenatal', type, onTypeChanged),
-                const SizedBox(width: 8),
-                _typeBtn('Neonatal', 'neonatal', type, onTypeChanged),
-                const SizedBox(width: 8),
-                _typeBtn('Other', 'other', type, onTypeChanged),
-              ]),
-              const SizedBox(height: 16),
               _dlgField('Event Title *', titleCtrl, Icons.title, validator: _validateEventTitle),
               const SizedBox(height: 12),
               // Patient name field with autocomplete
@@ -1089,23 +1107,6 @@ class _CalendarPageState extends State<CalendarPage> {
             ]),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _typeBtn(String label, String t, String current, void Function(String) onChanged) {
-    final sel = current == t;
-    return GestureDetector(
-      onTap: () => onChanged(t),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color: sel ? AppColors.navy : AppColors.g100,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600,
-            color: sel ? Colors.white : AppColors.g600)),
       ),
     );
   }

@@ -6,6 +6,36 @@ import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
+TimeOfDay _parseAppointmentTime(String? rawTime, {TimeOfDay? fallback}) {
+  final defaultTime = fallback ?? const TimeOfDay(hour: 9, minute: 0);
+  final match = RegExp(
+    r'^(\d{1,2})(?::(\d{1,2}))?\s*([ap]m)?$',
+    caseSensitive: false,
+  ).firstMatch(rawTime?.trim() ?? '');
+
+  if (match == null) return defaultTime;
+
+  var hour = int.tryParse(match.group(1) ?? '') ?? defaultTime.hour;
+  final minute = int.tryParse(match.group(2) ?? '0') ?? defaultTime.minute;
+  final period = match.group(3)?.toLowerCase();
+
+  if (period != null) {
+    if (hour == 12) hour = 0;
+    if (period == 'pm') hour += 12;
+  }
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return defaultTime;
+  }
+
+  return TimeOfDay(hour: hour, minute: minute);
+}
+
+DateTime _combineAppointmentDateTime(DateTime date, String? rawTime) {
+  final time = _parseAppointmentTime(rawTime);
+  return DateTime(date.year, date.month, date.day, time.hour, time.minute);
+}
+
 class AppointmentsScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
   const AppointmentsScreen({super.key, this.onOpenDrawer});
@@ -261,15 +291,24 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                     const Spacer(),
                     Switch(
                       value: remindersEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setDialogState(() {
                           remindersEnabled = value;
                         });
-                        // Update the appointment in the list
                         setState(() {
                           appointment['remindersEnabled'] = value;
                         });
-                        // TODO: Send update to backend when API supports it
+                        final appointmentId = appointment['id']?.toString();
+                        if (appointmentId == null || appointmentId.isEmpty) return;
+                        await ReminderService.cancelAppointmentReminders(appointmentId);
+                        if (value) {
+                          await ReminderService.scheduleAppointmentReminders(
+                            appointmentId: appointmentId,
+                            patientName: title,
+                            appointmentDateTime:
+                                _combineAppointmentDateTime(date, time),
+                          );
+                        }
                       },
                       activeTrackColor: const Color(0xFF1A237E),
                     ),
@@ -330,21 +369,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     final notesCtrl = TextEditingController(text: appointment['notes'] ?? '');
     DateTime? picked = DateTime.tryParse(appointment['date'] ?? '');
     
-    // Parse time from appointment
-    TimeOfDay selectedTime = TimeOfDay.now();
-    if (appointment['time'] != null) {
-      try {
-        final timeParts = (appointment['time'] as String).replaceAll(RegExp(r'[^\d:]'), '').split(':');
-        if (timeParts.length >= 2) {
-          selectedTime = TimeOfDay(
-            hour: int.parse(timeParts[0]),
-            minute: int.parse(timeParts[1]),
-          );
-        }
-      } catch (e) {
-        debugPrint('Failed to parse time: $e');
-      }
-    }
+    TimeOfDay selectedTime = _parseAppointmentTime(
+      appointment['time']?.toString(),
+      fallback: TimeOfDay.now(),
+    );
     
     final formKey = GlobalKey<FormState>();
 
@@ -600,7 +628,12 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               Navigator.pop(ctx);
               final messenger = ScaffoldMessenger.of(context);
               try {
-                await ApiService.deleteAppointment(appointment['id'].toString());
+                final appointmentId = appointment['id']?.toString();
+                if (appointmentId == null || appointmentId.isEmpty) {
+                  throw Exception('Missing appointment id');
+                }
+                await ReminderService.cancelAppointmentReminders(appointmentId);
+                await ApiService.deleteAppointment(appointmentId);
                 setState(() {
                   _appointments.removeWhere((a) => a['id'] == appointment['id']);
                 });

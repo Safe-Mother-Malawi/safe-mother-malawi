@@ -34,12 +34,14 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
         ApiService.instance.get('/patients/prenatal'),
         ApiService.instance.get('/patients/neonatal'),
       ]);
+      if (!mounted) return;
       setState(() {
-        _prenatal = (results[0] as List).cast<Map<String, dynamic>>();
-        _neonatal = (results[1] as List).cast<Map<String, dynamic>>();
+        _prenatal = _asMapList(results[0]);
+        _neonatal = _asMapList(results[1]);
         _loading  = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
   }
@@ -70,38 +72,90 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
     }).toList();
   }
 
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return Map<String, dynamic>.from(value);
+    if (value is Map) {
+      return value.map((key, val) => MapEntry(key.toString(), val));
+    }
+    return {};
+  }
+
+  List<Map<String, dynamic>> _asMapList(dynamic value) {
+    if (value is List) {
+      return value
+          .map(_asMap)
+          .where((item) => item.isNotEmpty)
+          .toList();
+    }
+
+    if (value is Map) {
+      final map = _asMap(value);
+      for (final key in ['data', 'items', 'results', 'patients', 'assessments']) {
+        final nested = map[key];
+        if (nested is List) return _asMapList(nested);
+      }
+    }
+
+    return [];
+  }
+
+  String _display(dynamic value, {String fallback = 'N/A'}) {
+    final text = (value ?? '').toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  String _dateDisplay(dynamic value, {String fallback = 'N/A'}) {
+    final text = _display(value, fallback: '');
+    if (text.isEmpty) return fallback;
+
+    final parsed = DateTime.tryParse(text);
+    if (parsed != null) {
+      return parsed.toIso8601String().split('T').first;
+    }
+
+    return text.length >= 10 ? text.substring(0, 10) : text;
+  }
+
+  String _initial(Map<String, dynamic> p) {
+    final name = _patientName(p);
+    return name.isEmpty ? '?' : name.substring(0, 1).toUpperCase();
+  }
+
   String _patientName(Map<String, dynamic> p) =>
       p['_type'] == 'prenatal'
-          ? (p['fullName'] ?? 'Unknown').toString()
-          : (p['motherName'] ?? 'Unknown').toString();
+          ? _display(p['fullName'], fallback: 'Unknown')
+          : _display(p['motherName'], fallback: 'Unknown');
 
   String _patientSub(Map<String, dynamic> p) =>
       p['_type'] == 'prenatal'
           ? 'Prenatal · ${p['pregnancyMonths'] ?? '?'} months'
           : 'Neonatal · ${p['babyName'] ?? 'Baby'}';
 
-  int get _highCount   => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('High')).length;
-  int get _medCount    => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('Moderate')).length;
-  int get _lowCount    => _all.where((p) => (p['latestRiskLevel'] ?? '').toString().contains('Low')).length;
+  int get _highCount   => _all.where((p) => _display(p['latestRiskLevel'], fallback: '').toLowerCase().contains('high')).length;
+  int get _medCount    => _all.where((p) => _display(p['latestRiskLevel'], fallback: '').toLowerCase().contains('moderate')).length;
+  int get _lowCount    => _all.where((p) => _display(p['latestRiskLevel'], fallback: '').toLowerCase().contains('low')).length;
 
   Color _riskColor(String? level) {
-    if (level == null || level.isEmpty) return AppColors.g400;
-    if (level.contains('High') || level.contains('Seek')) return AppColors.red;
-    if (level.contains('Moderate')) return AppColors.orange;
+    final text = _display(level, fallback: '').toLowerCase();
+    if (text.isEmpty) return AppColors.g400;
+    if (text.contains('high') || text.contains('seek')) return AppColors.red;
+    if (text.contains('moderate') || text.contains('medium')) return AppColors.orange;
     return AppColors.green;
   }
 
   Color _riskBg(String? level) {
-    if (level == null || level.isEmpty) return AppColors.g100;
-    if (level.contains('High') || level.contains('Seek')) return AppColors.redL;
-    if (level.contains('Moderate')) return AppColors.orangeL;
+    final text = _display(level, fallback: '').toLowerCase();
+    if (text.isEmpty) return AppColors.g100;
+    if (text.contains('high') || text.contains('seek')) return AppColors.redL;
+    if (text.contains('moderate') || text.contains('medium')) return AppColors.orangeL;
     return AppColors.greenL;
   }
 
   String _riskLabel(String? level) {
-    if (level == null || level.isEmpty) return 'No data';
-    if (level.contains('High') || level.contains('Seek')) return 'High';
-    if (level.contains('Moderate')) return 'Medium';
+    final text = _display(level, fallback: '').toLowerCase();
+    if (text.isEmpty) return 'No data';
+    if (text.contains('high') || text.contains('seek')) return 'High';
+    if (text.contains('moderate') || text.contains('medium')) return 'Medium';
     return 'Low';
   }
 
@@ -132,7 +186,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           ),
           if (_selected != null) ...[
             const SizedBox(width: 16),
-            Expanded(flex: 3, child: _buildDetailPanel()),
+            Expanded(flex: 3, child: _buildSafeDetailPanel()),
           ],
         ]),
       ]),
@@ -269,8 +323,12 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
 
     return GestureDetector(
       onTap: () {
-        setState(() { _selected = p; _selectedType = p['_type'] as String; });
-        _loadPatientHistory(p['id'].toString(), p['_type'] as String);
+        final patientType = _display(p['_type'], fallback: 'prenatal');
+        final patientId = _display(p['id'], fallback: '');
+        setState(() { _selected = p; _selectedType = patientType; });
+        if (patientId.isNotEmpty) {
+          _loadPatientHistory(patientId, patientType);
+        }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -283,7 +341,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           Container(width: 8, height: 8, margin: const EdgeInsets.only(right: 10),
               decoration: BoxDecoration(color: riskColor, shape: BoxShape.circle)),
           CircleAvatar(radius: 16, backgroundColor: AppColors.navyL,
-              child: Text(_patientName(p)[0],
+              child: Text(_initial(p),
                   style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
           const SizedBox(width: 10),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -309,17 +367,58 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
     setState(() { _historyLoading = true; _riskHistory = []; });
     try {
       final data = await ApiService.instance.get('/risk-assessments/patient/$id');
-      if (data is List) {
-        setState(() { _riskHistory = data.cast<Map<String, dynamic>>(); _historyLoading = false; });
-      } else if (data is Map<String, dynamic>) {
-        // Handle case where API returns a single object
-        setState(() { _riskHistory = [data]; _historyLoading = false; });
-      } else {
-        setState(() { _riskHistory = []; _historyLoading = false; });
-      }
+      final history = _asMapList(data);
+      final single = _asMap(data);
+      if (!mounted) return;
+      setState(() {
+        _riskHistory = history.isNotEmpty
+            ? history
+            : (single.containsKey('riskLevel') || single.containsKey('score')
+                ? [single]
+                : <Map<String, dynamic>>[]);
+        _historyLoading = false;
+      });
     } catch (e) {
-      print('Error loading patient history: $e');
-      setState(() { _riskHistory = []; _historyLoading = false; });
+      debugPrint('Error loading patient history: $e');
+      if (mounted) {
+        setState(() {
+          _riskHistory = [];
+          _historyLoading = false;
+        });
+      }
+    }
+  }
+
+  Widget _buildSafeDetailPanel() {
+    try {
+      return _buildDetailPanel();
+    } catch (e, stackTrace) {
+      debugPrint('Risk detail render failed: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.g200),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Row(children: [
+            Icon(Icons.error_outline, color: AppColors.red, size: 18),
+            SizedBox(width: 8),
+            Text('Could not display this patient',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.g800)),
+          ]),
+          const SizedBox(height: 8),
+          const Text('This record has missing or unexpected data. The patient list is still available.',
+              style: TextStyle(fontSize: 12, color: AppColors.g600)),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: () => setState(() { _selected = null; _selectedType = ''; }),
+            child: const Text('Back to list'),
+          ),
+        ]),
+      );
     }
   }
 
@@ -341,7 +440,7 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
           decoration: const BoxDecoration(color: AppColors.navyL, borderRadius: BorderRadius.vertical(top: Radius.circular(12))),
           child: Row(children: [
             CircleAvatar(radius: 22, backgroundColor: Colors.white,
-                child: Text(_patientName(p)[0],
+                child: Text(_initial(p),
                     style: const TextStyle(color: AppColors.navy, fontSize: 16, fontWeight: FontWeight.bold))),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -372,28 +471,28 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
             // Contact info
             _section('Contact', [
               if (type == 'prenatal') ...[
-                _row(Icons.phone, 'Phone', p['phone'] ?? 'N/A'),
-                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
-                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+                _row(Icons.phone, 'Phone', _display(p['phone'])),
+                _row(Icons.location_on_outlined, 'District', _display(p['district'])),
+                _row(Icons.local_hospital_outlined, 'Health Centre', _display(p['facilityName'])),
               ] else ...[
-                _row(Icons.phone, 'Mother Phone', p['motherPhone'] ?? 'N/A'),
-                _row(Icons.location_on_outlined, 'District', p['district'] ?? 'N/A'),
-                _row(Icons.local_hospital_outlined, 'Health Centre', p['facilityName'] ?? 'N/A'),
+                _row(Icons.phone, 'Mother Phone', _display(p['motherPhone'])),
+                _row(Icons.location_on_outlined, 'District', _display(p['district'])),
+                _row(Icons.local_hospital_outlined, 'Health Centre', _display(p['facilityName'])),
               ],
             ]),
             const SizedBox(height: 16),
 
             if (type == 'prenatal')
               _section('Pregnancy', [
-                _row(Icons.pregnant_woman, 'Duration', '${p['pregnancyMonths'] ?? '?'} months'),
-                if (p['expectedDeliveryDate'] != null)
-                  _row(Icons.calendar_today_outlined, 'EDD', p['expectedDeliveryDate'].toString().substring(0, 10)),
+                _row(Icons.pregnant_woman, 'Duration', '${_display(p['pregnancyMonths'], fallback: '?')} months'),
+                if (_display(p['expectedDeliveryDate'], fallback: '').isNotEmpty)
+                  _row(Icons.calendar_today_outlined, 'EDD', _dateDisplay(p['expectedDeliveryDate'])),
               ])
             else
               _section('Baby Details', [
-                _row(Icons.child_friendly_outlined, 'Baby Name', p['babyName'] ?? 'N/A'),
-                _row(Icons.cake_outlined, 'Date of Birth', (p['babyDob'] ?? 'N/A').toString().substring(0, 10)),
-                _row(Icons.wc_outlined, 'Gender', p['babyGender'] ?? 'N/A'),
+                _row(Icons.child_friendly_outlined, 'Baby Name', _display(p['babyName'])),
+                _row(Icons.cake_outlined, 'Date of Birth', _dateDisplay(p['babyDob'])),
+                _row(Icons.wc_outlined, 'Gender', _display(p['babyGender'])),
               ]),
 
             const SizedBox(height: 16),
@@ -415,10 +514,9 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
               )
             else
               ..._riskHistory.take(5).map((r) {
-                final rl    = (r['riskLevel'] ?? '').toString();
-                final score = r['score']?.toString() ?? '0';
-                final date  = (r['submittedAt'] ?? r['createdAt'] ?? '').toString();
-                final dateStr = date.length >= 10 ? date.substring(0, 10) : date;
+                final rl    = _display(r['riskLevel'], fallback: 'No data');
+                final score = _display(r['score'], fallback: '0');
+                final dateStr = _dateDisplay(r['submittedAt'] ?? r['createdAt'], fallback: '');
                 final rc    = _riskColor(rl);
                 final rb    = _riskBg(rl);
                 return Container(
@@ -429,11 +527,17 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
                   child: Row(children: [
                     Container(width: 7, height: 7, decoration: BoxDecoration(color: rc, shape: BoxShape.circle)),
                     const SizedBox(width: 8),
-                    Text(rl, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: rc)),
+                    Expanded(
+                      child: Text(rl,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: rc)),
+                    ),
                     const SizedBox(width: 8),
                     Text('Score: $score', style: const TextStyle(fontSize: 11, color: AppColors.g600)),
-                    const Spacer(),
-                    Text(dateStr, style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+                    if (dateStr.isNotEmpty) ...[
+                      const SizedBox(width: 8),
+                      Text(dateStr, style: const TextStyle(fontSize: 10, color: AppColors.g400)),
+                    ],
                   ]),
                 );
               }),
@@ -463,9 +567,19 @@ class _RiskScoringPageState extends State<RiskScoringPage> {
       child: Row(children: [
         Icon(icon, size: 15, color: AppColors.navy),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
-        const Spacer(),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
+        Expanded(
+          child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        ),
+        const SizedBox(width: 10),
+        Flexible(
+          child: Text(
+            value,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.right,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800),
+          ),
+        ),
       ]),
     );
   }

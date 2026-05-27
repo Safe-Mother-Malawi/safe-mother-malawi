@@ -1,8 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../services/reminder_service.dart';
 import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
+
+DateTime _combineAppointmentDateTime(DateTime date, String? rawTime) {
+  var hour = 9;
+  var minute = 0;
+  final match = RegExp(
+    r'^(\d{1,2})(?::(\d{1,2}))?\s*([ap]m)?$',
+    caseSensitive: false,
+  ).firstMatch(rawTime?.trim() ?? '');
+
+  if (match != null) {
+    hour = int.tryParse(match.group(1) ?? '') ?? hour;
+    minute = int.tryParse(match.group(2) ?? '0') ?? minute;
+    final period = match.group(3)?.toLowerCase();
+
+    if (period != null) {
+      if (hour == 12) hour = 0;
+      if (period == 'pm') hour += 12;
+    }
+
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      hour = 9;
+      minute = 0;
+    }
+  }
+
+  return DateTime(date.year, date.month, date.day, hour, minute);
+}
 
 class ScheduleScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -145,15 +173,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     const Spacer(),
                     Switch(
                       value: remindersEnabled,
-                      onChanged: (value) {
+                      onChanged: (value) async {
                         setDialogState(() {
                           remindersEnabled = value;
                         });
-                        // Update the appointment in the list
                         setState(() {
                           appointment['remindersEnabled'] = value;
                         });
-                        // TODO: Send update to backend when API supports it
+                        final appointmentId = appointment['id']?.toString();
+                        if (appointmentId == null || appointmentId.isEmpty) return;
+                        await ReminderService.cancelAppointmentReminders(appointmentId);
+                        if (value) {
+                          await ReminderService.scheduleAppointmentReminders(
+                            appointmentId: appointmentId,
+                            patientName: title,
+                            appointmentDateTime:
+                                _combineAppointmentDateTime(date, time),
+                          );
+                        }
                       },
                       activeTrackColor: const Color(0xFF1A237E),
                     ),
@@ -341,6 +378,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       'notes': (notesCtrl.text.isEmpty ? '' : notesCtrl.text) + 
                                (locationCtrl.text.isEmpty ? '' : '\nLocation: ${locationCtrl.text}'),
                     });
+                    final appointmentId = appointment['id']?.toString();
+                    if (appointmentId != null && appointmentId.isNotEmpty) {
+                      await ReminderService.cancelAppointmentReminders(appointmentId);
+                      if (appointment['remindersEnabled'] ?? true) {
+                        await ReminderService.scheduleAppointmentReminders(
+                          appointmentId: appointmentId,
+                          patientName: titleCtrl.text,
+                          appointmentDateTime:
+                              _combineAppointmentDateTime(picked!, timeCtrl.text),
+                        );
+                      }
+                    }
                     setState(() {
                       final idx = _appointments.indexWhere((a) => a['id'] == appointment['id']);
                       if (idx != -1) {
@@ -401,7 +450,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               Navigator.pop(ctx);
               final messenger = ScaffoldMessenger.of(context);
               try {
-                await ApiService.deleteAppointment(appointment['id'].toString());
+                final appointmentId = appointment['id']?.toString();
+                if (appointmentId == null || appointmentId.isEmpty) {
+                  throw Exception('Missing appointment id');
+                }
+                await ReminderService.cancelAppointmentReminders(appointmentId);
+                await ApiService.deleteAppointment(appointmentId);
                 setState(() {
                   _appointments.removeWhere((a) => a['id'] == appointment['id']);
                 });
@@ -1028,6 +1082,14 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
                   'notes': locationCtrl.text.isEmpty ? '' : 'Location: ${locationCtrl.text}',
                   'status': 'scheduled',
                 });
+                if (created['id'] != null) {
+                  await ReminderService.scheduleAppointmentReminders(
+                    appointmentId: created['id'].toString(),
+                    patientName: titleCtrl.text,
+                    appointmentDateTime:
+                        _combineAppointmentDateTime(pickedDate, timeCtrl.text),
+                  );
+                }
                 widget.onSave(created);
                 if (mounted) {
                   messenger.showSnackBar(

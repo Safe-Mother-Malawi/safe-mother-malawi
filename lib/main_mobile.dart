@@ -4,12 +4,18 @@ import 'mobile/auth/screens/splash_screen.dart';
 import 'mobile/auth/services/auth_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/mobile_user_provider.dart';
+import 'services/reminder_service.dart';
 
 // Global navigator key — used by logout to always reach the root navigator
 final navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await ReminderService.initialize();
+  } catch (e) {
+    debugPrint('Reminder service initialization failed: $e');
+  }
   await AuthService().seedDemoAccounts(); // always sync demo data before app starts
   runApp(const SafeMotherMobileApp());
 }
