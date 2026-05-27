@@ -136,7 +136,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
 
   Future<void> _silentLoad() async {
     try {
-      print('[AdminOverview] Starting silent load...');
       final results = await Future.wait([
         _safeGet('/analytics/overview'),
         _safeGet('/analytics/registrations'),
@@ -148,7 +147,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _safeGet('/analytics/clinician-activity'),
         _safeGet('/analytics/appointment-statuses'),
       ]);
-      print('[AdminOverview] Results received: ${results.map((r) => r != null ? 'OK' : 'NULL').toList()}');
       final overview      = _asMap(results[0]);
       final regTrends     = _asMap(results[1]);
       final riskDist      = _asList(results[2]);
@@ -190,14 +188,7 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
   }
 
   Future<dynamic> _safeGet(String path) async {
-    try { 
-      final result = await ApiService.instance.get(path);
-      print('[AdminOverview] GET $path: OK');
-      return result;
-    } catch (e) { 
-      print('[AdminOverview] GET $path: ERROR - $e');
-      return null; 
-    }
+    try { return await ApiService.instance.get(path); } catch (_) { return null; }
   }
 
   Map<String, dynamic> _asMap(dynamic d) =>
@@ -207,7 +198,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
 
   Future<void> _load() async {
     try {
-      print('[AdminOverview] Loading data...');
       final results = await Future.wait([
         _safeGet('/analytics/overview'),
         _safeGet('/analytics/registrations'),
@@ -220,7 +210,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _safeGet('/analytics/appointment-statuses'),
       ]);
 
-      print('[AdminOverview] Data loaded, processing...');
       final overview  = _asMap(results[0]);
       final regTrends = _asMap(results[1]);
       final riskDist  = _asList(results[2]);
@@ -230,10 +219,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
       final ancCompliance = _asMap(results[6]);
       final clinAct = _asList(results[7]);
       final apptStatus = _asList(results[8]);
-
-      print('[AdminOverview] Overview: $overview');
-      print('[AdminOverview] RegTrends: $regTrends');
-      print('[AdminOverview] RiskDist: $riskDist');
 
       // Build registration spots from prenatal monthly data
       final prenatalMonths = _asList(regTrends['prenatal']);
@@ -284,7 +269,6 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         _loading           = false;
       });
     } catch (e) {
-      print('[AdminOverview] Error loading data: $e');
       setState(() { _error = e.toString(); _loading = false; });
     }
   }
