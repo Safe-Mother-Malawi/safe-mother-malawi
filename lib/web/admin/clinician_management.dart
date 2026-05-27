@@ -838,11 +838,11 @@ class _EditClinicianFormState extends State<_EditClinicianForm> {
               'region':   _region,
               'zone':     _zone,
               'district': _district,
-              if (_selectedFacility != null) ...[
+              if (_selectedFacility != null) ...{
                 'facilityName': _selectedFacility!['facilityName']?.toString() ?? '',
                 'urbanRural': _selectedFacility!['urbanRural']?.toString() ?? '',
                 'facilityType': _selectedFacility!['facilityType']?.toString() ?? '',
-              ],
+              },
             }),
           ),
           const SizedBox(width: 12),
