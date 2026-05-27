@@ -13,6 +13,7 @@ import '../admin/analytics_dashboard.dart';
 import '../admin/task_analytics.dart';
 import '../admin/question_insights.dart';
 import '../admin/reports_screen_export.dart';
+import 'facilities_view.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
@@ -52,6 +53,7 @@ class _DhoOverviewState extends State<DhoOverview> {
       case '/task-analytics':     return const TaskAnalytics();
       case '/question-insights':  return const QuestionInsights();
       case '/reports':            return const ReportsScreen();
+      case '/facilities':         return const DhoFacilitiesView();
       default:                    return const _DhoOverviewBody();
     }
   }
@@ -65,6 +67,7 @@ class _DhoOverviewState extends State<DhoOverview> {
       '/task-analytics':    'Task Analytics',
       '/question-insights': 'Question Insights',
       '/reports':           'Reports',
+      '/facilities':        'Health Facilities',
     };
     return titles[_currentRoute] ?? 'DHO Dashboard';
   }

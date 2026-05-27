@@ -39,6 +39,8 @@ const List<NavItem> _flatItems = [
       allowedRoles: [UserRole.admin]),
 
   // ── DHO only ──────────────────────────────────────────────────────────────
+  NavItem(label: 'Health Facilities', icon: Icons.local_hospital_rounded, route: '/facilities',
+      allowedRoles: [UserRole.dho]),
   NavItem(label: 'Clinician Management', icon: Icons.people_alt_rounded, route: '/clinicians',
       allowedRoles: [UserRole.dho]),
   NavItem(label: 'Analytics Dashboard', icon: Icons.bar_chart_rounded, route: '/analytics',
