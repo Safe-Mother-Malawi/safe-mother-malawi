@@ -31,9 +31,13 @@ mixin LiveDataMixin<T extends StatefulWidget> on State<T> {
 
   /// Start real-time updates. [callback] is called on every socket event
   /// and also every 30 seconds as a fallback.
-  void startLive(Future<void> Function() callback) {
-    _connectSocket(callback);
-    _pollTimer = Timer.periodic(_pollInterval, (_) async {
+  void startLive(
+    Future<void> Function() callback, {
+    Duration pollInterval = _pollInterval,
+    void Function(String event, dynamic payload)? onEvent,
+  }) {
+    _connectSocket(callback, onEvent: onEvent);
+    _pollTimer = Timer.periodic(pollInterval, (_) async {
       if (!mounted) return;
       try { await callback(); } catch (_) {}
     });
@@ -50,12 +54,15 @@ mixin LiveDataMixin<T extends StatefulWidget> on State<T> {
 
   // ── Legacy alias so existing startPolling calls still compile ────────────
   void startPolling(Future<void> Function() callback, {Duration interval = _pollInterval}) {
-    startLive(callback);
+    startLive(callback, pollInterval: interval);
   }
 
   void stopPolling() => stopLive();
 
-  void _connectSocket(Future<void> Function() callback) {
+  void _connectSocket(
+    Future<void> Function() callback, {
+    void Function(String event, dynamic payload)? onEvent,
+  }) {
     try {
       _socket = io.io(
         ApiConfig.wsUrl,
@@ -69,8 +76,9 @@ mixin LiveDataMixin<T extends StatefulWidget> on State<T> {
       );
 
       for (final event in _events) {
-        _socket!.on(event, (_) async {
+        _socket!.on(event, (payload) async {
           if (!mounted) return;
+          onEvent?.call(event, payload);
           try { await callback(); } catch (_) {}
         });
       }

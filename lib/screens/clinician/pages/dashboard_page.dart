@@ -32,7 +32,7 @@ class _ClinicianDashboardPageState extends State<ClinicianDashboardPage> with Li
     super.initState();
     _userName = AuthServiceWeb.instance.userName;
     _load();
-    startLive(_load);
+    startLive(_load, pollInterval: const Duration(seconds: 5));
     // Refresh appointments every 10 seconds to catch updates/deletions
     _refreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
       _loadTodayAppointments();

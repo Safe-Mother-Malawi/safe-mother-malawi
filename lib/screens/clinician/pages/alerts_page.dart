@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
 import '../../../widgets/animated_pulse_dot.dart';
 import '../../../services/api_service.dart';
+import '../../../services/auth_service_web.dart';
 import '../../../utils/live_data_mixin.dart';
 
 class ClinicianAlertsPage extends StatefulWidget {
@@ -24,18 +26,27 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _alerts = [];
+  Timer? _timeTicker;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _load();
-    startLive(_load);
+    startLive(
+      _load,
+      pollInterval: const Duration(seconds: 5),
+      onEvent: _handleLiveEvent,
+    );
+    _timeTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && _alerts.isNotEmpty) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     stopLive();
+    _timeTicker?.cancel();
     _tabCtrl.dispose();
     _search.dispose();
     super.dispose();
@@ -47,7 +58,11 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
       final list = raw is List ? raw : (raw is Map ? (raw['data'] as List? ?? []) : []);
       if (!mounted) return;
       setState(() {
-        _alerts  = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+        _alerts = list
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList()
+          ..sort(_newestFirst);
         _loading = false;
         _error = null;
       });
@@ -55,6 +70,71 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
       if (!mounted) return;
       setState(() { _error = e.toString(); _loading = false; });
     }
+  }
+
+  void _handleLiveEvent(String event, dynamic payload) {
+    if (event != 'alert:created' || payload is! Map || !mounted) return;
+
+    final alert = _alertFromPayload(payload);
+    if (!_isVisibleForCurrentClinician(alert)) return;
+
+    setState(() {
+      final id = _text(alert['id']);
+      final index = id.isEmpty
+          ? -1
+          : _alerts.indexWhere((item) => _text(item['id']) == id);
+
+      if (index >= 0) {
+        _alerts[index] = {..._alerts[index], ...alert};
+      } else {
+        _alerts.insert(0, alert);
+      }
+
+      _alerts.sort(_newestFirst);
+      _loading = false;
+      _error = null;
+    });
+  }
+
+  Map<String, dynamic> _alertFromPayload(Map payload) {
+    final alert = payload.map((key, value) => MapEntry(key.toString(), value));
+    alert['createdAt'] = _text(
+      alert['createdAt'],
+      fallback: DateTime.now().toUtc().toIso8601String(),
+    );
+    alert['attended'] = alert['attended'] == true;
+
+    final symptoms = alert['symptoms'];
+    alert['symptoms'] = symptoms is List
+        ? symptoms.map((item) => item.toString()).toList()
+        : <String>[];
+
+    return alert;
+  }
+
+  bool _isVisibleForCurrentClinician(Map<String, dynamic> alert) {
+    final user = AuthServiceWeb.instance.currentUser;
+    if (user == null) return true;
+
+    final role = _text(user['role']).toLowerCase();
+    if (role != 'clinician') return true;
+
+    final clinicianId = _text(user['id']);
+    final alertClinicianId = _text(alert['clinicianId']);
+    if (clinicianId.isNotEmpty && clinicianId == alertClinicianId) return true;
+
+    final userDistrict = _text(user['district']);
+    final userFacility = _text(user['facilityName']);
+    final alertDistrict = _text(alert['district']);
+    final alertFacility = _text(alert['facilityName']);
+
+    if (userDistrict.isEmpty) return alertDistrict.isEmpty;
+    if (alertDistrict.isNotEmpty && !_same(userDistrict, alertDistrict)) {
+      return false;
+    }
+
+    if (userFacility.isEmpty) return true;
+    return alertFacility.isEmpty || _same(userFacility, alertFacility);
   }
 
   Future<void> _markAttended(Map<String, dynamic> alert) async {
@@ -87,14 +167,11 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
         final q = _search.text.toLowerCase();
         if (q.isNotEmpty && !(a['patientName'] ?? '').toString().toLowerCase().contains(q)) return false;
         return true;
-      }).toList();
+      }).toList()
+        ..sort(_newestFirst);
 
-  List<Map<String, dynamic>> get _history => List.from(_alerts)
-    ..sort((a, b) {
-      final ta = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime(2000);
-      final tb = DateTime.tryParse(b['createdAt'] ?? '') ?? DateTime(2000);
-      return tb.compareTo(ta);
-    });
+  List<Map<String, dynamic>> get _history =>
+      List<Map<String, dynamic>>.from(_alerts)..sort(_newestFirst);
 
   Map<String, List<Map<String, dynamic>>> _groupByDate(List<Map<String, dynamic>> list) {
     final now       = DateTime.now();
@@ -102,7 +179,7 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     final yesterday = today.subtract(const Duration(days: 1));
     final map       = <String, List<Map<String, dynamic>>>{};
     for (final a in list) {
-      final dt = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime(2000);
+      final dt = _parseCreatedAt(a['createdAt']);
       final d  = DateTime(dt.year, dt.month, dt.day);
       String key;
       if (d == today) key = 'Today';
@@ -253,12 +330,12 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     final severity   = (a['severity'] ?? 'high').toString();
     final isCritical = severity == 'critical';
     final riskColor  = isCritical ? AppColors.red : AppColors.orange;
-    final name       = a['patientName'] as String? ?? 'Unknown';
-    final status     = a['patientStatus'] as String? ?? '';
-    final reason     = a['reason'] as String? ?? '';
-    final contact    = a['contact'] as String? ?? '';
+    final name       = _text(a['patientName'], fallback: 'Unknown');
+    final status     = _text(a['patientStatus']);
+    final reason     = _text(a['reason']);
+    final contact    = _text(a['contact']);
     final symptoms   = (a['symptoms'] as List<dynamic>? ?? []).cast<String>();
-    final ts         = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+    final ts         = _parseCreatedAt(a['createdAt']);
 
     return GestureDetector(
       onTap: () => setState(() => a['_expanded'] = !(a['_expanded'] == true)),
@@ -276,7 +353,7 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Padding(padding: const EdgeInsets.only(top: 4, right: 10), child: AnimatedPulseDot(color: riskColor, size: 9)),
               CircleAvatar(radius: 17, backgroundColor: AppColors.navyL,
-                  child: Text(name[0], style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
+                  child: Text(_initial(name), style: const TextStyle(color: AppColors.navy, fontSize: 12, fontWeight: FontWeight.bold))),
               const SizedBox(width: 12),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
@@ -401,10 +478,10 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
     final isCritical = severity == 'critical';
     final riskColor  = isCritical ? AppColors.red : AppColors.orange;
     final attended   = a['attended'] == true;
-    final name       = a['patientName'] as String? ?? 'Unknown';
-    final status     = a['patientStatus'] as String? ?? '';
-    final reason     = a['reason'] as String? ?? '';
-    final ts         = DateTime.tryParse(a['createdAt'] ?? '') ?? DateTime.now();
+    final name       = _text(a['patientName'], fallback: 'Unknown');
+    final status     = _text(a['patientStatus']);
+    final reason     = _text(a['reason']);
+    final ts         = _parseCreatedAt(a['createdAt']);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -418,7 +495,7 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
         Padding(padding: const EdgeInsets.only(top: 4, right: 10),
             child: Container(width: 9, height: 9, decoration: BoxDecoration(color: attended ? AppColors.green : riskColor, shape: BoxShape.circle))),
         CircleAvatar(radius: 16, backgroundColor: AppColors.navyL,
-            child: Text(name[0], style: const TextStyle(color: AppColors.navy, fontSize: 11, fontWeight: FontWeight.bold))),
+            child: Text(_initial(name), style: const TextStyle(color: AppColors.navy, fontSize: 11, fontWeight: FontWeight.bold))),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
@@ -468,10 +545,38 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
   }
 
   String _timeAgo(DateTime t) {
-    final diff = DateTime.now().difference(t);
-    if (diff.inMinutes < 60) return '${diff.inMinutes} min ago';
+    final localTime = t.isUtc ? t.toLocal() : t;
+    var diff = DateTime.now().difference(localTime);
+    if (diff.isNegative) diff = Duration.zero;
+    if (diff.inSeconds < 60) return '${diff.inSeconds}s ago';
+    if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
     if (diff.inHours < 24) return '${diff.inHours}h ago';
     return '${diff.inDays}d ago';
+  }
+
+  int _newestFirst(Map<String, dynamic> a, Map<String, dynamic> b) {
+    return _parseCreatedAt(b['createdAt']).compareTo(_parseCreatedAt(a['createdAt']));
+  }
+
+  DateTime _parseCreatedAt(dynamic value) {
+    final parsed = DateTime.tryParse(_text(value));
+    if (parsed == null) return DateTime.now();
+    return parsed.isUtc ? parsed.toLocal() : parsed;
+  }
+
+  String _initial(String name) {
+    final value = name.trim();
+    if (value.isEmpty) return '?';
+    return value.substring(0, 1).toUpperCase();
+  }
+
+  String _text(dynamic value, {String fallback = ''}) {
+    final text = (value ?? '').toString().trim();
+    return text.isEmpty ? fallback : text;
+  }
+
+  bool _same(String left, String right) {
+    return left.trim().toLowerCase() == right.trim().toLowerCase();
   }
 }
 
