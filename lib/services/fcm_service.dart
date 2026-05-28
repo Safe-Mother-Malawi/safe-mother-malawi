@@ -13,13 +13,24 @@ class FCMService {
 
   late ApiService _apiService;
   String? _currentToken;
+  Function(Map<String, dynamic>)? _onForegroundMessage;
 
   /// Initialize FCM service
-  Future<void> initialize(ApiService apiService) async {
+  Future<void> initialize(
+    ApiService apiService, {
+    Function(Map<String, dynamic>)? onForegroundMessage,
+  }) async {
     _apiService = apiService;
+    _onForegroundMessage = onForegroundMessage;
+    
     // FCM initialization would go here on mobile
     // On web, this is a no-op
     print('✓ FCM Service initialized (stub)');
+  }
+
+  /// Set foreground message handler
+  void setForegroundMessageHandler(Function(Map<String, dynamic>) handler) {
+    _onForegroundMessage = handler;
   }
 
   /// Get current FCM token

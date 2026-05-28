@@ -38,14 +38,17 @@ class NotificationService {
     _fcmService = FCMService();
     _soundService = NotificationSoundService();
 
-    // Initialize FCM service (handles token registration on mobile)
-    await _fcmService.initialize(apiService);
-
     // Initialize local notifications
     await _initializeLocalNotifications();
 
     // Initialize sound service
     await _soundService.initialize();
+
+    // Initialize FCM service with foreground message handler
+    await _fcmService.initialize(
+      apiService,
+      onForegroundMessage: _handleForegroundMessage,
+    );
 
     _isInitialized = true;
     print('✓ Notification Service initialized');
@@ -93,24 +96,47 @@ class NotificationService {
     }
   }
 
-  /// Handle foreground messages (stub for mobile)
+  /// Handle foreground messages - plays sound and shows notification in real-time
   void _handleForegroundMessage(dynamic message) {
-    print('📬 Message received');
+    print('📬 Message received in foreground');
     
-    // Play notification sound immediately when message arrives
-    _playNotificationSoundAsync();
+    // Extract notification data
+    final title = message['notification']?['title'] ?? 'Notification';
+    final body = message['notification']?['body'] ?? 'New message';
+    final data = message['data'] as Map<String, dynamic>? ?? {};
     
+    // Play notification sound immediately (real-time)
+    _playNotificationSoundAsync(data);
+    
+    // Show local notification
+    _showLocalNotification(
+      title: title,
+      body: body,
+      data: data,
+    );
+    
+    // Emit to stream for UI listeners
     _notificationStream.add({
       'type': 'foreground',
+      'title': title,
+      'body': body,
+      'data': data,
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
 
-  /// Play notification sound asynchronously (fire-and-forget)
-  void _playNotificationSoundAsync() {
+  /// Play notification sound asynchronously based on notification type (fire-and-forget)
+  void _playNotificationSoundAsync(Map<String, dynamic> data) {
+    // Determine sound type from notification data
+    final soundType = (data['soundType'] ?? 'alert').toString().toLowerCase();
+    final volume = double.tryParse(data['volume']?.toString() ?? '1.0') ?? 1.0;
+    
     // Fire and forget - don't wait for completion
-    _soundService.playNotificationSound(soundType: 'alert', volume: 1.0).catchError((e) {
-      print('Error playing notification sound: $e');
+    _soundService.playNotificationSound(
+      soundType: soundType,
+      volume: volume,
+    ).catchError((e) {
+      print('❌ Error playing notification sound: $e');
     });
   }
 
