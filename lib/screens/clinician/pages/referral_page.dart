@@ -927,10 +927,10 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
                         labelText: 'Referring Facility *',
                         border: OutlineInputBorder(),
                       ),
-                      items: _facilities.map((facility) {
-                        return DropdownMenuItem(
-                          value: facility['id'],
-                          child: Text(facility['facilityName'] ?? 'Unknown'),
+                      items: _facilities.map<DropdownMenuItem<String>>((facility) {
+                        return DropdownMenuItem<String>(
+                          value: facility['id'] as String,
+                          child: Text(facility['facilityName'] as String? ?? 'Unknown'),
                         );
                       }).toList(),
                       onChanged: (value) => setState(() => _selectedReferringFacility = value),
@@ -945,10 +945,10 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
                         labelText: 'Receiving Facility *',
                         border: OutlineInputBorder(),
                       ),
-                      items: _facilities.map((facility) {
-                        return DropdownMenuItem(
-                          value: facility['id'],
-                          child: Text(facility['facilityName'] ?? 'Unknown'),
+                      items: _facilities.map<DropdownMenuItem<String>>((facility) {
+                        return DropdownMenuItem<String>(
+                          value: facility['id'] as String,
+                          child: Text(facility['facilityName'] as String? ?? 'Unknown'),
                         );
                       }).toList(),
                       onChanged: (value) => setState(() => _selectedReceivingFacility = value),
