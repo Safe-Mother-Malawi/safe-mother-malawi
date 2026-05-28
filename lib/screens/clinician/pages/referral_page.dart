@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../../../services/referral_service.dart';
+import '../../../services/api_service.dart';
 import '../../../theme/app_colors.dart';
 
 class ReferralPage extends StatefulWidget {
@@ -12,11 +14,76 @@ class ReferralPage extends StatefulWidget {
 class _ReferralPageState extends State<ReferralPage> {
   late Future<List<Referral>> _referralsFuture;
   String _filterStatus = 'all';
+  IO.Socket? _socket;
+  List<Referral> _referrals = [];
 
   @override
   void initState() {
     super.initState();
     _loadReferrals();
+    _initializeWebSocket();
+  }
+
+  @override
+  void dispose() {
+    _socket?.disconnect();
+    super.dispose();
+  }
+
+  void _initializeWebSocket() {
+    try {
+      _socket = IO.io(
+        ApiService.baseUrl,
+        IO.OptionBuilder()
+            .setTransports(['websocket'])
+            .disableAutoConnect()
+            .build(),
+      );
+
+      _socket?.on('referral:created', (data) {
+        debugPrint('📨 Referral created: $data');
+        _loadReferrals();
+      });
+
+      _socket?.on('referral:updated', (data) {
+        debugPrint('📨 Referral updated: $data');
+        _loadReferrals();
+      });
+
+      _socket?.on('referral:accepted', (data) {
+        debugPrint('✅ Referral accepted: $data');
+        _loadReferrals();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Referral accepted: ${data['referralCode']}')),
+          );
+        }
+      });
+
+      _socket?.on('referral:rejected', (data) {
+        debugPrint('❌ Referral rejected: $data');
+        _loadReferrals();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Referral rejected: ${data['referralCode']}')),
+          );
+        }
+      });
+
+      _socket?.on('referral:completed', (data) {
+        debugPrint('🏁 Referral completed: $data');
+        _loadReferrals();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Referral completed: ${data['referralCode']}')),
+          );
+        }
+      });
+
+      _socket?.connect();
+    } catch (e) {
+      debugPrint('⚠️ WebSocket connection error: $e');
+    }
   }
 
   void _loadReferrals() {
@@ -705,12 +772,39 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
   late TextEditingController _patientNameController;
   late TextEditingController _patientContactController;
   late TextEditingController _patientAgeController;
-  late TextEditingController _reasonController;
   late TextEditingController _clinicalSummaryController;
   late TextEditingController _urgencyNotesController;
-  late TextEditingController _referringFacilityController;
-  late TextEditingController _receivingFacilityController;
-  late TextEditingController _transportModeController;
+
+  String? _selectedReason;
+  String? _selectedReferringFacility;
+  String? _selectedReceivingFacility;
+  String? _selectedTransportMode;
+  
+  List<Map<String, dynamic>> _facilities = [];
+  bool _loadingFacilities = true;
+
+  final List<String> _referralReasons = [
+    'Hypertension',
+    'Bleeding',
+    'Infection',
+    'Fetal Distress',
+    'Premature Labor',
+    'Placental Issues',
+    'Neonatal Emergency',
+    'Neonatal Infection',
+    'Low Birth Weight',
+    'Respiratory Distress',
+    'Jaundice',
+    'Other',
+  ];
+
+  final List<String> _transportModes = [
+    'Ambulance',
+    'Personal Vehicle',
+    'Motorcycle',
+    'Walking',
+    'Other',
+  ];
 
   @override
   void initState() {
@@ -718,12 +812,24 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     _patientNameController = TextEditingController();
     _patientContactController = TextEditingController();
     _patientAgeController = TextEditingController();
-    _reasonController = TextEditingController();
     _clinicalSummaryController = TextEditingController();
     _urgencyNotesController = TextEditingController();
-    _referringFacilityController = TextEditingController();
-    _receivingFacilityController = TextEditingController();
-    _transportModeController = TextEditingController();
+    _loadFacilities();
+  }
+
+  Future<void> _loadFacilities() async {
+    try {
+      final facilities = await ApiService.instance.get('/health-facilities');
+      if (facilities is List) {
+        setState(() {
+          _facilities = facilities.cast<Map<String, dynamic>>();
+          _loadingFacilities = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading facilities: $e');
+      setState(() => _loadingFacilities = false);
+    }
   }
 
   @override
@@ -731,12 +837,8 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     _patientNameController.dispose();
     _patientContactController.dispose();
     _patientAgeController.dispose();
-    _reasonController.dispose();
     _clinicalSummaryController.dispose();
     _urgencyNotesController.dispose();
-    _referringFacilityController.dispose();
-    _receivingFacilityController.dispose();
-    _transportModeController.dispose();
     super.dispose();
   }
 
@@ -782,13 +884,17 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
               // Referral Details
               Text('Referral Details', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _reasonController,
+              DropdownButtonFormField<String>(
+                value: _selectedReason,
                 decoration: const InputDecoration(
                   labelText: 'Reason for Referral *',
                   border: OutlineInputBorder(),
                 ),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                items: _referralReasons.map((reason) {
+                  return DropdownMenuItem(value: reason, child: Text(reason));
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedReason = value),
+                validator: (value) => value == null ? 'Required' : null,
               ),
               const SizedBox(height: 12),
               TextFormField(
@@ -813,34 +919,56 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
               // Facilities
               Text('Facilities', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _referringFacilityController,
-                decoration: const InputDecoration(
-                  labelText: 'Referring Facility ID *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-              ),
+              _loadingFacilities
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<String>(
+                      value: _selectedReferringFacility,
+                      decoration: const InputDecoration(
+                        labelText: 'Referring Facility *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _facilities.map((facility) {
+                        return DropdownMenuItem(
+                          value: facility['id'],
+                          child: Text(facility['facilityName'] ?? 'Unknown'),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => _selectedReferringFacility = value),
+                      validator: (value) => value == null ? 'Required' : null,
+                    ),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _receivingFacilityController,
-                decoration: const InputDecoration(
-                  labelText: 'Receiving Facility ID *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
-              ),
+              _loadingFacilities
+                  ? const CircularProgressIndicator()
+                  : DropdownButtonFormField<String>(
+                      value: _selectedReceivingFacility,
+                      decoration: const InputDecoration(
+                        labelText: 'Receiving Facility *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _facilities.map((facility) {
+                        return DropdownMenuItem(
+                          value: facility['id'],
+                          child: Text(facility['facilityName'] ?? 'Unknown'),
+                        );
+                      }).toList(),
+                      onChanged: (value) => setState(() => _selectedReceivingFacility = value),
+                      validator: (value) => value == null ? 'Required' : null,
+                    ),
               const SizedBox(height: 16),
               
               // Transport
               Text('Transport', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _transportModeController,
+              DropdownButtonFormField<String>(
+                value: _selectedTransportMode,
                 decoration: const InputDecoration(
-                  labelText: 'Transport Mode (ambulance, personal_vehicle, etc.)',
+                  labelText: 'Transport Mode',
                   border: OutlineInputBorder(),
                 ),
+                items: _transportModes.map((mode) {
+                  return DropdownMenuItem(value: mode, child: Text(mode));
+                }).toList(),
+                onChanged: (value) => setState(() => _selectedTransportMode = value),
               ),
             ],
           ),
@@ -868,12 +996,12 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
         patientName: _patientNameController.text,
         patientContact: _patientContactController.text.isEmpty ? null : _patientContactController.text,
         patientAge: _patientAgeController.text.isEmpty ? null : _patientAgeController.text,
-        reason: _reasonController.text,
+        reason: _selectedReason ?? '',
         clinicalSummary: _clinicalSummaryController.text,
         urgencyNotes: _urgencyNotesController.text.isEmpty ? null : _urgencyNotesController.text,
-        referringFacilityId: _referringFacilityController.text,
-        receivingFacilityId: _receivingFacilityController.text,
-        transportMode: _transportModeController.text.isEmpty ? null : _transportModeController.text,
+        referringFacilityId: _selectedReferringFacility ?? '',
+        receivingFacilityId: _selectedReceivingFacility ?? '',
+        transportMode: _selectedTransportMode?.toLowerCase().replaceAll(' ', '_'),
       );
 
       await ReferralService.instance.createReferral(request);
@@ -881,13 +1009,13 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Referral created successfully')),
+          const SnackBar(content: Text('✅ Referral created successfully')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('❌ Error: $e')),
         );
       }
     }
