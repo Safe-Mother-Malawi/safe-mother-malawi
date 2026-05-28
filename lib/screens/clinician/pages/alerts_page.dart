@@ -420,41 +420,17 @@ class _ClinicianAlertsPageState extends State<ClinicianAlertsPage>
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        // Store patient details for calendar to auto-fill
-                        ClinicianAlertsPage.pendingAppointmentData = {
-                          'patientName': name,
-                          'patientContact': contact,
-                          'patientType': status == 'Prenatal' ? 'prenatal' : 'neonatal',
-                          'reason': reason,
-                          'symptoms': symptoms,
-                        };
-                        
-                        await ApiService.createAppointment({
-                          'title': 'Checkup — $name',
-                          'patientName': name,
-                          'patientContact': contact,
-                          'patientType': status == 'Prenatal' ? 'prenatal' : 'neonatal',
-                          'time': '09:00 AM',
-                          'notes': 'Scheduled from alert: $reason',
-                          'scheduledDate': DateTime.now().add(const Duration(days: 1)).toIso8601String(),
-                          'status': 'Pending',
-                        });
-                      } catch (_) {}
+                    onPressed: () {
+                      // Pass alert data directly to CalendarPage via the layout
+                      ClinicianAlertsPage.pendingAppointmentData = {
+                        'patientName': name,
+                        'patientContact': contact,
+                        'patientType': status == 'Prenatal' ? 'prenatal' : 'neonatal',
+                        'reason': reason,
+                        'symptoms': symptoms,
+                        'alertPatientId': _text(a['prenatalPatientId'] ?? a['patientId']),
+                      };
                       widget.onNavigate?.call(5);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                          content: Row(children: [
-                            Icon(Icons.calendar_today, color: Colors.white, size: 16),
-                            SizedBox(width: 8),
-                            Text('Checkup scheduled and added to Calendar.'),
-                          ]),
-                          backgroundColor: Color(0xFF1A3A5C),
-                          duration: Duration(seconds: 3),
-                          behavior: SnackBarBehavior.floating,
-                        ));
-                      }
                     },
                     icon: const Icon(Icons.schedule, size: 16),
                     label: const Text('Schedule Checkup', style: TextStyle(fontSize: 13)),
