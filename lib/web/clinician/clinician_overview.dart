@@ -10,7 +10,17 @@ import '../shared/utils/responsive_helper.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../state/user_store.dart';
+import '../../../state/notification_store.dart';
 import '../../../utils/live_data_mixin.dart';
+import '../../screens/clinician/pages/dashboard_page.dart';
+import '../../screens/clinician/pages/patients_page.dart';
+import '../../screens/clinician/pages/alerts_page.dart';
+import '../../screens/clinician/pages/register_page.dart';
+import '../../screens/clinician/pages/risk_scoring_page.dart';
+import '../../screens/clinician/pages/calendar_page.dart';
+import '../../screens/clinician/pages/profile_page.dart';
+import '../../screens/clinician/pages/referral_page.dart';
+import '../../screens/splash_screen.dart';
 
 class ClinicianOverview extends StatefulWidget {
   const ClinicianOverview({super.key});
@@ -21,397 +31,460 @@ class ClinicianOverview extends StatefulWidget {
 
 class _ClinicianOverviewState extends State<ClinicianOverview> {
   String _currentRoute = '/overview';
+  int _selectedIndex = 0;
+  Key _patientsKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
     UserStore.instance.addListener(_onUserChanged);
+    NotificationStore.instance.addListener(_onNotif);
+    NotificationStore.instance.load();
   }
 
   @override
   void dispose() {
     UserStore.instance.removeListener(_onUserChanged);
+    NotificationStore.instance.removeListener(_onNotif);
+    NotificationStore.instance.stopAutoRefresh();
     super.dispose();
   }
 
   void _onUserChanged() => setState(() {});
+  void _onNotif() => setState(() {});
 
-  void _navigate(String route) => setState(() => _currentRoute = route);
+  void _navigate(String route) {
+    setState(() => _currentRoute = route);
+  }
+
+  void _onPatientRegistered() {
+    setState(() {
+      _patientsKey = UniqueKey();
+      _selectedIndex = 1;
+    });
+  }
+
+  void _selectPage(int index) {
+    setState(() => _selectedIndex = index);
+  }
 
   Widget _buildPage() {
-    switch (_currentRoute) {
+    switch (_selectedIndex) {
+      case 0:
+        return ClinicianDashboardPage(
+          onRegisterPatient: () => _selectPage(3),
+        );
+      case 1:
+        return ClinicianPatientsPage(key: _patientsKey);
+      case 2:
+        return ClinicianAlertsPage(
+          onNavigate: (i) => _selectPage(i),
+        );
+      case 3:
+        return ClinicianRegisterPage(
+          onPatientRegistered: _onPatientRegistered,
+        );
+      case 4:
+        return const RiskScoringPage();
+      case 5:
+        return const CalendarPage();
+      case 6:
+        return const ReferralPage();
+      case 7:
+        return MyProfilePage(
+          onClose: () => _selectPage(0),
+        );
       default:
-        return const _ClinicianOverviewBody();
+        return ClinicianDashboardPage(
+          onRegisterPatient: () => _selectPage(3),
+        );
     }
   }
 
   String get _pageTitle {
     const titles = {
-      '/overview': 'Overview',
+      0: 'Dashboard',
+      1: 'Patients',
+      2: 'Alerts',
+      3: 'Register Patient',
+      4: 'Risk Monitoring',
+      5: 'Calendar',
+      6: 'Referrals',
+      7: 'Profile',
     };
-    return titles[_currentRoute] ?? 'Clinician Dashboard';
+    return titles[_selectedIndex] ?? 'Clinician Dashboard';
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return AppShell(
-      role: UserRole.clinician,
-      userName: AuthServiceWeb.instance.userName,
-      currentRoute: _currentRoute,
-      pageTitle: _pageTitle,
-      onNavigate: _navigate,
-      body: _buildPage(),
-    );
-  }
-}
-
-class _ClinicianOverviewBody extends StatefulWidget {
-  const _ClinicianOverviewBody();
-
-  @override
-  State<_ClinicianOverviewBody> createState() => _ClinicianOverviewBodyState();
-}
-
-class _ClinicianOverviewBodyState extends State<_ClinicianOverviewBody> with LiveDataMixin {
-  bool _loading = true;
-  String? _error;
-
-  int _prenatalCount = 0;
-  int _neonatalCount = 0;
-  int _alertCount = 0;
-  int _appointmentCount = 0;
-
-  List<Map<String, dynamic>> _recentPrenatal = [];
-  List<Map<String, dynamic>> _todayAppts = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    startPolling(_silentLoad);
-  }
-
-  @override
-  void dispose() {
-    stopPolling();
-    super.dispose();
-  }
-
-  Future<void> _silentLoad() async {
-    try {
-      final results = await Future.wait([
-        ApiService.instance.get('/patients/prenatal').timeout(const Duration(seconds: 10)),
-        ApiService.instance.get('/patients/neonatal').timeout(const Duration(seconds: 10)),
-        ApiService.instance.get('/alerts/active').timeout(const Duration(seconds: 10)),
-        ApiService.getAppointments().timeout(const Duration(seconds: 10)),
-      ], eagerError: false).catchError((e) {
-        debugPrint('❌ Clinician dashboard polling error: $e');
-        return <dynamic>[];
-      });
-
-      if (results.isEmpty || results.length < 4) return;
-
-      final prenatal = _parseList(results[0]);
-      final neonatal = _parseList(results[1]);
-      final alerts = _parseList(results[2]);
-      final appointments = _parseList(results[3]);
-
-      if (mounted) {
-        setState(() {
-          _prenatalCount = prenatal.length;
-          _neonatalCount = neonatal.length;
-          _alertCount = alerts.length;
-          _appointmentCount = appointments.length;
-          _recentPrenatal = prenatal.take(5).toList();
-          _todayAppts = appointments.take(5).toList();
-        });
-      }
-    } catch (e) {
-      debugPrint('⚠️ Silent load error: $e');
-    }
-  }
-
-  Future<void> _load() async {
-    try {
-      await _silentLoad();
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    } catch (e) {
-      debugPrint('❌ Failed to load clinician dashboard: $e');
-      if (mounted) {
-        setState(() {
-          _error = e.toString().replaceAll('Exception: ', '');
-          _loading = false;
-        });
-      }
-    }
-  }
-
-  List<Map<String, dynamic>> _parseList(dynamic data) {
-    try {
-      if (data is List) {
-        return data.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-      }
-      if (data is Map<String, dynamic>) {
-        final items = data['data'] ?? data['items'] ?? data['results'] ?? [];
-        if (items is List) {
-          return items.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
-        }
-      }
-      return [];
-    } catch (e) {
-      debugPrint('⚠️ Error parsing list data: $e');
-      return [];
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 40),
-            const SizedBox(height: 12),
-            const Text('Failed to load dashboard'),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _loading = true;
-                  _error = null;
-                });
-                _load();
-              },
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    final isMobile = ResponsiveHelper.isMobile(context);
-    final isTablet = ResponsiveHelper.isTablet(context);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // KPI Cards
-          Wrap(
-            spacing: 16,
-            runSpacing: 16,
-            children: [
-              SizedBox(
-                width: isMobile ? double.infinity : (isTablet ? 200 : 220),
-                child: KpiCard(
-                  icon: Icons.people_outline,
-                  value: '$_prenatalCount',
-                  title: 'Prenatal',
-                  subtitle: 'Active patients',
-                  iconColor: AppColors.navy,
-                  iconBg: AppColors.navyL,
-                ),
-              ),
-              SizedBox(
-                width: isMobile ? double.infinity : (isTablet ? 200 : 220),
-                child: KpiCard(
-                  icon: Icons.child_friendly_outlined,
-                  value: '$_neonatalCount',
-                  title: 'Neonatal',
-                  subtitle: 'Active patients',
-                  iconColor: AppColors.navy,
-                  iconBg: AppColors.navyL,
-                ),
-              ),
-              SizedBox(
-                width: isMobile ? double.infinity : (isTablet ? 200 : 220),
-                child: KpiCard(
-                  icon: Icons.notifications_active_outlined,
-                  value: '$_alertCount',
-                  title: 'Alerts',
-                  subtitle: 'Active alerts',
-                  iconColor: Colors.orange,
-                  iconBg: const Color(0xFFFFF3E0),
-                ),
-              ),
-              SizedBox(
-                width: isMobile ? double.infinity : (isTablet ? 200 : 220),
-                child: KpiCard(
-                  icon: Icons.calendar_today_outlined,
-                  value: '$_appointmentCount',
-                  title: 'Appointments',
-                  subtitle: 'Total scheduled',
-                  iconColor: Colors.green,
-                  iconBg: const Color(0xFFE8F5E9),
-                ),
-              ),
-            ],
+  void _confirmLogout() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        title: const Row(children: [
+          Icon(Icons.logout, color: AppColors.navy, size: 20),
+          SizedBox(width: 8),
+          Text('Log Out', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        ]),
+        content: const Text('Are you sure you want to log out of the clinician portal?',
+            style: TextStyle(fontSize: 13, color: AppColors.g600)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.g400)),
           ),
-          const SizedBox(height: 24),
-
-          // Recent Patients and Today's Appointments
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 3,
-                child: _buildRecentPatients(),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 2,
-                child: _buildTodayAppointments(),
-              ),
-            ],
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => const SplashScreen()),
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              elevation: 0,
+            ),
+            child: const Text('Log Out'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildRecentPatients() {
-    return ChartCard(
-      title: 'Recent Prenatal Patients',
-      subtitle: 'Latest registered patients',
-      chart: _recentPrenatal.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No patients yet'),
-              ),
-            )
-          : Column(
-              children: _recentPrenatal.map((p) {
-                final name = p['fullName'] as String? ?? 'Unknown';
-                final age = p['age']?.toString() ?? '?';
-                final months = p['pregnancyMonths']?.toString() ?? '?';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          // Custom Sidebar
+          Container(
+            width: 280,
+            color: AppColors.sidebarBg,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Brand
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: AppColors.navyL,
-                        child: Text(
-                          name[0],
-                          style: const TextStyle(
-                            color: AppColors.navy,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Row(children: [
+                        Image.asset('assets/logo/LOGO5.png', width: 110, height: 110, fit: BoxFit.contain),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text('Safe Mother',
+                              style: TextStyle(
+                                  fontFamily: 'Public Sans',
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white)),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.g800,
-                              ),
-                            ),
-                            Text(
-                              '$age yrs · $months months pregnant',
-                              style: const TextStyle(
-                                fontSize: 10,
-                                color: AppColors.g400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.navyL,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Text(
-                          'Prenatal',
+                      ]),
+                      const SizedBox(height: 6),
+                      Text('Malawi',
                           style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.navy,
-                          ),
-                        ),
-                      ),
+                              fontFamily: 'Roboto',
+                              fontSize: 11,
+                              color: AppColors.sidebarMuted,
+                              letterSpacing: 1.5)),
                     ],
                   ),
-                );
-              }).toList(),
-            ),
-    );
-  }
+                ),
 
-  Widget _buildTodayAppointments() {
-    return ChartCard(
-      title: "Today's Appointments",
-      subtitle: 'Scheduled for today',
-      chart: _todayAppts.isEmpty
-          ? const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text('No appointments today'),
-              ),
-            )
-          : Column(
-              children: _todayAppts.map((a) {
-                final time = a['time'] as String? ?? '--:--';
-                final title = a['title'] as String? ?? a['patientName'] as String? ?? 'Appointment';
-                final status = a['status'] as String? ?? 'Scheduled';
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                // Role chip
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text('Clinician Portal',
+                        style: TextStyle(
+                            fontFamily: 'Roboto',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.sidebarMuted)),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // Nav items
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    children: [
+                      _sidebarItem(0, Icons.dashboard_rounded, 'Dashboard'),
+                      _sidebarItem(1, Icons.people_alt_rounded, 'Patients'),
+                      _sidebarItem(2, Icons.notifications_rounded, 'Alerts'),
+                      _sidebarItem(3, Icons.person_add_rounded, 'Register Patient'),
+                      _sidebarItem(4, Icons.assessment_rounded, 'Risk Monitoring'),
+                      _sidebarItem(5, Icons.calendar_today_rounded, 'Calendar'),
+                      _sidebarItem(6, Icons.send_rounded, 'Referrals'),
+                    ],
+                  ),
+                ),
+
+                // Logout
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  child: Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: _confirmLogout,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        child: Row(children: [
+                          const Icon(Icons.logout_rounded, size: 18, color: Colors.white54),
+                          const SizedBox(width: 12),
+                          Text('Log Out',
+                              style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: Colors.white54)),
+                        ]),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Footer
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Text('Ministry of Health\nMalawi',
+                      style: TextStyle(
+                          fontFamily: 'Roboto',
+                          fontSize: 10,
+                          color: AppColors.sidebarMuted,
+                          height: 1.6)),
+                ),
+              ],
+            ),
+          ),
+
+          // Main Content
+          Expanded(
+            child: Column(
+              children: [
+                // Top Bar
+                Container(
+                  height: 64,
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Row(
                     children: [
                       Text(
-                        time,
+                        _pageTitle,
                         style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.g600,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.g800,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Container(
-                        width: 3,
-                        height: 32,
-                        color: AppColors.navy,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Text(
-                          title,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.g800,
+                      const Spacer(),
+                      // Notifications
+                      Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            onPressed: () {
+                              showDialog(
+                                context: context,
+                                builder: (_) => Dialog(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  child: ConstrainedBox(
+                                    constraints: const BoxConstraints(maxWidth: 420, maxHeight: 520),
+                                    child: Column(children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(20),
+                                        decoration: const BoxDecoration(
+                                          color: AppColors.navy,
+                                          borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                                        ),
+                                        child: Row(children: [
+                                          const Icon(Icons.notifications_rounded, color: Colors.white, size: 20),
+                                          const SizedBox(width: 10),
+                                          const Expanded(
+                                              child: Text('Notifications',
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.bold))),
+                                          TextButton(
+                                            onPressed: () => NotificationStore.instance.markAllRead(),
+                                            child: const Text('Mark all read',
+                                                style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                          ),
+                                        ]),
+                                      ),
+                                      Expanded(child: _NotificationList()),
+                                    ]),
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.g600, size: 22),
                           ),
-                        ),
+                          if (NotificationStore.instance.unreadCount > 0)
+                            Positioned(
+                              top: 6,
+                              right: 6,
+                              child: Container(
+                                width: 14,
+                                height: 14,
+                                decoration: const BoxDecoration(color: AppColors.red, shape: BoxShape.circle),
+                                child: Center(
+                                  child: Text('${NotificationStore.instance.unreadCount}',
+                                      style: TextStyle(
+                                          fontFamily: 'Roboto',
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.w700,
+                                          color: Colors.white)),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      StatusBadge(
-                        label: status,
-                        type: status.toLowerCase() == 'scheduled'
-                            ? BadgeType.info
-                            : status.toLowerCase() == 'completed'
-                                ? BadgeType.success
-                                : BadgeType.neutral,
+                      const SizedBox(width: 4),
+                      // Profile
+                      GestureDetector(
+                        onTap: () => _selectPage(7),
+                        child: Row(children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: AppColors.navy,
+                            child: Text(
+                              AuthServiceWeb.instance.userName
+                                  .trim()
+                                  .split(' ')
+                                  .where((w) => w.isNotEmpty)
+                                  .take(2)
+                                  .map((w) => w[0].toUpperCase())
+                                  .join(),
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(AuthServiceWeb.instance.userName,
+                              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.g800)),
+                        ]),
                       ),
                     ],
                   ),
-                );
-              }).toList(),
+                ),
+
+                // Page Content
+                Expanded(
+                  child: _buildPage(),
+                ),
+              ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sidebarItem(int index, IconData icon, String title) {
+    final selected = _selectedIndex == index;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () => _selectPage(index),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: selected ? AppColors.sidebarActive : Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(children: [
+              Icon(icon, size: 18, color: selected ? Colors.white : AppColors.sidebarMuted),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title,
+                    style: TextStyle(
+                        fontFamily: 'Roboto',
+                        fontSize: 13,
+                        fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+                        color: selected ? Colors.white : AppColors.sidebarText)),
+              ),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Notification list widget ──────────────────────────────────────────────────
+
+class _NotificationList extends StatefulWidget {
+  @override
+  State<_NotificationList> createState() => _NotificationListState();
+}
+
+class _NotificationListState extends State<_NotificationList> {
+  @override
+  void initState() {
+    super.initState();
+    NotificationStore.instance.addListener(_rebuild);
+  }
+
+  @override
+  void dispose() {
+    NotificationStore.instance.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  void _rebuild() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final items = NotificationStore.instance.all;
+    if (items.isEmpty) {
+      return const Center(
+          child: Padding(
+        padding: EdgeInsets.all(24),
+        child: Text('No notifications.', style: TextStyle(color: Colors.black45)),
+      ));
+    }
+    return ListView.builder(
+      itemCount: items.length,
+      itemBuilder: (_, i) {
+        final n = items[i];
+        final color = n.type == NotifType.alert
+            ? Colors.red
+            : n.type == NotifType.appointment
+                ? AppColors.navy
+                : Colors.green;
+        final icon = n.type == NotifType.alert
+            ? Icons.warning_amber_rounded
+            : n.type == NotifType.appointment
+                ? Icons.calendar_today_rounded
+                : Icons.info_outline_rounded;
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withOpacity(0.1),
+            child: Icon(icon, color: color, size: 18),
+          ),
+          title: Text(n.title,
+              style: TextStyle(fontSize: 13, fontWeight: n.read ? FontWeight.normal : FontWeight.bold)),
+          subtitle: Text(n.body,
+              style: const TextStyle(fontSize: 12), maxLines: 2, overflow: TextOverflow.ellipsis),
+          trailing: n.read
+              ? null
+              : Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+          onTap: () => NotificationStore.instance.markRead(n.id),
+        );
+      },
     );
   }
 }
