@@ -177,6 +177,22 @@ class _SignupScreenState extends State<SignupScreen> {
 
   void _back() => setState(() => _step--);
 
+  /// Calculate EDD based on pregnancy duration
+  /// Standard pregnancy is 40 weeks, so EDD = today + (40 - current weeks)
+  void _calculateAndSetEDD() {
+    if (_totalWeeks > 40) return; // Invalid duration
+    
+    final weeksRemaining = 40 - _totalWeeks;
+    final daysRemaining = weeksRemaining * 7;
+    final calculatedEDD = DateTime.now().add(Duration(days: daysRemaining));
+    
+    setState(() {
+      _dueDate = calculatedEDD;
+      _dueDateCtrl.text =
+          '${calculatedEDD.year}-${calculatedEDD.month.toString().padLeft(2, '0')}-${calculatedEDD.day.toString().padLeft(2, '0')}';
+    });
+  }
+
   Future<void> _pickDueDate() async {
     final now = DateTime.now();
     final p = await showDatePicker(
@@ -527,7 +543,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   items: List.generate(9, (i) => i + 1)
                       .map((m) => DropdownMenuItem(value: m, child: Text('$m months')))
                       .toList(),
-                  onChanged: (v) { if (v != null) setState(() => _pregMonth = v); },
+                  onChanged: (v) { 
+                    if (v != null) {
+                      setState(() => _pregMonth = v);
+                      _calculateAndSetEDD();
+                    }
+                  },
                   validator: (_) => null,
                 ),
               ),
@@ -540,7 +561,12 @@ class _SignupScreenState extends State<SignupScreen> {
                   items: List.generate(5, (i) => i)
                       .map((w) => DropdownMenuItem(value: w, child: Text('$w weeks')))
                       .toList(),
-                  onChanged: (v) { if (v != null) setState(() => _pregWeek = v); },
+                  onChanged: (v) { 
+                    if (v != null) {
+                      setState(() => _pregWeek = v);
+                      _calculateAndSetEDD();
+                    }
+                  },
                   validator: (v) => (v ?? 0) > 4 ? 'Max 4 weeks' : null,
                 ),
               ),
