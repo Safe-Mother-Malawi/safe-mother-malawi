@@ -82,6 +82,7 @@ class AuthService {
 
   UserModel _userFromMap(Map<String, dynamic> m) {
     return UserModel(
+      id: (m['id']?.toString()) ?? (m['_id']?.toString()) ?? '',
       email: (m['email'] as String?) ?? '',
       password: '',
       role: (m['role'] as String?) ?? '',
