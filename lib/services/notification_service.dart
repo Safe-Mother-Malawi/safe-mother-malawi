@@ -96,9 +96,21 @@ class NotificationService {
   /// Handle foreground messages (stub for mobile)
   void _handleForegroundMessage(dynamic message) {
     print('📬 Message received');
+    
+    // Play notification sound immediately when message arrives
+    _playNotificationSoundAsync();
+    
     _notificationStream.add({
       'type': 'foreground',
       'timestamp': DateTime.now().toIso8601String(),
+    });
+  }
+
+  /// Play notification sound asynchronously (fire-and-forget)
+  void _playNotificationSoundAsync() {
+    // Fire and forget - don't wait for completion
+    _soundService.playNotificationSound(soundType: 'alert', volume: 1.0).catchError((e) {
+      print('Error playing notification sound: $e');
     });
   }
 

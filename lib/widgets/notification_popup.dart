@@ -37,7 +37,6 @@ class _NotificationPopupState extends State<NotificationPopup>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
   late NotificationSoundService _soundService;
-  late Future<void> _soundPlayFuture;
 
   @override
   void initState() {
@@ -61,31 +60,14 @@ class _NotificationPopupState extends State<NotificationPopup>
       end: 1.0,
     ).animate(CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
 
-    // Initialize sound service
+    // Initialize sound service (sound is already played by NotificationService)
     _soundService = NotificationSoundService();
-
-    // Play sound and start animations
-    _soundPlayFuture = _initializeAndPlaySound();
 
     // Start slide-in animation
     _animationController.forward();
 
     // Auto-dismiss after display duration
     Future.delayed(widget.displayDuration, _dismissNotification);
-  }
-
-  /// Initialize sound service and play notification sound
-  Future<void> _initializeAndPlaySound() async {
-    try {
-      await _soundService.initialize();
-      await _soundService.playNotificationSound(
-        soundType: widget.soundType ?? 'default',
-        volume: widget.volume,
-      );
-      debugPrint('✓ Notification sound played');
-    } catch (e) {
-      debugPrint('❌ Error playing notification sound: $e');
-    }
   }
 
   /// Dismiss notification with animation
