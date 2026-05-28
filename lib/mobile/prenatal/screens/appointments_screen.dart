@@ -62,6 +62,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
+      // IMPORTANT: Load token from storage before making API calls
+      await ApiService.instance.loadToken();
+      
       // Get the current logged-in patient's ID so we only fetch their appointments.
       // We first try to get the prenatal patient record (which has the patientId
       // the backend stores on appointments). Fall back to the user's own ID.
