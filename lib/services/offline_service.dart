@@ -50,7 +50,7 @@ class OfflineService extends ChangeNotifier {
 
   late SharedPreferences _prefs;
   final List<OfflineAction> _syncQueue = [];
-  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
+  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
   bool _isOnline = true;
   bool _isSyncing = false;
   Timer? _syncTimer;

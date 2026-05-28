@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../services/referral_service.dart';
-import '../../../config/responsive_helper.dart';
 
 class ReferralPage extends StatefulWidget {
   const ReferralPage({Key? key}) : super(key: key);
@@ -74,8 +73,9 @@ class _ReferralPageState extends State<ReferralPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = ResponsiveHelper.isMobile(context);
-    final isTablet = ResponsiveHelper.isTablet(context);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
 
     return Scaffold(
       appBar: AppBar(
