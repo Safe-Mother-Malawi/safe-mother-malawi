@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../services/notification_sound_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
@@ -35,6 +36,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     // Check both 'read' and 'isRead' fields
     final isAlreadyRead = (n['read'] ?? n['isRead']) == true;
     if (isAlreadyRead) return;
+    
+    // Play notification sound
+    final soundService = NotificationSoundService();
+    final notificationType = (n['type'] ?? 'default').toString().toLowerCase();
+    await soundService.playNotificationSound(soundType: notificationType);
+    
     try {
       await ApiService.markNotificationRead(n['id'].toString());
       // Update both fields for consistency
