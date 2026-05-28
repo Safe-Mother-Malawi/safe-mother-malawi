@@ -214,7 +214,7 @@ class _ReferralPageState extends State<ReferralPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header row
+              // Header row with patient name and status
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -260,14 +260,23 @@ class _ReferralPageState extends State<ReferralPage> {
                 ],
               ),
               const SizedBox(height: 12),
-              // Reason
+              
+              // Reason and urgency
               Text(
                 'Reason: ${referral.reason}',
                 style: const TextStyle(fontSize: 13),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (referral.urgencyNotes != null) ...[
+                const SizedBox(height: 4),
+                Text(
+                  'Urgency: ${referral.urgencyNotes}',
+                  style: TextStyle(fontSize: 12, color: Colors.orange[700]),
+                ),
+              ],
               const SizedBox(height: 8),
+              
               // Facilities
               Row(
                 children: [
@@ -291,11 +300,58 @@ class _ReferralPageState extends State<ReferralPage> {
                 ],
               ),
               const SizedBox(height: 8),
+              
+              // Transport info if available
+              if (referral.transportMode != null) ...[
+                Text(
+                  'Transport: ${referral.transportMode}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              // Rejection reason if rejected
+              if (referral.rejectionReason != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Rejection: ${referral.rejectionReason}',
+                    style: TextStyle(fontSize: 12, color: AppColors.red),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              
+              // Treatment outcome if completed
+              if (referral.treatmentOutcome != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    'Outcome: ${referral.treatmentOutcome}',
+                    style: TextStyle(fontSize: 12, color: Colors.green[700]),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              
               // Date
               Text(
                 'Created: ${_formatDate(referral.createdAt)}',
                 style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
+              
               // Action buttons
               if (referral.status == 'pending' || referral.status == 'accepted')
                 Padding(
@@ -345,24 +401,94 @@ class _ReferralPageState extends State<ReferralPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Patient:', referral.patientName),
+              // Patient Information
+              _buildSectionHeader('Patient Information'),
+              _buildDetailRow('Name:', referral.patientName),
+              if (referral.patientContact != null)
+                _buildDetailRow('Contact:', referral.patientContact!),
+              if (referral.patientAge != null)
+                _buildDetailRow('Age:', referral.patientAge!),
+              const SizedBox(height: 12),
+              
+              // Referral Details
+              _buildSectionHeader('Referral Details'),
               _buildDetailRow('Status:', _getStatusLabel(referral.status)),
               _buildDetailRow('Reason:', referral.reason),
+              _buildDetailRow('Clinical Summary:', referral.clinicalSummary),
+              if (referral.urgencyNotes != null)
+                _buildDetailRow('Urgency Notes:', referral.urgencyNotes!),
+              const SizedBox(height: 12),
+              
+              // Facilities
+              _buildSectionHeader('Facilities'),
               _buildDetailRow(
-                'From:',
+                'Referring Facility:',
                 referral.referringFacility?['facilityName'] ?? 'Unknown',
               ),
               _buildDetailRow(
-                'To:',
+                'Receiving Facility:',
                 referral.receivingFacility?['facilityName'] ?? 'Unknown',
               ),
-              _buildDetailRow('Clinical Summary:', referral.clinicalSummary),
-              _buildDetailRow('Created:', _formatDate(referral.createdAt)),
+              const SizedBox(height: 12),
+              
+              // Clinicians
+              _buildSectionHeader('Clinicians'),
+              if (referral.referringClinician != null)
+                _buildDetailRow(
+                  'Referring Clinician:',
+                  referral.referringClinician?['fullName'] ?? 'Unknown',
+                ),
               if (referral.receivingClinician != null)
                 _buildDetailRow(
                   'Receiving Clinician:',
                   referral.receivingClinician?['fullName'] ?? 'Unknown',
                 ),
+              const SizedBox(height: 12),
+              
+              // Transport Information
+              if (referral.transportMode != null) ...[
+                _buildSectionHeader('Transport'),
+                _buildDetailRow('Mode:', referral.transportMode!),
+                if (referral.transportProvider != null)
+                  _buildDetailRow('Provider:', referral.transportProvider!),
+                if (referral.transportContact != null)
+                  _buildDetailRow('Contact:', referral.transportContact!),
+                if (referral.departureTime != null)
+                  _buildDetailRow('Departure:', _formatDate(referral.departureTime!)),
+                if (referral.arrivalTime != null)
+                  _buildDetailRow('Arrival:', _formatDate(referral.arrivalTime!)),
+                if (referral.transportNotes != null)
+                  _buildDetailRow('Notes:', referral.transportNotes!),
+                const SizedBox(height: 12),
+              ],
+              
+              // Acceptance/Rejection
+              if (referral.acceptedAt != null || referral.rejectedAt != null) ...[
+                _buildSectionHeader('Response'),
+                if (referral.acceptedAt != null)
+                  _buildDetailRow('Accepted At:', _formatDate(referral.acceptedAt!)),
+                if (referral.rejectionReason != null)
+                  _buildDetailRow('Rejection Reason:', referral.rejectionReason!),
+                if (referral.rejectedAt != null)
+                  _buildDetailRow('Rejected At:', _formatDate(referral.rejectedAt!)),
+                const SizedBox(height: 12),
+              ],
+              
+              // Outcome
+              if (referral.treatmentOutcome != null || referral.completedAt != null) ...[
+                _buildSectionHeader('Outcome'),
+                if (referral.treatmentOutcome != null)
+                  _buildDetailRow('Treatment Outcome:', referral.treatmentOutcome!),
+                if (referral.completedAt != null)
+                  _buildDetailRow('Completed At:', _formatDate(referral.completedAt!)),
+              ],
+              
+              // Timestamps
+              const SizedBox(height: 12),
+              _buildSectionHeader('Timestamps'),
+              _buildDetailRow('Created:', _formatDate(referral.createdAt)),
+              if (referral.updatedAt != null)
+                _buildDetailRow('Updated:', _formatDate(referral.updatedAt!)),
             ],
           ),
         ),
@@ -372,6 +498,20 @@ class _ReferralPageState extends State<ReferralPage> {
             child: const Text('Close'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          fontSize: 13,
+          color: AppColors.navy,
+        ),
       ),
     );
   }
@@ -529,5 +669,208 @@ class _ReferralPageState extends State<ReferralPage> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+
+/// Create Referral Dialog
+class _CreateReferralDialog extends StatefulWidget {
+  const _CreateReferralDialog({Key? key}) : super(key: key);
+
+  @override
+  State<_CreateReferralDialog> createState() => _CreateReferralDialogState();
+}
+
+class _CreateReferralDialogState extends State<_CreateReferralDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _patientNameController;
+  late TextEditingController _patientContactController;
+  late TextEditingController _patientAgeController;
+  late TextEditingController _reasonController;
+  late TextEditingController _clinicalSummaryController;
+  late TextEditingController _urgencyNotesController;
+  late TextEditingController _referringFacilityController;
+  late TextEditingController _receivingFacilityController;
+  late TextEditingController _transportModeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _patientNameController = TextEditingController();
+    _patientContactController = TextEditingController();
+    _patientAgeController = TextEditingController();
+    _reasonController = TextEditingController();
+    _clinicalSummaryController = TextEditingController();
+    _urgencyNotesController = TextEditingController();
+    _referringFacilityController = TextEditingController();
+    _receivingFacilityController = TextEditingController();
+    _transportModeController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _patientNameController.dispose();
+    _patientContactController.dispose();
+    _patientAgeController.dispose();
+    _reasonController.dispose();
+    _clinicalSummaryController.dispose();
+    _urgencyNotesController.dispose();
+    _referringFacilityController.dispose();
+    _receivingFacilityController.dispose();
+    _transportModeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create New Referral'),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Patient Information
+              Text('Patient Information', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _patientNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Patient Name *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _patientContactController,
+                decoration: const InputDecoration(
+                  labelText: 'Contact Number',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _patientAgeController,
+                decoration: const InputDecoration(
+                  labelText: 'Age',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Referral Details
+              Text('Referral Details', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _reasonController,
+                decoration: const InputDecoration(
+                  labelText: 'Reason for Referral *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _clinicalSummaryController,
+                decoration: const InputDecoration(
+                  labelText: 'Clinical Summary *',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _urgencyNotesController,
+                decoration: const InputDecoration(
+                  labelText: 'Urgency Notes',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Facilities
+              Text('Facilities', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _referringFacilityController,
+                decoration: const InputDecoration(
+                  labelText: 'Referring Facility ID *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _receivingFacilityController,
+                decoration: const InputDecoration(
+                  labelText: 'Receiving Facility ID *',
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // Transport
+              Text('Transport', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _transportModeController,
+                decoration: const InputDecoration(
+                  labelText: 'Transport Mode (ambulance, personal_vehicle, etc.)',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _submitForm,
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.navy),
+          child: const Text('Create'),
+        ),
+      ],
+    );
+  }
+
+  void _submitForm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    try {
+      final request = CreateReferralRequest(
+        patientName: _patientNameController.text,
+        patientContact: _patientContactController.text.isEmpty ? null : _patientContactController.text,
+        patientAge: _patientAgeController.text.isEmpty ? null : _patientAgeController.text,
+        reason: _reasonController.text,
+        clinicalSummary: _clinicalSummaryController.text,
+        urgencyNotes: _urgencyNotesController.text.isEmpty ? null : _urgencyNotesController.text,
+        referringFacilityId: _referringFacilityController.text,
+        receivingFacilityId: _receivingFacilityController.text,
+        transportMode: _transportModeController.text.isEmpty ? null : _transportModeController.text,
+      );
+
+      await ReferralService.instance.createReferral(request);
+
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Referral created successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
   }
 }
