@@ -350,7 +350,13 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                     setState(() {
                       _targetType = v!;
                       if (v == 'role') _targetRole = 'prenatal';
-                      if (v == 'district') _selectedDistricts = [];
+                      if (v == 'district') {
+                        _selectedDistricts = [];
+                        _selectedRegion = null;
+                        _selectedZone = null;
+                        _zones = [];
+                        _districts = [];
+                      }
                     });
                   },
                 ),
@@ -375,79 +381,90 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                   const SizedBox(height: 16),
                   const Text('Select Districts by Region → Zone → District', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12)),
                   const SizedBox(height: 12),
-                  // Region dropdown
-                  DropdownButtonFormField<String>(
-                    value: _selectedRegion,
-                    decoration: const InputDecoration(labelText: 'Region', border: OutlineInputBorder()),
-                    items: _regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setState(() {
-                          _selectedRegion = v;
-                          _selectedZone = null;
-                          _zones = [];
-                          _districts = [];
-                        });
-                        _loadZones(v);
-                      }
-                    },
-                    validator: _targetType == 'district' ? (v) => v == null ? 'Select region' : null : null,
-                  ),
-                  const SizedBox(height: 12),
-                  // Zone dropdown
-                  if (_selectedRegion != null)
+                  if (_isLoadingData)
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: CircularProgressIndicator(),
+                    )
+                  else if (_regions.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Text('No regions available', style: TextStyle(color: Colors.red, fontSize: 12)),
+                    )
+                  else ...[
+                    // Region dropdown
                     DropdownButtonFormField<String>(
-                      value: _selectedZone,
-                      decoration: const InputDecoration(labelText: 'Zone', border: OutlineInputBorder()),
-                      items: _zones.map((z) => DropdownMenuItem(value: z, child: Text(z))).toList(),
+                      value: _selectedRegion,
+                      decoration: const InputDecoration(labelText: 'Region', border: OutlineInputBorder()),
+                      items: _regions.map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
                       onChanged: (v) {
-                        if (v != null && _selectedRegion != null) {
-                          setState(() => _selectedZone = v);
-                          _loadDistricts(_selectedRegion!, v);
+                        if (v != null) {
+                          setState(() {
+                            _selectedRegion = v;
+                            _selectedZone = null;
+                            _zones = [];
+                            _districts = [];
+                          });
+                          _loadZones(v);
                         }
                       },
-                      validator: _targetType == 'district' ? (v) => v == null ? 'Select zone' : null : null,
+                      validator: _targetType == 'district' ? (v) => v == null ? 'Select region' : null : null,
                     ),
-                  const SizedBox(height: 12),
-                  // Districts multi-select
-                  if (_selectedZone != null)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('Districts (select one or more)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                        const SizedBox(height: 8),
-                        if (_districts.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: Text('No districts available', style: TextStyle(color: Colors.red, fontSize: 12)),
-                          )
-                        else
-                          Container(
-                            decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: _districts.length,
-                              itemBuilder: (context, index) {
-                                final district = _districts[index];
-                                final isSelected = _selectedDistricts.contains(district);
-                                return CheckboxListTile(
-                                  value: isSelected,
-                                  title: Text(district, style: const TextStyle(fontSize: 13)),
-                                  onChanged: (v) {
-                                    setState(() {
-                                      if (v == true) {
-                                        _selectedDistricts.add(district);
-                                      } else {
-                                        _selectedDistricts.remove(district);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
+                    const SizedBox(height: 12),
+                    // Zone dropdown
+                    if (_selectedRegion != null)
+                      DropdownButtonFormField<String>(
+                        value: _selectedZone,
+                        decoration: const InputDecoration(labelText: 'Zone', border: OutlineInputBorder()),
+                        items: _zones.map((z) => DropdownMenuItem(value: z, child: Text(z))).toList(),
+                        onChanged: (v) {
+                          if (v != null && _selectedRegion != null) {
+                            setState(() => _selectedZone = v);
+                            _loadDistricts(_selectedRegion!, v);
+                          }
+                        },
+                        validator: _targetType == 'district' ? (v) => v == null ? 'Select zone' : null : null,
+                      ),
+                    const SizedBox(height: 12),
+                    // Districts multi-select
+                    if (_selectedZone != null)
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Districts (select one or more)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                          const SizedBox(height: 8),
+                          if (_districts.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text('No districts available', style: TextStyle(color: Colors.red, fontSize: 12)),
+                            )
+                          else
+                            Container(
+                              decoration: BoxDecoration(border: Border.all(color: Colors.grey[300]!), borderRadius: BorderRadius.circular(4)),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _districts.length,
+                                itemBuilder: (context, index) {
+                                  final district = _districts[index];
+                                  final isSelected = _selectedDistricts.contains(district);
+                                  return CheckboxListTile(
+                                    value: isSelected,
+                                    title: Text(district, style: const TextStyle(fontSize: 13)),
+                                    onChanged: (v) {
+                                      setState(() {
+                                        if (v == true) {
+                                          _selectedDistricts.add(district);
+                                        } else {
+                                          _selectedDistricts.remove(district);
+                                        }
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
                             ),
-                          ),
-                        if (_selectedDistricts.isNotEmpty)
-                          Padding(
+                          if (_selectedDistricts.isNotEmpty)
+                            Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Wrap(
                               spacing: 8,
