@@ -28,6 +28,13 @@ class _CalendarPageState extends State<CalendarPage> {
     _month    = DateTime(now.year, now.month);
     _selected = DateTime(now.year, now.month, now.day);
     _load();
+
+    // If navigated from alerts with pending data, auto-open the add dialog
+    if (ClinicianAlertsPage.pendingAppointmentData != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showAddDialog();
+      });
+    }
   }
 
   Future<void> _load() async {
@@ -594,6 +601,16 @@ class _CalendarPageState extends State<CalendarPage> {
                 } else {
                   appointmentBody['prenatalPatientId'] = selectedPatientId;
                 }
+              } else {
+                // Fall back to patient ID passed from alert if no patient was selected from list
+                final alertPatientId = pending?['alertPatientId']?.toString() ?? '';
+                if (alertPatientId.isNotEmpty) {
+                  if (type == 'neonatal') {
+                    appointmentBody['neonatalPatientId'] = alertPatientId;
+                  } else {
+                    appointmentBody['prenatalPatientId'] = alertPatientId;
+                  }
+                }
               }
 
               final created = await ApiService.createAppointment(appointmentBody);
@@ -1013,7 +1030,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         builder: (ctx) => Dialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: Padding(
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(12),
                             child: ClockTimePicker(
                               initialTime: selectedTime,
                               onTimeChanged: (newTime) {

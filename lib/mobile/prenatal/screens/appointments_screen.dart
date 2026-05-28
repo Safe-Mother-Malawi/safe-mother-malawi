@@ -61,7 +61,23 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getAppointments().timeout(
+      // Get the current logged-in patient's ID so we only fetch their appointments.
+      // We first try to get the prenatal patient record (which has the patientId
+      // the backend stores on appointments). Fall back to the user's own ID.
+      String? patientId;
+      try {
+        final patientData = await ApiService.instance.get('/patients/me/prenatal');
+        if (patientData is Map) {
+          patientId = patientData['id']?.toString();
+        }
+      } catch (_) {}
+
+      if (patientId == null || patientId.isEmpty) {
+        final currentUser = await AuthService().getCurrentUser();
+        patientId = currentUser?.id;
+      }
+
+      final data = await ApiService.getAppointments(patientId: patientId).timeout(
         const Duration(seconds: 10),
         onTimeout: () => throw Exception('Request timeout. Please check your connection.'),
       );
@@ -403,7 +419,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                         builder: (ctx) => Dialog(
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                           child: Padding(
-                            padding: const EdgeInsets.all(24),
+                            padding: const EdgeInsets.all(12),
                             child: ClockTimePicker(
                               initialTime: selectedTime,
                               onTimeChanged: (newTime) {
@@ -1351,11 +1367,13 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
     timeCtrl = TextEditingController();
     locationCtrl = TextEditingController();
     pickedDate = widget.selectedDay;
-    
-    // Auto-fill current device time
     selectedTime = TimeOfDay.now();
-    timeCtrl.text = selectedTime.format(context);
-    
+    // Format time after first frame so context is available
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() => timeCtrl.text = selectedTime.format(context));
+      }
+    });
     _loadCliniciansAndPatient();
   }
 
@@ -1371,19 +1389,30 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
     setState(() => loadingClinicians = true);
     try {
       final user = await AuthService().getCurrentUser();
-      if (user != null && user.facilityName.isNotEmpty) {
-        // Fetch clinicians
-        final clinicianData = await ApiService.getCliniciansByFacility(user.facilityName);
-        
-        // Fetch patient ID
-        final patientData = await ApiService.instance.get('/patients/me/prenatal');
-        final patientId = patientData is Map ? patientData['id'] as String? : null;
-        
+      if (user != null) {
+        // Fetch clinicians by facility if available
+        if (user.facilityName.isNotEmpty) {
+          final clinicianData = await ApiService.getCliniciansByFacility(user.facilityName);
+          setState(() {
+            clinicians = (clinicianData as List<dynamic>)
+                .map((e) => Map<String, dynamic>.from(e as Map))
+                .toList();
+          });
+        }
+
+        // Fetch the prenatal patient record to get the correct patient ID
+        // that the backend stores on appointments (prenatalPatientId).
+        // Fall back to the user's own ID if the endpoint is unavailable.
+        String? resolvedPatientId;
+        try {
+          final patientData = await ApiService.instance.get('/patients/me/prenatal');
+          if (patientData is Map) {
+            resolvedPatientId = patientData['id']?.toString();
+          }
+        } catch (_) {}
+
         setState(() {
-          clinicians = (clinicianData as List<dynamic>)
-              .map((e) => Map<String, dynamic>.from(e as Map))
-              .toList();
-          this.patientId = patientId;
+          patientId = resolvedPatientId?.isNotEmpty == true ? resolvedPatientId : user.id;
           loadingClinicians = false;
         });
       } else {
@@ -1414,7 +1443,7 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
                   builder: (ctx) => Dialog(
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     child: Padding(
-                      padding: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(12),
                       child: ClockTimePicker(
                         initialTime: selectedTime,
                         onTimeChanged: (newTime) {

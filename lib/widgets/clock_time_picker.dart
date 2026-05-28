@@ -33,8 +33,8 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
       children: [
         // Clock display
         Container(
-          width: 280,
-          height: 280,
+          width: 160,
+          height: 160,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFF1A237E), width: 2),
@@ -43,15 +43,13 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              // Clock face
               CustomPaint(
-                size: const Size(280, 280),
+                size: const Size(160, 160),
                 painter: _ClockPainter(_selectedTime),
               ),
-              // Center dot
               Container(
-                width: 12,
-                height: 12,
+                width: 8,
+                height: 8,
                 decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: Color(0xFF1A237E),
@@ -60,26 +58,27 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         // Time display
         Text(
           _selectedTime.format(context),
           style: const TextStyle(
-            fontSize: 32,
+            fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Color(0xFF1A237E),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 10),
         // Hour and Minute selectors
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Hour selector
             Column(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_drop_up, size: 28),
+                  icon: const Icon(Icons.arrow_drop_up, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
@@ -91,10 +90,12 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
                 ),
                 Text(
                   _selectedTime.hour.toString().padLeft(2, '0'),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_drop_down, size: 28),
+                  icon: const Icon(Icons.arrow_drop_down, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
@@ -106,14 +107,15 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
                 ),
               ],
             ),
-            const SizedBox(width: 20),
-            const Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 20),
-            // Minute selector
+            const SizedBox(width: 12),
+            const Text(':', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(width: 12),
             Column(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.arrow_drop_up, size: 28),
+                  icon: const Icon(Icons.arrow_drop_up, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
@@ -125,10 +127,12 @@ class _ClockTimePickerState extends State<ClockTimePicker> {
                 ),
                 Text(
                   _selectedTime.minute.toString().padLeft(2, '0'),
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_drop_down, size: 28),
+                  icon: const Icon(Icons.arrow_drop_down, size: 20),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                   onPressed: () {
                     setState(() {
                       _selectedTime = _selectedTime.replacing(
@@ -190,7 +194,7 @@ class _ClockPainter extends CustomPainter {
           text: (i == 0 ? 12 : i).toString(),
           style: const TextStyle(
             color: Color(0xFF1A237E),
-            fontSize: 14,
+            fontSize: 9,
             fontWeight: FontWeight.bold,
           ),
         ),
