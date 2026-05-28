@@ -2,39 +2,107 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'api_service.dart';
 
+/// Referral reason enum
+enum ReferralReason {
+  hypertension,
+  bleeding,
+  infection,
+  fetalDistress,
+  prematureLab or,
+  placentalIssues,
+  neonatalEmergency,
+  neonatalInfection,
+  lowBirthWeight,
+  respiratoryDistress,
+  jaundice,
+  other,
+}
+
+/// Referral status enum
+enum ReferralStatus {
+  pending,
+  accepted,
+  inTransit,
+  arrived,
+  completed,
+  rejected,
+  cancelled,
+}
+
+/// Transport mode enum
+enum TransportMode {
+  ambulance,
+  personalVehicle,
+  motorcycle,
+  walking,
+  other,
+}
+
 /// Models for referral feature
 class Referral {
   final String id;
   final String referralCode;
   final String patientName;
+  final String? patientContact;
+  final String? patientAge;
   final String reason;
   final String status;
+  final String clinicalSummary;
+  final String? urgencyNotes;
   final String referringFacilityId;
   final String receivingFacilityId;
   final String referringClinicianId;
   final String? receivingClinicianId;
-  final String clinicalSummary;
+  final String? transportMode;
+  final String? transportProvider;
+  final String? transportContact;
+  final DateTime? departureTime;
+  final DateTime? arrivalTime;
+  final String? transportNotes;
+  final bool acceptedByReceivingFacility;
+  final DateTime? acceptedAt;
+  final String? rejectionReason;
+  final DateTime? rejectedAt;
+  final String? treatmentOutcome;
+  final DateTime? completedAt;
   final DateTime createdAt;
   final DateTime? updatedAt;
   final Map<String, dynamic>? referringFacility;
   final Map<String, dynamic>? receivingFacility;
+  final Map<String, dynamic>? referringClinician;
   final Map<String, dynamic>? receivingClinician;
 
   Referral({
     required this.id,
     required this.referralCode,
     required this.patientName,
+    this.patientContact,
+    this.patientAge,
     required this.reason,
     required this.status,
+    required this.clinicalSummary,
+    this.urgencyNotes,
     required this.referringFacilityId,
     required this.receivingFacilityId,
     required this.referringClinicianId,
     this.receivingClinicianId,
-    required this.clinicalSummary,
+    this.transportMode,
+    this.transportProvider,
+    this.transportContact,
+    this.departureTime,
+    this.arrivalTime,
+    this.transportNotes,
+    this.acceptedByReceivingFacility = false,
+    this.acceptedAt,
+    this.rejectionReason,
+    this.rejectedAt,
+    this.treatmentOutcome,
+    this.completedAt,
     required this.createdAt,
     this.updatedAt,
     this.referringFacility,
     this.receivingFacility,
+    this.referringClinician,
     this.receivingClinician,
   });
 
@@ -43,19 +111,45 @@ class Referral {
       id: json['id'] as String,
       referralCode: json['referralCode'] as String,
       patientName: json['patientName'] as String,
+      patientContact: json['patientContact'] as String?,
+      patientAge: json['patientAge'] as String?,
       reason: json['reason'] as String,
       status: json['status'] as String,
+      clinicalSummary: json['clinicalSummary'] as String,
+      urgencyNotes: json['urgencyNotes'] as String?,
       referringFacilityId: json['referringFacilityId'] as String,
       receivingFacilityId: json['receivingFacilityId'] as String,
       referringClinicianId: json['referringClinicianId'] as String,
       receivingClinicianId: json['receivingClinicianId'] as String?,
-      clinicalSummary: json['clinicalSummary'] as String,
+      transportMode: json['transportMode'] as String?,
+      transportProvider: json['transportProvider'] as String?,
+      transportContact: json['transportContact'] as String?,
+      departureTime: json['departureTime'] != null
+          ? DateTime.parse(json['departureTime'] as String)
+          : null,
+      arrivalTime: json['arrivalTime'] != null
+          ? DateTime.parse(json['arrivalTime'] as String)
+          : null,
+      transportNotes: json['transportNotes'] as String?,
+      acceptedByReceivingFacility: json['acceptedByReceivingFacility'] as bool? ?? false,
+      acceptedAt: json['acceptedAt'] != null
+          ? DateTime.parse(json['acceptedAt'] as String)
+          : null,
+      rejectionReason: json['rejectionReason'] as String?,
+      rejectedAt: json['rejectedAt'] != null
+          ? DateTime.parse(json['rejectedAt'] as String)
+          : null,
+      treatmentOutcome: json['treatmentOutcome'] as String?,
+      completedAt: json['completedAt'] != null
+          ? DateTime.parse(json['completedAt'] as String)
+          : null,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: json['updatedAt'] != null
           ? DateTime.parse(json['updatedAt'] as String)
           : null,
       referringFacility: json['referringFacility'] as Map<String, dynamic>?,
       receivingFacility: json['receivingFacility'] as Map<String, dynamic>?,
+      referringClinician: json['referringClinician'] as Map<String, dynamic>?,
       receivingClinician: json['receivingClinician'] as Map<String, dynamic>?,
     );
   }
@@ -64,42 +158,70 @@ class Referral {
     'id': id,
     'referralCode': referralCode,
     'patientName': patientName,
+    'patientContact': patientContact,
+    'patientAge': patientAge,
     'reason': reason,
     'status': status,
+    'clinicalSummary': clinicalSummary,
+    'urgencyNotes': urgencyNotes,
     'referringFacilityId': referringFacilityId,
     'receivingFacilityId': receivingFacilityId,
     'referringClinicianId': referringClinicianId,
     'receivingClinicianId': receivingClinicianId,
-    'clinicalSummary': clinicalSummary,
+    'transportMode': transportMode,
+    'transportProvider': transportProvider,
+    'transportContact': transportContact,
+    'departureTime': departureTime?.toIso8601String(),
+    'arrivalTime': arrivalTime?.toIso8601String(),
+    'transportNotes': transportNotes,
+    'acceptedByReceivingFacility': acceptedByReceivingFacility,
+    'acceptedAt': acceptedAt?.toIso8601String(),
+    'rejectionReason': rejectionReason,
+    'rejectedAt': rejectedAt?.toIso8601String(),
+    'treatmentOutcome': treatmentOutcome,
+    'completedAt': completedAt?.toIso8601String(),
     'createdAt': createdAt.toIso8601String(),
     'updatedAt': updatedAt?.toIso8601String(),
     'referringFacility': referringFacility,
     'receivingFacility': receivingFacility,
+    'referringClinician': referringClinician,
     'receivingClinician': receivingClinician,
   };
 }
 
 class CreateReferralRequest {
   final String patientName;
+  final String? patientContact;
+  final String? patientAge;
   final String reason;
   final String referringFacilityId;
   final String receivingFacilityId;
   final String clinicalSummary;
+  final String? urgencyNotes;
+  final String? transportMode;
 
   CreateReferralRequest({
     required this.patientName,
+    this.patientContact,
+    this.patientAge,
     required this.reason,
     required this.referringFacilityId,
     required this.receivingFacilityId,
     required this.clinicalSummary,
+    this.urgencyNotes,
+    this.transportMode,
   });
 
   Map<String, dynamic> toJson() => {
     'patientName': patientName,
+    'patientContact': patientContact,
+    'patientAge': patientAge,
     'reason': reason,
     'referringFacilityId': referringFacilityId,
     'receivingFacilityId': receivingFacilityId,
     'clinicalSummary': clinicalSummary,
+    'urgencyNotes': urgencyNotes,
+    'transportMode': transportMode,
   };
 }
 
