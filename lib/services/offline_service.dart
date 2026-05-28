@@ -50,7 +50,7 @@ class OfflineService extends ChangeNotifier {
 
   late SharedPreferences _prefs;
   final List<OfflineAction> _syncQueue = [];
-  late StreamSubscription<ConnectivityResult> _connectivitySubscription;
+  late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isOnline = true;
   bool _isSyncing = false;
   Timer? _syncTimer;
@@ -77,9 +77,9 @@ class OfflineService extends ChangeNotifier {
 
   /// Setup connectivity listener
   void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
       final wasOnline = _isOnline;
-      _isOnline = result != ConnectivityResult.none;
+      _isOnline = results.isNotEmpty && results.first != ConnectivityResult.none;
 
       if (_isOnline && !wasOnline) {
         debugPrint('📡 Connection restored - starting sync');
