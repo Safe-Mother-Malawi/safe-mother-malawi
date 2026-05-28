@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../web/admin/admin_overview.dart';
 import '../web/dho/dho_overview.dart';
-import 'clinician/clinician_layout.dart';
+import '../web/clinician/clinician_overview.dart';
 import '../services/auth_service_web.dart';
 import '../services/api_service.dart';
 import 'email_forgot_password_dialog.dart';
@@ -70,7 +70,7 @@ class _LoginDialogState extends State<LoginDialog> {
       } else if (role == 'dho') {
         dest = const DhoOverview();
       } else if (role == 'clinician') {
-        dest = const ClinicianDashboard();
+        dest = const ClinicianOverview();
       } else {
         // Unknown role
         await AuthServiceWeb.instance.logout();
