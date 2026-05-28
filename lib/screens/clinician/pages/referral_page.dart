@@ -81,21 +81,40 @@ class _ReferralPageState extends State<ReferralPage> {
           // Header
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Referrals',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.navy,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Referrals',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.navy,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Manage patient referrals',
+                      style: TextStyle(fontSize: 13, color: AppColors.g600),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Manage patient referrals',
-                  style: TextStyle(fontSize: 13, color: AppColors.g600),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const _CreateReferralDialog(),
+                    ).then((_) => _loadReferrals());
+                  },
+                  icon: const Icon(Icons.add),
+                  label: const Text('Create Referral'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navy,
+                    foregroundColor: Colors.white,
+                  ),
                 ),
               ],
             ),
