@@ -3,6 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import 'fcm_service.dart';
+import 'notification_sound_service.dart';
 
 /// Notification service for handling push and local notifications
 /// Note: Firebase Messaging is only available on mobile platforms
@@ -18,6 +19,7 @@ class NotificationService {
   late FlutterLocalNotificationsPlugin _localNotifications;
   late ApiService _apiService;
   late FCMService _fcmService;
+  late NotificationSoundService _soundService;
 
   final StreamController<Map<String, dynamic>> _notificationStream =
       StreamController<Map<String, dynamic>>.broadcast();
@@ -34,12 +36,16 @@ class NotificationService {
     _apiService = apiService;
     _localNotifications = FlutterLocalNotificationsPlugin();
     _fcmService = FCMService();
+    _soundService = NotificationSoundService();
 
     // Initialize FCM service (handles token registration on mobile)
     await _fcmService.initialize(apiService);
 
     // Initialize local notifications
     await _initializeLocalNotifications();
+
+    // Initialize sound service
+    await _soundService.initialize();
 
     _isInitialized = true;
     print('✓ Notification Service initialized');
