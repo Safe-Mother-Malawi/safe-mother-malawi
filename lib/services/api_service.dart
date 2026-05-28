@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import 'request_queue_manager.dart';
+import 'token_refresh_service.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -55,6 +56,9 @@ class ApiService {
 
   // ── Request deduplication ─────────────────────────────────────────────────
   final Map<String, Future<dynamic>> _pendingRequests = {};
+
+  // ── Retry tracking ────────────────────────────────────────────────────────
+  bool _isRetryingAfterRefresh = false;
 
   // ── Rate limiting ─────────────────────────────────────────────────────────
   int _requestCount = 0;
@@ -144,7 +148,7 @@ class ApiService {
   Future<dynamic> _performGet(String path) async {
     await _checkRateLimit();
     final res = await http.get(Uri.parse('$_base$path'), headers: _headers);
-    return _handle(res);
+    return _handle(res, () => _performGet(path));
   }
 
   Future<dynamic> get(String path) async {
@@ -167,7 +171,7 @@ class ApiService {
     } else {
       debugPrint('❌ Error: ${res.body}');
     }
-    return _handle(res);
+    return _handle(res, () => post(path, body));
   }
 
   Future<dynamic> patch(String path, Map<String, dynamic> body) async {
@@ -177,7 +181,7 @@ class ApiService {
       headers: _headers,
       body: jsonEncode(body),
     );
-    return _handle(res);
+    return _handle(res, () => patch(path, body));
   }
 
   Future<dynamic> put(String path, Map<String, dynamic> body) async {
@@ -187,16 +191,16 @@ class ApiService {
       headers: _headers,
       body: jsonEncode(body),
     );
-    return _handle(res);
+    return _handle(res, () => put(path, body));
   }
 
   Future<void> delete(String path) async {
     await _checkRateLimit();
     final res = await http.delete(Uri.parse('$_base$path'), headers: _headers);
-    _handle(res);
+    _handle(res, () => delete(path));
   }
 
-  dynamic _handle(http.Response res) {
+  dynamic _handle(http.Response res, [Future<dynamic> Function()? retryFn]) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return null;
       return jsonDecode(res.body);
@@ -209,8 +213,39 @@ class ApiService {
           'Too many requests. Please wait a moment and try again.');
     }
 
+    // Handle 401 Unauthorized - attempt token refresh
+    if (res.statusCode == 401 && !_isRetryingAfterRefresh && retryFn != null) {
+      debugPrint('🔐 Received 401 - attempting token refresh...');
+      return _handleUnauthorized(retryFn);
+    }
+
     final msg = _tryParseError(res.body);
     throw ApiException(res.statusCode, msg);
+  }
+
+  /// Handle 401 error by attempting to refresh token and retry
+  Future<dynamic> _handleUnauthorized(Future<dynamic> Function() retryFn) async {
+    _isRetryingAfterRefresh = true;
+    try {
+      final newToken = await TokenRefreshService.instance.refreshAccessToken();
+      
+      if (newToken != null) {
+        // Update in-memory token
+        _token = newToken;
+        debugPrint('✅ Token refreshed, retrying request...');
+        
+        // Retry the original request with new token
+        return await retryFn();
+      } else {
+        debugPrint('❌ Token refresh failed - session expired');
+        throw ApiException(401, 'Session expired. Please log in again.');
+      }
+    } catch (e) {
+      debugPrint('❌ Error during token refresh: $e');
+      throw ApiException(401, 'Session expired. Please log in again.');
+    } finally {
+      _isRetryingAfterRefresh = false;
+    }
   }
 
   String _tryParseError(String body) {
