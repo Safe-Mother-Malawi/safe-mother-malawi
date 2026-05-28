@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
 import '../../../services/reminder_service.dart';
 import '../../../widgets/clock_time_picker.dart';
+import '../../../utils/error_handler.dart';
 import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     } catch (e) {
       debugPrint('❌ Failed to load appointments: $e');
       setState(() { 
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorHandler.getErrorMessage(e);
         _loading = false; 
       });
     }
