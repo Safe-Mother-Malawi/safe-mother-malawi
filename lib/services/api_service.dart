@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import 'request_queue_manager.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -59,8 +60,9 @@ class ApiService {
   int _requestCount = 0;
   DateTime _rateLimitResetTime = DateTime.now();
   static const int _rateLimitPerMinute =
-      5000; // Increased to 5000 requests per minute
+      50000; // Increased to 50000 requests per minute to avoid 429
   static const int _rateLimitWindowMs = 60000;
+  final RequestQueueManager _queueManager = RequestQueueManager();
 
   // ── Token management ──────────────────────────────────────────────────────
 
@@ -97,7 +99,7 @@ class ApiService {
 
   // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-  /// Check and enforce rate limiting
+  /// Check and enforce rate limiting with smart queuing
   Future<void> _checkRateLimit() async {
     final now = DateTime.now();
 
@@ -108,17 +110,9 @@ class ApiService {
       _rateLimitResetTime = now;
     }
 
-    // If at limit, wait until window resets
-    if (_requestCount >= _rateLimitPerMinute) {
-      final waitTime = _rateLimitWindowMs -
-          now.difference(_rateLimitResetTime).inMilliseconds;
-      if (waitTime > 0) {
-        debugPrint(
-            '⏳ Rate limit reached. Waiting ${waitTime}ms before next request...');
-        await Future.delayed(Duration(milliseconds: waitTime + 100));
-        _requestCount = 0;
-        _rateLimitResetTime = DateTime.now();
-      }
+    // If approaching limit (80%), add small delay to prevent hitting it
+    if (_requestCount > _rateLimitPerMinute * 0.8) {
+      await Future.delayed(const Duration(milliseconds: 5));
     }
 
     _requestCount++;
