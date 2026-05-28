@@ -61,7 +61,11 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final data = await ApiService.getAppointments().timeout(
+      // Get the current logged-in patient's ID so we only fetch their appointments
+      final currentUser = await AuthService().getCurrentUser();
+      final patientId = currentUser?.id;
+
+      final data = await ApiService.getAppointments(patientId: patientId).timeout(
         const Duration(seconds: 10),
         onTimeout: () => throw Exception('Request timeout. Please check your connection.'),
       );

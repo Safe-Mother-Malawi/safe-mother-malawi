@@ -323,7 +323,9 @@ class ApiService {
   // ── Appointments ──────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getAppointments({String? patientId}) {
-    final path = patientId != null ? '/appointments?patientId=$patientId' : '/appointments';
+    final path = (patientId != null && patientId.isNotEmpty)
+        ? '/appointments?patientId=${Uri.encodeComponent(patientId)}'
+        : '/appointments';
     return instance.get(path).then(_asList);
   }
 
