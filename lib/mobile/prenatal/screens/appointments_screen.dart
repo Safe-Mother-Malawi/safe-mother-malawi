@@ -896,7 +896,6 @@ class _AppointmentCard extends StatelessWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      isScrollControlled: true,
       builder: (ctx) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -904,184 +903,63 @@ class _AppointmentCard extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with close button
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'When will you be available?',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(ctx),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
               const Text(
-                'Select your preferred time for rescheduling',
-                style: TextStyle(fontSize: 12, color: Color(0xFF757575)),
+                'When will you be available?',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A237E)),
               ),
-              const SizedBox(height: 20),
-              
-              // Quick options with better styling
-              _RescheduleOption(
-                icon: Icons.flash_on,
-                color: const Color(0xFFFB8C00),
-                title: 'Later today',
-                subtitle: '+4 hours from now',
+              const SizedBox(height: 16),
+              ListTile(
+                leading: const Icon(Icons.flash_on, color: Color(0xFFFB8C00)),
+                title: const Text('Later today (+4 hours)'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _handleReschedule('later_today', null);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'later_today');
                 },
               ),
-              const SizedBox(height: 12),
-              _RescheduleOption(
-                icon: Icons.today,
-                color: const Color(0xFF1E88E5),
-                title: 'Tomorrow',
-                subtitle: 'Same time as original',
+              ListTile(
+                leading: const Icon(Icons.today, color: Color(0xFF1E88E5)),
+                title: const Text('Tomorrow'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _handleReschedule('tomorrow', null);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'tomorrow');
                 },
               ),
-              const SizedBox(height: 12),
-              _RescheduleOption(
-                icon: Icons.date_range,
-                color: const Color(0xFF2E7D32),
-                title: 'This week',
-                subtitle: 'In 3 days',
+              ListTile(
+                leading: const Icon(Icons.date_range, color: Color(0xFF2E7D32)),
+                title: const Text('This week (in 3 days)'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  _handleReschedule('this_week', null);
+                  onUpdateStatus?.call('patient_unavailable', preferredTime: 'this_week');
                 },
               ),
-              const SizedBox(height: 12),
-              _RescheduleOption(
-                icon: Icons.event,
-                color: const Color(0xFF8E24AA),
-                title: 'Custom date & time',
-                subtitle: 'Choose your preferred slot',
+              ListTile(
+                leading: const Icon(Icons.event, color: Color(0xFF8E24AA)),
+                title: const Text('Select a custom date & time'),
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _showCustomDateTimePicker(context);
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now().add(const Duration(days: 1)),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 90)),
+                  );
+                  if (date != null) {
+                    final time = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.now(),
+                    );
+                    if (time != null) {
+                      final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                      onUpdateStatus?.call('patient_unavailable', preferredTime: 'custom', customDateTime: dt.toIso8601String());
+                    }
+                  }
                 },
-              ),
-              const SizedBox(height: 20),
-              
-              // Info box
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE3F2FD),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFF1E88E5), width: 0.5),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.info_outline, size: 16, color: Color(0xFF1E88E5)),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Your health facility will review and confirm the new time',
-                        style: TextStyle(fontSize: 11, color: Color(0xFF1565C0)),
-                      ),
-                    ),
-                  ],
-                ),
               ),
             ],
           ),
         ),
       ),
     );
-  }
-
-  Future<void> _showCustomDateTimePicker(BuildContext context) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
-    );
-    
-    if (date != null && mounted) {
-      final time = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      
-      if (time != null) {
-        final dt = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-        _handleReschedule('custom', dt.toIso8601String());
-      }
-    }
-  }
-
-  void _handleReschedule(String type, String? customDateTime) {
-    // Show confirmation dialog
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Reschedule'),
-        content: Text(
-          _getRescheduleMessage(type, customDateTime),
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-            ),
-            onPressed: () {
-              Navigator.pop(ctx);
-              onUpdateStatus?.call('patient_unavailable', preferredTime: type, customDateTime: customDateTime);
-              
-              // Show success message
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Reschedule request sent to your health facility'),
-                  backgroundColor: const Color(0xFF2E7D32),
-                  duration: const Duration(seconds: 3),
-                  action: SnackBarAction(
-                    label: 'Undo',
-                    onPressed: () {
-                      // Could implement undo functionality
-                    },
-                  ),
-                ),
-              );
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getRescheduleMessage(String type, String? customDateTime) {
-    switch (type) {
-      case 'later_today':
-        return 'Request to reschedule for later today (+4 hours)?';
-      case 'tomorrow':
-        return 'Request to reschedule for tomorrow at the same time?';
-      case 'this_week':
-        return 'Request to reschedule for this week (in 3 days)?';
-      case 'custom':
-        if (customDateTime != null) {
-          final dt = DateTime.parse(customDateTime);
-          return 'Request to reschedule for ${dt.toString().split(' ')[0]} at ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}?';
-        }
-        return 'Request to reschedule?';
-      default:
-        return 'Confirm reschedule request?';
-    }
   }
 
   @override
@@ -1720,78 +1598,3 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
   }
 }
 
-
-
-// ─── Reschedule Option Widget ─────────────────────────────────────────────────
-
-class _RescheduleOption extends StatelessWidget {
-  final IconData icon;
-  final Color color;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  const _RescheduleOption({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            border: Border.all(color: color.withOpacity(0.3), width: 1.5),
-            borderRadius: BorderRadius.circular(12),
-            color: color.withOpacity(0.05),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: color, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A237E),
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF757575),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: color.withOpacity(0.6)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
