@@ -465,16 +465,17 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                             ),
                           if (_selectedDistricts.isNotEmpty)
                             Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Wrap(
-                              spacing: 8,
-                              children: _selectedDistricts.map((d) => Chip(label: Text(d), onDeleted: () {
-                                setState(() => _selectedDistricts.remove(d));
-                              })).toList(),
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Wrap(
+                                spacing: 8,
+                                children: _selectedDistricts.map((d) => Chip(label: Text(d), onDeleted: () {
+                                  setState(() => _selectedDistricts.remove(d));
+                                })).toList(),
+                              ),
                             ),
-                          ),
-                      ],
-                    ),
+                        ],
+                      ),
+                  ],
                 ],
                 const SizedBox(height: 16),
                 const Text('Delivery Channels', style: TextStyle(fontWeight: FontWeight.bold)),
