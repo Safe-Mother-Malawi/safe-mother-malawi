@@ -7,6 +7,7 @@ import '../shared/sidebar.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
+import '../shared/utils/responsive_helper.dart';
 import '../admin/clinician_management.dart';
 import '../admin/generate_analytics.dart';
 import '../admin/analytics_dashboard.dart';
@@ -244,46 +245,78 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
     final missedVisitsRate = 100 - ancAttendanceRate;
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(context.responsivePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // District header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('$_district District', style: TextStyle(fontFamily: 'Public Sans', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.headings)),
-                  const SizedBox(height: 4),
-                  Text('District Health Officer Dashboard', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.1),
-                  border: Border.all(color: Colors.green),
-                  borderRadius: BorderRadius.circular(20),
+          // District header - Responsive
+          if (context.shouldStackLayout)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$_district District', style: TextStyle(fontFamily: 'Public Sans', fontSize: context.isMobile ? 20 : 24, fontWeight: FontWeight.w700, color: AppColors.headings)),
+                    const SizedBox(height: 4),
+                    Text('District Health Officer Dashboard', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText)),
+                  ],
                 ),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  const Icon(Icons.check_circle, color: Colors.green, size: 16),
-                  const SizedBox(width: 6),
-                  Text('On Track', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
-                ]),
-              ),
-            ],
-          ),
-          const SizedBox(height: 28),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    border: Border.all(color: Colors.green),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 6),
+                    Text('On Track', style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.green)),
+                  ]),
+                ),
+              ],
+            )
+          else
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('$_district District', style: TextStyle(fontFamily: 'Public Sans', fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.headings)),
+                    const SizedBox(height: 4),
+                    Text('District Health Officer Dashboard', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText)),
+                  ],
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    border: Border.all(color: Colors.green),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                    const SizedBox(width: 6),
+                    Text('On Track', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green)),
+                  ]),
+                ),
+              ],
+            ),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
           // SECTION 1: CRITICAL STATUS
-          Text('Critical Status', style: TextStyle(fontFamily: 'Public Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
-          const SizedBox(height: 12),
+          Text('Critical Status', style: TextStyle(fontFamily: 'Public Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
+          SizedBox(height: context.responsiveSpacing),
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: context.gridColumns,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            crossAxisSpacing: context.responsiveSpacing,
+            mainAxisSpacing: context.responsiveSpacing,
+            childAspectRatio: ResponsiveHelper.getGridAspectRatio(context),
             children: [
               KpiCard(
                 title: 'Active Alerts',
@@ -319,15 +352,18 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
           // SECTION 2: PROGRAM PERFORMANCE
-          Text('Program Performance', style: TextStyle(fontFamily: 'Public Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
-          const SizedBox(height: 12),
+          Text('Program Performance', style: TextStyle(fontFamily: 'Public Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
+          SizedBox(height: context.responsiveSpacing),
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: context.gridColumns,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            crossAxisSpacing: context.responsiveSpacing,
+            mainAxisSpacing: context.responsiveSpacing,
+            childAspectRatio: ResponsiveHelper.getGridAspectRatio(context),
             children: [
               KpiCard(
                 title: 'Mothers Enrolled',
@@ -363,15 +399,18 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
           // SECTION 3: DELIVERY OUTCOMES
-          Text('Delivery Outcomes', style: TextStyle(fontFamily: 'Public Sans', fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
-          const SizedBox(height: 12),
+          Text('Delivery Outcomes', style: TextStyle(fontFamily: 'Public Sans', fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.mutedText)),
+          SizedBox(height: context.responsiveSpacing),
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: context.gridColumns,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            crossAxisSpacing: context.responsiveSpacing,
+            mainAxisSpacing: context.responsiveSpacing,
+            childAspectRatio: ResponsiveHelper.getGridAspectRatio(context),
             children: [
               KpiCard(
                 title: 'Live Births',
@@ -407,56 +446,102 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
               ),
             ],
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
-          // SECTION 4: TRENDS & RISK DISTRIBUTION
-          Row(children: [
-            Expanded(flex: 2, child: ChartCard(
-              title: 'Monthly Registration Trend',
-              subtitle: 'Last 6 months',
-              chart: SizedBox(height: 200, child: _trendSpots.length < 2
-                  ? const Center(child: Text('No data yet'))
-                  : LineChart(LineChartData(
-                      gridData: const FlGridData(show: false),
-                      borderData: FlBorderData(show: false),
-                      titlesData: FlTitlesData(
-                        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                        bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
-                          getTitlesWidget: (v, _) {
-                            const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                            final i = v.toInt();
-                            if (i < 0 || i >= m.length) return const SizedBox();
-                            return Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
-                          })),
-                      ),
-                      lineBarsData: [
-                        LineChartBarData(
-                          spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
-                          dotData: const FlDotData(show: false),
-                          belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
+          // SECTION 4: TRENDS & RISK DISTRIBUTION - Responsive Layout
+          if (context.shouldStackLayout)
+            Column(
+              children: [
+                ChartCard(
+                  title: 'Monthly Registration Trend',
+                  subtitle: 'Last 6 months',
+                  chart: SizedBox(height: context.chartHeight, child: _trendSpots.length < 2
+                      ? const Center(child: Text('No data yet'))
+                      : LineChart(LineChartData(
+                          gridData: const FlGridData(show: false),
+                          borderData: FlBorderData(show: false),
+                          titlesData: FlTitlesData(
+                            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                            bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
+                              getTitlesWidget: (v, _) {
+                                const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                                final i = v.toInt();
+                                if (i < 0 || i >= m.length) return const SizedBox();
+                                return Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 10, color: AppColors.mutedText));
+                              })),
+                          ),
+                          lineBarsData: [
+                            LineChartBarData(
+                              spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
+                              dotData: const FlDotData(show: false),
+                              belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
+                            ),
+                          ],
+                        ))),
+                ),
+                SizedBox(height: context.responsiveSpacing),
+                ChartCard(
+                  title: 'Risk Level Distribution',
+                  subtitle: 'Current breakdown',
+                  chart: SizedBox(height: context.chartHeight, child: _riskDist.isEmpty
+                      ? const Center(child: Text('No data yet'))
+                      : PieChart(PieChartData(
+                          sectionsSpace: 3, centerSpaceRadius: 40,
+                          sections: _buildRiskSections(),
+                        ))),
+                ),
+              ],
+            )
+          else
+            Row(children: [
+              Expanded(flex: 2, child: ChartCard(
+                title: 'Monthly Registration Trend',
+                subtitle: 'Last 6 months',
+                chart: SizedBox(height: context.chartHeight, child: _trendSpots.length < 2
+                    ? const Center(child: Text('No data yet'))
+                    : LineChart(LineChartData(
+                        gridData: const FlGridData(show: false),
+                        borderData: FlBorderData(show: false),
+                        titlesData: FlTitlesData(
+                          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                          bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true,
+                            getTitlesWidget: (v, _) {
+                              const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              final i = v.toInt();
+                              if (i < 0 || i >= m.length) return const SizedBox();
+                              return Text(m[i], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
+                            })),
                         ),
-                      ],
-                    ))),
-            )),
-            const SizedBox(width: 20),
-            Expanded(child: ChartCard(
-              title: 'Risk Level Distribution',
-              subtitle: 'Current breakdown',
-              chart: SizedBox(height: 200, child: _riskDist.isEmpty
-                  ? const Center(child: Text('No data yet'))
-                  : PieChart(PieChartData(
-                      sectionsSpace: 3, centerSpaceRadius: 44,
-                      sections: _buildRiskSections(),
-                    ))),
-            )),
-          ]),
-          const SizedBox(height: 28),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: _trendSpots, isCurved: true, color: AppColors.primary, barWidth: 3,
+                            dotData: const FlDotData(show: false),
+                            belowBarData: BarAreaData(show: true, color: AppColors.primary.withOpacity(0.08)),
+                          ),
+                        ],
+                      ))),
+              )),
+              SizedBox(width: context.responsiveSpacing),
+              Expanded(child: ChartCard(
+                title: 'Risk Level Distribution',
+                subtitle: 'Current breakdown',
+                chart: SizedBox(height: context.chartHeight, child: _riskDist.isEmpty
+                    ? const Center(child: Text('No data yet'))
+                    : PieChart(PieChartData(
+                        sectionsSpace: 3, centerSpaceRadius: 44,
+                        sections: _buildRiskSections(),
+                      ))),
+              )),
+            ]),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
           // SECTION 5: DISTRICT ALERTS
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(context.responsivePadding),
             decoration: BoxDecoration(
               color: AppColors.surfaceContainerLowest,
               borderRadius: BorderRadius.circular(16),
@@ -465,10 +550,10 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('District Alerts & Actions', style: TextStyle(fontFamily: 'Public Sans', fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.headings)),
-                const SizedBox(height: 16),
+                Text('District Alerts & Actions', style: TextStyle(fontFamily: 'Public Sans', fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.headings)),
+                SizedBox(height: context.responsiveSpacing),
                 if (_districtAlerts.isEmpty)
-                  Text('No active alerts. District is operating normally.', style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText))
+                  Text('No active alerts. District is operating normally.', style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.mutedText))
                 else
                   ..._districtAlerts.take(5).map((a) {
                     final type = a['type'] as String? ?? 'info';
@@ -479,16 +564,32 @@ class _DhoOverviewBodyState extends State<_DhoOverviewBody> with LiveDataMixin {
                     final badge = type == 'critical' ? BadgeType.critical
                         : type == 'warning' ? BadgeType.warning : BadgeType.info;
                     return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(children: [
-                        Container(padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
-                            child: Icon(Icons.warning_amber_rounded, color: color, size: 18)),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(a['message'] as String? ?? '',
-                            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
-                        StatusBadge(label: type, type: badge),
-                      ]),
+                      padding: EdgeInsets.only(bottom: context.responsiveSpacing),
+                      child: context.isMobile
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(children: [
+                                  Container(padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+                                      child: Icon(Icons.warning_amber_rounded, color: color, size: 16)),
+                                  const SizedBox(width: 12),
+                                  Expanded(child: Text(a['message'] as String? ?? '',
+                                      style: TextStyle(fontFamily: 'Roboto', fontSize: 12, color: AppColors.onSurface))),
+                                ]),
+                                const SizedBox(height: 8),
+                                Align(alignment: Alignment.centerRight, child: StatusBadge(label: type, type: badge)),
+                              ],
+                            )
+                          : Row(children: [
+                              Container(padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+                                  child: Icon(Icons.warning_amber_rounded, color: color, size: 18)),
+                              const SizedBox(width: 12),
+                              Expanded(child: Text(a['message'] as String? ?? '',
+                                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.onSurface))),
+                              StatusBadge(label: type, type: badge),
+                            ]),
                     );
                   }),
               ],

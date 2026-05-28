@@ -132,7 +132,7 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         debugPrint('❌ Analytics load error: $e');
         final errorMsg = e.toString();
         if (errorMsg.contains('Connection refused') || errorMsg.contains('Failed host lookup')) {
-          throw Exception('Backend server is not responding. Please ensure the backend is running at ${ApiConfig.baseUrl}');
+          throw Exception('Backend server is not responding. Please ensure the backend is running.');
         } else if (errorMsg.contains('TimeoutException')) {
           throw Exception('Request timeout. Backend is taking too long to respond.');
         } else if (errorMsg.contains('401') || errorMsg.contains('Unauthorized')) {

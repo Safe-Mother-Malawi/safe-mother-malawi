@@ -77,9 +77,9 @@ class OfflineService extends ChangeNotifier {
 
   /// Setup connectivity listener
   void _setupConnectivityListener() {
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
       final wasOnline = _isOnline;
-      _isOnline = !results.contains(ConnectivityResult.none);
+      _isOnline = result != ConnectivityResult.none;
 
       if (_isOnline && !wasOnline) {
         debugPrint('📡 Connection restored - starting sync');

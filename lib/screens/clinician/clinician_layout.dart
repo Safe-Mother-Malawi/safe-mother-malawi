@@ -127,17 +127,73 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+
     return Scaffold(
       backgroundColor: AppColors.bg,
-      body: Row(children: [
-        _buildSidebar(),
+      body: isMobile
+          ? _buildMobileLayout()
+          : isTablet
+              ? _buildTabletLayout()
+              : _buildDesktopLayout(),
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return Column(
+      children: [
+        _buildTopBar(),
         Expanded(
-          child: Column(children: [
-            _buildTopBar(),
-            Expanded(child: _buildPage()),
-          ]),
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _buildSidebar(),
+                _buildPage(),
+              ],
+            ),
+          ),
         ),
-      ]),
+      ],
+    );
+  }
+
+  Widget _buildTabletLayout() {
+    return Column(
+      children: [
+        _buildTopBar(),
+        Expanded(
+          child: Row(
+            children: [
+              SizedBox(
+                width: 240,
+                child: SingleChildScrollView(child: _buildSidebar()),
+              ),
+              Expanded(child: _buildPage()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Row(
+      children: [
+        SizedBox(
+          width: 280,
+          child: SingleChildScrollView(child: _buildSidebar()),
+        ),
+        Expanded(
+          child: Column(
+            children: [
+              _buildTopBar(),
+              Expanded(child: _buildPage()),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
