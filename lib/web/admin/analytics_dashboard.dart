@@ -130,7 +130,17 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         neonatalFuture,
       ], eagerError: false).catchError((e) {
         debugPrint('❌ Analytics load error: $e');
-        throw Exception('Failed to load analytics data. Please try again.');
+        final errorMsg = e.toString();
+        if (errorMsg.contains('Connection refused') || errorMsg.contains('Failed host lookup')) {
+          throw Exception('Backend server is not responding. Please ensure the backend is running at ${ApiConfig.baseUrl}');
+        } else if (errorMsg.contains('TimeoutException')) {
+          throw Exception('Request timeout. Backend is taking too long to respond.');
+        } else if (errorMsg.contains('401') || errorMsg.contains('Unauthorized')) {
+          throw Exception('Unauthorized. Please log in again.');
+        } else if (errorMsg.contains('403') || errorMsg.contains('Forbidden')) {
+          throw Exception('You do not have permission to view analytics.');
+        }
+        throw Exception('Failed to load analytics data: $errorMsg');
       });
 
       // Validate results
