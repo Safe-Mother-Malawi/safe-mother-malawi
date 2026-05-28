@@ -31,7 +31,7 @@ class NeonatalHomeScreen extends StatefulWidget {
   State<NeonatalHomeScreen> createState() => _NeonatalHomeScreenState();
 }
 
-class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
+class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> with WidgetsBindingObserver {
   NeonatalData? _data;
   String _firstName = 'Mama';
   bool _loading = true;
@@ -40,7 +40,22 @@ class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh data when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
@@ -399,73 +414,6 @@ class _WelcomeCard extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Mother and baby image with shadow blending
-          Stack(
-            children: [
-              // Shadow gradient behind image
-              Container(
-                width: 140,
-                height: 140,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.08),
-                      Colors.black.withValues(alpha: 0.15),
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.12),
-                      blurRadius: 16,
-                      offset: const Offset(0, 4),
-                    ),
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-              // Image with rounded corners
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Image.asset(
-                    'assets/images/mother_baby.png',
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              // Soft overlay shadow for blending
-              ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withValues(alpha: 0.05),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
         ],
       ),
     );

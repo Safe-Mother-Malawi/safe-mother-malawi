@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
 import '../../../services/reminder_service.dart';
 import '../../../widgets/clock_time_picker.dart';
+import '../../../utils/error_handler.dart';
 import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
@@ -102,7 +103,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
     } catch (e) {
       debugPrint('❌ Failed to load appointments: $e');
       setState(() { 
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorHandler.getErrorMessage(e);
         _loading = false; 
       });
     }
@@ -294,7 +295,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                 detailRow('Date', _fmtFull(date)),
                 detailRow('Time', time),
                 detailRow('Location', location),
-                detailRow('Doctor/Provider', doctor),
+                detailRow('Clinician', doctor),
                 detailRow('Status', status),
                 if (notes.isNotEmpty) detailRow('Notes', notes),
                 const SizedBox(height: 16),
@@ -460,7 +461,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                   const SizedBox(height: 10),
                   _DialogField(hint: 'Location', controller: locationCtrl),
                   const SizedBox(height: 10),
-                  _DialogField(hint: 'Doctor / Provider', controller: doctorCtrl),
+                  _DialogField(hint: 'Clinician', controller: doctorCtrl),
                   const SizedBox(height: 10),
                   _DialogField(hint: 'Notes (optional)', controller: notesCtrl),
                   const SizedBox(height: 10),

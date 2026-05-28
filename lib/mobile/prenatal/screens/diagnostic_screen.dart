@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../services/offline_api_service.dart';
 import '../../widgets/notification_icon.dart';
 import 'notifications_screen.dart';
 
@@ -41,9 +42,7 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
   Future<void> _loadQuestions() async {
     setState(() { _loadingQuestions = true; _loadError = null; });
     try {
-      // Ensure token is loaded from storage
-      await ApiService.instance.loadToken();
-      final res = await ApiService.instance.get('/who/questions') as Map<String, dynamic>;
+      final res = await OfflineApiService().get('/who/questions') as Map<String, dynamic>;
       final qs  = (res['questions'] as List).cast<Map<String, dynamic>>();
       
       debugPrint('=== QUESTIONS LOADED ===');
@@ -103,48 +102,61 @@ class _DiagnosticScreenState extends State<DiagnosticScreen> {
             .map((e) => {'questionId': e.key, 'value': e.value})
             .toList(),
       };
-      final res = await ApiService.instance.post('/who/assessment', payload)
-          as Map<String, dynamic>;
-      final savedToHistory = await _saveToHistory(res);
+      final res = await OfflineApiService().post('/who/assessment', payload);
+      if (res is Map && res['queued'] == true) {
+        final offlineResult = _buildOfflineResult();
+        if (!mounted) return;
+        setState(() { _result = offlineResult; _submitting = false; _offline = true; });
+        return;
+      }
+      final savedToHistory = await _saveToHistory(res as Map<String, dynamic>);
       if (!mounted) return;
       setState(() { _result = res; _submitting = false; });
       if (!savedToHistory) {
         _showHistorySaveWarning();
       }
     } catch (_) {
-      // Offline fallback — compute locally
-      final score = _answers.entries.fold<double>(0, (s, e) {
-        if (e.value == 0) return s;
-        final q = _questions.firstWhere((q) => q['id'] == e.key, orElse: () => {});
-        return s + ((q['weight'] as num?)?.toDouble() ?? 0);
-      });
-      final maxScore = _questions.fold<double>(
-          0, (s, q) => s + ((q['weight'] as num?)?.toDouble() ?? 0));
-      final pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
-      String riskLevel;
-      String message;
-      if (pct >= 70) {
-        riskLevel = 'High Risk';
-        message = 'URGENT: Your symptoms require immediate medical attention. Go to the nearest hospital now or call 116.';
-      } else if (pct >= 40) {
-        riskLevel = 'Moderate Risk';
-        message = 'Some symptoms require monitoring. Please contact your clinician within 24–48 hours.';
-      } else {
-        riskLevel = 'Low Risk';
-        message = 'You appear to be in good health. Continue your regular care visits and maintain a healthy lifestyle.';
-      }
-      setState(() {
-        _result = {
-          'riskLevel': riskLevel,
-          'message': message,
-          'score': score.round(),
-          'maxScore': maxScore.round(),
-          'percentage': pct.roundToDouble(),
-        };
-        _submitting = false;
-        _offline = true;
-      });
+      _applyOfflineFallback();
     }
+  }
+
+  Map<String, dynamic> _buildOfflineResult() {
+    final score = _answers.entries.fold<double>(0, (s, e) {
+      if (e.value == 0) return s;
+      final q = _questions.firstWhere((q) => q['id'] == e.key, orElse: () => {});
+      return s + ((q['weight'] as num?)?.toDouble() ?? 0);
+    });
+    final maxScore = _questions.fold<double>(
+        0, (s, q) => s + ((q['weight'] as num?)?.toDouble() ?? 0));
+    final pct = maxScore > 0 ? (score / maxScore) * 100 : 0;
+    String riskLevel;
+    String message;
+    if (pct >= 70) {
+      riskLevel = 'High Risk';
+      message = 'URGENT: Your symptoms require immediate medical attention. Go to the nearest hospital now or call 116.';
+    } else if (pct >= 40) {
+      riskLevel = 'Moderate Risk';
+      message = 'Some symptoms require monitoring. Please contact your clinician within 24–48 hours.';
+    } else {
+      riskLevel = 'Low Risk';
+      message = 'You appear to be in good health. Continue your regular care visits and maintain a healthy lifestyle.';
+    }
+    return {
+      'riskLevel': riskLevel,
+      'message': message,
+      'score': score.round(),
+      'maxScore': maxScore.round(),
+      'percentage': pct.roundToDouble(),
+    };
+  }
+
+  void _applyOfflineFallback() {
+    final result = _buildOfflineResult();
+    setState(() {
+      _result = result;
+      _submitting = false;
+      _offline = true;
+    });
   }
 
   Future<bool> _saveToHistory(Map<String, dynamic> result) async {

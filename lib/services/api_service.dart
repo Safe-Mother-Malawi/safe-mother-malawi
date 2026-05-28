@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
+import 'request_queue_manager.dart';
 
 /// Exception thrown when API calls fail
 class ApiException implements Exception {
@@ -27,6 +28,22 @@ class ApiService {
   /// Exposed for direct URL construction (e.g. blob downloads)
   static String get baseUrl => _base;
 
+  /// Resolve relative photo URLs returned by the backend into usable image URLs.
+  static String? resolvePhotoUrl(String? photoUrl) {
+    if (photoUrl == null || photoUrl.isEmpty) return null;
+    if (photoUrl.startsWith('data:')) return photoUrl;
+    if (photoUrl.startsWith('http://') || photoUrl.startsWith('https://'))
+      return photoUrl;
+
+    final parsed = Uri.parse(_base);
+    final origin = parsed
+        .replace(path: '', queryParameters: null, fragment: null)
+        .toString()
+        .replaceAll(RegExp(r'/$'), '');
+    final normalized = photoUrl.startsWith('/') ? photoUrl : '/$photoUrl';
+    return '$origin$normalized';
+  }
+
   /// Returns the current bearer token (for authenticated fetch calls)
   Future<String?> getToken() async {
     if (_token != null) return _token;
@@ -35,15 +52,17 @@ class ApiService {
   }
 
   String? _token;
-  
+
   // ── Request deduplication ─────────────────────────────────────────────────
   final Map<String, Future<dynamic>> _pendingRequests = {};
-  
+
   // ── Rate limiting ─────────────────────────────────────────────────────────
   int _requestCount = 0;
   DateTime _rateLimitResetTime = DateTime.now();
-  static const int _rateLimitPerMinute = 5000; // Increased to 5000 requests per minute
+  static const int _rateLimitPerMinute =
+      50000; // Increased to 50000 requests per minute to avoid 429
   static const int _rateLimitWindowMs = 60000;
+  final RequestQueueManager _queueManager = RequestQueueManager();
 
   // ── Token management ──────────────────────────────────────────────────────
 
@@ -80,44 +99,39 @@ class ApiService {
 
   // ── HTTP helpers ──────────────────────────────────────────────────────────
 
-  /// Check and enforce rate limiting
+  /// Check and enforce rate limiting with smart queuing
   Future<void> _checkRateLimit() async {
     final now = DateTime.now();
-    
+
     // Reset counter if window has passed
-    if (now.difference(_rateLimitResetTime).inMilliseconds > _rateLimitWindowMs) {
+    if (now.difference(_rateLimitResetTime).inMilliseconds >
+        _rateLimitWindowMs) {
       _requestCount = 0;
       _rateLimitResetTime = now;
     }
-    
-    // If at limit, wait until window resets
-    if (_requestCount >= _rateLimitPerMinute) {
-      final waitTime = _rateLimitWindowMs - now.difference(_rateLimitResetTime).inMilliseconds;
-      if (waitTime > 0) {
-        debugPrint('⏳ Rate limit reached. Waiting ${waitTime}ms before next request...');
-        await Future.delayed(Duration(milliseconds: waitTime + 100));
-        _requestCount = 0;
-        _rateLimitResetTime = DateTime.now();
-      }
+
+    // If approaching limit (80%), add small delay to prevent hitting it
+    if (_requestCount > _rateLimitPerMinute * 0.8) {
+      await Future.delayed(const Duration(milliseconds: 5));
     }
-    
+
     _requestCount++;
   }
 
   /// Deduplicate identical GET requests
   Future<dynamic> _deduplicatedGet(String path) async {
     final key = 'GET:$path';
-    
+
     // If request is already pending, return the same future
     if (_pendingRequests.containsKey(key)) {
       debugPrint('🔄 Reusing pending request for: $path');
       return _pendingRequests[key]!;
     }
-    
+
     // Create new request and store it
     final future = _performGet(path);
     _pendingRequests[key] = future;
-    
+
     try {
       final result = await future;
       return result;
@@ -187,13 +201,14 @@ class ApiService {
       if (res.body.isEmpty) return null;
       return jsonDecode(res.body);
     }
-    
+
     // Handle rate limiting (429)
     if (res.statusCode == 429) {
       debugPrint('⚠️ Rate limited (429). Waiting before retry...');
-      throw ApiException(res.statusCode, 'Too many requests. Please wait a moment and try again.');
+      throw ApiException(res.statusCode,
+          'Too many requests. Please wait a moment and try again.');
     }
-    
+
     final msg = _tryParseError(res.body);
     throw ApiException(res.statusCode, msg);
   }
@@ -269,7 +284,8 @@ class ApiService {
 
   // ── Activity logs ─────────────────────────────────────────────────────────
 
-  static Future<List<dynamic>> getActivityLogs({int page = 1, int limit = 50}) =>
+  static Future<List<dynamic>> getActivityLogs(
+          {int page = 1, int limit = 50}) =>
       instance.get('/activity-logs?page=$page&limit=$limit').then(_asList);
 
   // ── Analytics ─────────────────────────────────────────────────────────────
@@ -287,7 +303,9 @@ class ApiService {
   static Future<Map<String, dynamic>> getRiskDistribution() async {
     final data = await instance.get('/analytics/risk-distribution');
     // Backend returns List<{riskLevel, count}> — convert to summary map
-    final list = data is List ? data : (data is Map ? (data['data'] as List? ?? []) : []);
+    final list = data is List
+        ? data
+        : (data is Map ? (data['data'] as List? ?? []) : []);
     if (list.isNotEmpty) {
       int low = 0, medium = 0, high = 0, total = 0;
       for (final item in list) {
@@ -295,14 +313,21 @@ class ApiService {
         final level = (item['riskLevel'] ?? '').toString();
         final count = int.tryParse(item['count']?.toString() ?? '0') ?? 0;
         total += count;
-        if (level.contains('Low'))           low    += count;
-        else if (level.contains('Moderate')) medium += count;
-        else if (level.contains('High') || level.contains('Seek')) high += count;
+        if (level.contains('Low'))
+          low += count;
+        else if (level.contains('Moderate'))
+          medium += count;
+        else if (level.contains('High') || level.contains('Seek'))
+          high += count;
       }
       return {
-        'total': total, 'low': low, 'medium': medium, 'high': high,
+        'total': total,
+        'low': low,
+        'medium': medium,
+        'high': high,
         'highRisk': high,
-        'completionRate': total > 0 ? ((total / (total + 1)) * 100).toStringAsFixed(1) : '—',
+        'completionRate':
+            total > 0 ? ((total / (total + 1)) * 100).toStringAsFixed(1) : '—',
         'avgScore': '—',
       };
     }
@@ -312,8 +337,10 @@ class ApiService {
 
   // ── Risk assessments ──────────────────────────────────────────────────────
 
-  static Future<List<dynamic>> getRiskAssessments({int page = 1, int limit = 50}) async {
-    final data = await instance.get('/risk-assessments?limit=$limit&offset=${(page - 1) * limit}');
+  static Future<List<dynamic>> getRiskAssessments(
+      {int page = 1, int limit = 50}) async {
+    final data = await instance
+        .get('/risk-assessments?limit=$limit&offset=${(page - 1) * limit}');
     if (data is Map<String, dynamic>) {
       return (data['assessments'] as List<dynamic>?) ?? [];
     }
@@ -323,7 +350,9 @@ class ApiService {
   // ── Appointments ──────────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getAppointments({String? patientId}) {
-    final path = patientId != null ? '/appointments?patientId=$patientId' : '/appointments';
+    final path = patientId != null
+        ? '/appointments?patientId=$patientId'
+        : '/appointments';
     return instance.get(path).then(_asList);
   }
 
@@ -347,7 +376,8 @@ class ApiService {
   }) async {
     final data = await instance.patch('/appointments/$id/status', {
       'status': status,
-      if (preferredTimeSelection != null) 'preferredTimeSelection': preferredTimeSelection,
+      if (preferredTimeSelection != null)
+        'preferredTimeSelection': preferredTimeSelection,
       if (customDateTime != null) 'customDateTime': customDateTime,
     });
     return (data as Map<String, dynamic>?) ?? {};
@@ -358,8 +388,12 @@ class ApiService {
 
   // ── Users ─────────────────────────────────────────────────────────────────
 
-  static Future<List<dynamic>> getCliniciansByFacility(String facility) =>
-      instance.get('/users/clinicians-by-facility?facility=${Uri.encodeComponent(facility)}').then(_asList);
+  static Future<
+      List<
+          dynamic>> getCliniciansByFacility(String facility) => instance
+      .get(
+          '/users/clinicians-by-facility?facility=${Uri.encodeComponent(facility)}')
+      .then(_asList);
 
   // ── Alerts ────────────────────────────────────────────────────────────────
 
@@ -381,31 +415,37 @@ class ApiService {
 
   // ── Health facilities ─────────────────────────────────────────────────────
 
-  static Future<List<dynamic>> getHealthFacilities() => instance.get('/health-facilities?limit=50000&page=1').then(_asList);
+  static Future<List<dynamic>> getHealthFacilities() =>
+      instance.get('/health-facilities?limit=50000&page=1').then(_asList);
 
   static Future<List<dynamic>> getFacilitiesByDistrict(String district) =>
-      instance.get('/health-facilities?district=${Uri.encodeComponent(district)}').then(_asList);
+      instance
+          .get('/health-facilities?district=${Uri.encodeComponent(district)}')
+          .then(_asList);
 
-  static Future<Map<String, dynamic>> createFacility(Map<String, dynamic> body) async {
+  static Future<Map<String, dynamic>> createFacility(
+      Map<String, dynamic> body) async {
     final data = await instance.post('/health-facilities', body);
     return (data as Map<String, dynamic>?) ?? {};
   }
 
-  static Future<List<String>> getRegions() =>
-      instance.get('/health-facilities/regions').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<List<String>> getRegions() => instance
+      .get('/health-facilities/regions')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getZones(String region) =>
-      instance.get('/health-facilities/zones?region=${Uri.encodeComponent(region)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<List<String>> getZones(String region) => instance
+      .get('/health-facilities/zones?region=${Uri.encodeComponent(region)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
   static Future<List<String>> getDistricts(String zone, [String? region]) {
-    String url = '/health-facilities/districts?zone=${Uri.encodeComponent(zone)}';
+    String url =
+        '/health-facilities/districts?zone=${Uri.encodeComponent(zone)}';
     if (region != null) {
       url += '&region=${Uri.encodeComponent(region)}';
     }
-    return instance.get(url).then((data) => 
-        (data as List<dynamic>).cast<String>());
+    return instance
+        .get(url)
+        .then((data) => (data as List<dynamic>).cast<String>());
   }
 
   static Future<Map<String, dynamic>> getHealthFacilityById(String id) async {
@@ -422,37 +462,53 @@ class ApiService {
   static Future<void> deleteHealthFacility(String id) =>
       instance.delete('/health-facilities/$id');
 
-  static Future<List<String>> getFacilityTypes() =>
-      instance.get('/health-facilities/facility-types').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<List<String>> getFacilityTypes() => instance
+      .get('/health-facilities/facility-types')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getManagingAuthorities() =>
-      instance.get('/health-facilities/managing-authorities').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<List<String>> getManagingAuthorities() => instance
+      .get('/health-facilities/managing-authorities')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getFacilityTypesByRegion(String region) =>
-      instance.get('/health-facilities/facility-types-by-region?region=${Uri.encodeComponent(region)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<
+      List<
+          String>> getFacilityTypesByRegion(String region) => instance
+      .get(
+          '/health-facilities/facility-types-by-region?region=${Uri.encodeComponent(region)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getManagingAuthoritiesByRegion(String region) =>
-      instance.get('/health-facilities/managing-authorities-by-region?region=${Uri.encodeComponent(region)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<
+      List<
+          String>> getManagingAuthoritiesByRegion(String region) => instance
+      .get(
+          '/health-facilities/managing-authorities-by-region?region=${Uri.encodeComponent(region)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getFacilityTypesByZone(String zone) =>
-      instance.get('/health-facilities/facility-types-by-zone?zone=${Uri.encodeComponent(zone)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<List<String>> getFacilityTypesByZone(String zone) => instance
+      .get(
+          '/health-facilities/facility-types-by-zone?zone=${Uri.encodeComponent(zone)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getManagingAuthoritiesByZone(String zone) =>
-      instance.get('/health-facilities/managing-authorities-by-zone?zone=${Uri.encodeComponent(zone)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<
+      List<
+          String>> getManagingAuthoritiesByZone(String zone) => instance
+      .get(
+          '/health-facilities/managing-authorities-by-zone?zone=${Uri.encodeComponent(zone)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getFacilityTypesByDistrict(String district) =>
-      instance.get('/health-facilities/facility-types-by-district?district=${Uri.encodeComponent(district)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<
+      List<
+          String>> getFacilityTypesByDistrict(String district) => instance
+      .get(
+          '/health-facilities/facility-types-by-district?district=${Uri.encodeComponent(district)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
-  static Future<List<String>> getManagingAuthoritiesByDistrict(String district) =>
-      instance.get('/health-facilities/managing-authorities-by-district?district=${Uri.encodeComponent(district)}').then((data) => 
-          (data as List<dynamic>).cast<String>());
+  static Future<
+      List<
+          String>> getManagingAuthoritiesByDistrict(String district) => instance
+      .get(
+          '/health-facilities/managing-authorities-by-district?district=${Uri.encodeComponent(district)}')
+      .then((data) => (data as List<dynamic>).cast<String>());
 
   // ── Patients ──────────────────────────────────────────────────────────────
 
@@ -517,9 +573,10 @@ class ApiService {
     final questionMap = <dynamic, String>{};
     for (final q in questions) {
       final id = q['id'];
-      final text = q['questionText']?.toString() ?? 
-                   q['question']?.toString() ?? 
-                   q['text']?.toString() ?? '';
+      final text = q['questionText']?.toString() ??
+          q['question']?.toString() ??
+          q['text']?.toString() ??
+          '';
       if (text.isNotEmpty) {
         questionMap[id] = text;
       }
@@ -529,14 +586,15 @@ class ApiService {
     debugPrint('Total questions: ${questions.length}');
     debugPrint('Question map size: ${questionMap.length}');
     debugPrint('Total answers: ${answers.length}');
-    debugPrint('Questions with YES answers: ${answers.entries.where((e) => e.value == 1).length}');
+    debugPrint(
+        'Questions with YES answers: ${answers.entries.where((e) => e.value == 1).length}');
 
     final symptoms = <String>[];
     for (final entry in answers.entries) {
       if (entry.value == 1) {
         // Try to find the question text - check multiple key formats
         String? questionText;
-        
+
         // Try direct key match
         if (questionMap.containsKey(entry.key)) {
           questionText = questionMap[entry.key];
@@ -552,9 +610,10 @@ class ApiService {
             questionText = questionMap[intKey];
           }
         }
-        
-        debugPrint('Answer ID: ${entry.key}, Found: ${questionText != null}, Text: $questionText');
-        
+
+        debugPrint(
+            'Answer ID: ${entry.key}, Found: ${questionText != null}, Text: $questionText');
+
         if (questionText != null && questionText.isNotEmpty) {
           symptoms.add(questionText);
         }
@@ -599,7 +658,8 @@ class ApiService {
     final level = value?.toString().toLowerCase() ?? '';
     if (level.contains('seek')) return 'Seek Help Immediately';
     if (level.contains('high')) return 'High Risk';
-    if (level.contains('medium') || level.contains('moderate')) return 'Moderate Risk';
+    if (level.contains('medium') || level.contains('moderate'))
+      return 'Moderate Risk';
     return 'Low Risk';
   }
 
@@ -627,14 +687,18 @@ class ApiService {
   }
 
   /// Get the latest health check for a user
-  static Future<Map<String, dynamic>> getLatestHealthCheck(String userId) async {
-    final data = await instance.get('/health-check-history/user/$userId/latest');
+  static Future<Map<String, dynamic>> getLatestHealthCheck(
+      String userId) async {
+    final data =
+        await instance.get('/health-check-history/user/$userId/latest');
     return (data as Map<String, dynamic>?) ?? {};
   }
 
   /// Get health check statistics for a user
-  static Future<Map<String, dynamic>> getHealthCheckStatistics(String userId) async {
-    final data = await instance.get('/health-check-history/user/$userId/statistics');
+  static Future<Map<String, dynamic>> getHealthCheckStatistics(
+      String userId) async {
+    final data =
+        await instance.get('/health-check-history/user/$userId/statistics');
     return (data as Map<String, dynamic>?) ?? {};
   }
 
@@ -755,22 +819,22 @@ class ApiService {
     }
   }
 
-  /// Upload or remove a profile photo
-  /// Pass a base64 data URL (e.g., 'data:image/jpeg;base64,...') to upload
-  /// Pass null to remove the photo
-  /// Returns the new photo URL or null if removed
+  /// Upload or remove a profile photo.
+  /// Pass a base64 data URL (e.g. 'data:image/jpeg;base64,...') to upload.
+  /// Pass null to remove the photo.
+  /// Returns the new photo URL/data URL or null if removed.
   static Future<String?> uploadProfilePhoto(String? photoDataUrl) async {
     final token = await instance.getToken();
     if (token == null) throw ApiException(401, 'Not authenticated');
 
-    final response = await http.post(
-      Uri.parse('$_base/auth/profile-photo'),
+    final response = await http.patch(
+      Uri.parse('$_base/users/me/photo'),
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
       body: jsonEncode({
-        'photoDataUrl': photoDataUrl,
+        'photoBase64': photoDataUrl,
       }),
     );
 
@@ -782,5 +846,3 @@ class ApiService {
     return data?['profilePhotoUrl'] as String?;
   }
 }
-
-

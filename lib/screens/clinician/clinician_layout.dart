@@ -4,6 +4,7 @@ import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../../state/notification_store.dart';
 import '../../state/user_store.dart';
+import '../../utils/profile_photo_utils.dart';
 import 'pages/dashboard_page.dart';
 import 'pages/patients_page.dart';
 import 'pages/alerts_page.dart';
@@ -24,6 +25,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
   int _selectedIndex = 0;
   Key _patientsKey = UniqueKey();
   String _userName = 'Clinician';
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -46,7 +48,13 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
 
   void _onUserChanged() {
     final fresh = UserStore.instance.fullName;
-    if (fresh != _userName) setState(() => _userName = fresh);
+    final photo = UserStore.instance.profilePhotoUrl;
+    if (fresh != _userName || photo != _photoUrl) {
+      setState(() {
+        _userName = fresh;
+        _photoUrl = photo;
+      });
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -56,6 +64,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
       if (data != null && mounted) {
         setState(() {
           _userName = (data['fullName'] ?? data['email'] ?? 'Clinician').toString();
+          _photoUrl = data['profilePhotoUrl']?.toString();
         });
       }
     } catch (_) {}
@@ -147,6 +156,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
 
   Widget _buildTopBar() {
     final unread = NotificationStore.instance.unreadCount;
+    final photoProvider = buildProfilePhotoProvider(_photoUrl);
 
     return Container(
       height: 52,
@@ -178,10 +188,13 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
             CircleAvatar(
               radius: 14,
               backgroundColor: AppColors.navy,
-              child: Text(
-                _userName.trim().split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join(),
-                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              backgroundImage: photoProvider,
+              child: photoProvider == null
+                  ? Text(
+                      _userName.trim().split(' ').where((w) => w.isNotEmpty).take(2).map((w) => w[0].toUpperCase()).join(),
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                    )
+                  : null,
             ),
             const SizedBox(width: 8),
             Text(_userName,

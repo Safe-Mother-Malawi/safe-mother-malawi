@@ -20,7 +20,7 @@ class PrenatalHomeScreen extends StatefulWidget {
   State<PrenatalHomeScreen> createState() => _PrenatalHomeScreenState();
 }
 
-class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
+class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> with WidgetsBindingObserver {
   PregnancyData? _data;
   String _firstName = 'Mama';
   bool _loading = true;
@@ -28,7 +28,22 @@ class _PrenatalHomeScreenState extends State<PrenatalHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh data when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
   }
 
   Future<void> _load() async {

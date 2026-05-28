@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_handler.dart';
 import '../../../utils/app_colors.dart';
 import 'health_check_result_screen.dart';
 
@@ -51,7 +52,7 @@ class _NeonatalHealthCheckScreenState extends State<NeonatalHealthCheckScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load questions: ${e.toString()}';
+          _error = ErrorHandler.getErrorMessage(e);
           _loading = false;
         });
       }

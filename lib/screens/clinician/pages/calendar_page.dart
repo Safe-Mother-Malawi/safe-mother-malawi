@@ -465,6 +465,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final contactCtrl = TextEditingController(
       text: pending != null ? pending['patientContact'] as String : ''
     );
+    final locationCtrl = TextEditingController();
     
     // Auto-fill current device time
     final now = TimeOfDay.now();
@@ -517,7 +518,7 @@ class _CalendarPageState extends State<CalendarPage> {
         return _eventDialog(
           title: 'Add New Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
-          contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
+          contactCtrl: contactCtrl, locationCtrl: locationCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
           date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
@@ -582,15 +583,20 @@ class _CalendarPageState extends State<CalendarPage> {
           onSave: () async {
             Navigator.pop(ctx);
             try {
+              // Get current clinician ID from auth
+              final currentClinicianId = await ApiService.instance.get('/auth/me').then((user) => user['id']);
+              
               final appointmentBody = <String, dynamic>{
                 'title': titleCtrl.text.trim(),
                 'patientName': patientCtrl.text.trim(),
                 'patientContact': contactCtrl.text.trim(),
+                'location': locationCtrl.text.trim(),
                 'time': timeCtrl.text.trim(),
                 'notes': notesCtrl.text.trim(),
                 'type': type,
                 'date': date.toIso8601String().split('T')[0], // YYYY-MM-DD format
                 'status': 'scheduled',
+                'clinicianId': currentClinicianId, // Lock clinician who created the appointment
               };
 
               final selectedPatientId = selectedPatient?['id']?.toString();
@@ -655,6 +661,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final titleCtrl   = TextEditingController(text: event['title'] ?? '');
     final patientCtrl = TextEditingController(text: event['patientName'] ?? '');
     final contactCtrl = TextEditingController(text: event['patientContact'] ?? '');
+    final locationCtrl = TextEditingController(text: event['location'] ?? '');
     final timeCtrl    = TextEditingController(text: event['time'] ?? '09:00 AM');
     
     // Parse time from event or use current time
@@ -714,7 +721,7 @@ class _CalendarPageState extends State<CalendarPage> {
         return _eventDialog(
           title: 'Edit Event',
           titleCtrl: titleCtrl, patientCtrl: patientCtrl,
-          contactCtrl: contactCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
+          contactCtrl: contactCtrl, locationCtrl: locationCtrl, timeCtrl: timeCtrl, notesCtrl: notesCtrl,
           date: date,
           allPatients: allPatients,
           filteredPatients: filteredPatients,
@@ -783,6 +790,7 @@ class _CalendarPageState extends State<CalendarPage> {
                 'title': titleCtrl.text.trim(),
                 'patientName': patientCtrl.text.trim(),
                 'patientContact': contactCtrl.text.trim(),
+                'location': locationCtrl.text.trim(),
                 'time': timeCtrl.text.trim(),
                 'notes': notesCtrl.text.trim(),
                 'type': type,
@@ -832,6 +840,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     'title': titleCtrl.text.trim(),
                     'patientName': patientCtrl.text.trim(),
                     'patientContact': contactCtrl.text.trim(),
+                    'location': locationCtrl.text.trim(),
                     'time': timeCtrl.text.trim(),
                     'notes': notesCtrl.text.trim(),
                     'type': type,
@@ -859,7 +868,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _eventDialog({
     required String title,
-    required TextEditingController titleCtrl, patientCtrl, contactCtrl, timeCtrl, notesCtrl,
+    required TextEditingController titleCtrl, patientCtrl, contactCtrl, locationCtrl, timeCtrl, notesCtrl,
     required DateTime date,
     required List<Map<String, dynamic>> allPatients,
     required List<Map<String, dynamic>> filteredPatients,
@@ -1016,6 +1025,8 @@ class _CalendarPageState extends State<CalendarPage> {
               ]),
               const SizedBox(height: 12),
               _dlgField('Contact *', contactCtrl, Icons.phone_outlined, validator: _validatePhone),
+              const SizedBox(height: 12),
+              _dlgField('Location', locationCtrl, Icons.location_on_outlined),
               const SizedBox(height: 12),
               // Time picker with clock widget
               Column(

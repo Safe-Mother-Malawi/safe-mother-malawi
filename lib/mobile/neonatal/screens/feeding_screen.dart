@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
+import '../../../services/offline_api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kAccent = Color(0xFF1A237E);
@@ -35,7 +35,7 @@ class _FeedingScreenState extends State<FeedingScreen> {
     }
     setState(() => _loading = true);
     try {
-      final data = await ApiService.instance.get('/tracking/feeding/${widget.patientId}');
+      final data = await OfflineApiService().get('/tracking/feeding/${widget.patientId}');
       if (data is List) {
         setState(() {
           _logs = data.map((e) {
@@ -102,7 +102,7 @@ class _FeedingScreenState extends State<FeedingScreen> {
     // Persist to backend
     if (widget.patientId != null) {
       try {
-        await ApiService.instance.post('/tracking/feeding', {
+        await OfflineApiService().post('/tracking/feeding', {
           'patientId': widget.patientId,
           'type': _selectedType == FeedType.breast ? 'breast'
               : _selectedType == FeedType.formula ? 'formula' : 'mixed',

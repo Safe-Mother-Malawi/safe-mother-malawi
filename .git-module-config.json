@@ -1,0 +1,56 @@
+{
+  "modules": {
+    "prenatal": {
+      "branch": "bsc-inf-12-20",
+      "author": "bsc-inf-12-20",
+      "email": "bsc-inf-12-20@unima.ac.mw",
+      "description": "Prenatal module - Pregnancy care and monitoring"
+    },
+    "neonatal": {
+      "branch": "bsc-inf-14-21",
+      "author": "bsc-inf-14-21",
+      "email": "bsc-inf-14-21@unima.ac.mw",
+      "description": "Neonatal module - Newborn care and monitoring"
+    },
+    "clinician": {
+      "branch": "bsc-inf-17-22",
+      "author": "Racheal Chavula",
+      "email": "rachealchavula04@gmail.com",
+      "description": "Clinician dashboard - Staff portal"
+    },
+    "admin": {
+      "branch": "prince",
+      "author": "bsc-inf-13-21",
+      "email": "bsc-inf-13-21@unima.ac.mw",
+      "description": "Admin & DHO module - System administration"
+    },
+    "dho": {
+      "branch": "prince",
+      "author": "bsc-inf-13-21",
+      "email": "bsc-inf-13-21@unima.ac.mw",
+      "description": "DHO module - District health officer"
+    }
+  },
+  "paths": {
+    "prenatal": [
+      "lib/mobile/prenatal/**",
+      "lib/mobile/auth/screens/signup_screen.dart"
+    ],
+    "neonatal": [
+      "lib/mobile/neonatal/**",
+      "lib/mobile/auth/screens/neonatal_signup_screen.dart"
+    ],
+    "clinician": [
+      "lib/screens/clinician/**",
+      "lib/web/clinician/**"
+    ],
+    "admin": [
+      "lib/web/admin/**",
+      "backend/backend/src/**"
+    ],
+    "dho": [
+      "lib/web/dho/**",
+      "backend/backend/src/**"
+    ]
+  }
+}

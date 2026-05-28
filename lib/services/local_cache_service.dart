@@ -48,7 +48,7 @@ class LocalCacheService {
   }
 
   /// Get cached data if not expired
-  dynamic get(String key) {
+  Future<dynamic> get(String key) async {
     try {
       final cacheKey = '$_cachePrefix$key';
       final timestampKey = '$_cacheTimestampPrefix$key';
@@ -85,22 +85,23 @@ class LocalCacheService {
   }
 
   /// Get cached data as list
-  List<dynamic>? getList(String key) {
-    final data = get(key);
+  Future<List<dynamic>?> getList(String key) async {
+    final data = await get(key);
     if (data is List) return data;
     return null;
   }
 
   /// Get cached data as map
-  Map<String, dynamic>? getMap(String key) {
-    final data = get(key);
+  Future<Map<String, dynamic>?> getMap(String key) async {
+    final data = await get(key);
     if (data is Map) return data.cast<String, dynamic>();
     return null;
   }
 
   /// Check if cache exists and is valid
-  bool has(String key) {
-    return get(key) != null;
+  Future<bool> has(String key) async {
+    final data = await get(key);
+    return data != null;
   }
 
   /// Remove specific cache

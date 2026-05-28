@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../theme/app_colors.dart';
 import '../../../services/api_service.dart';
 import '../../../services/auth_service_web.dart';
+import '../../../utils/profile_photo_utils.dart';
 import '../../../utils/validators.dart';
 
 class MyProfilePage extends StatefulWidget {
@@ -14,18 +15,18 @@ class MyProfilePage extends StatefulWidget {
 }
 
 class _MyProfilePageState extends State<MyProfilePage> {
-  bool _editing  = false;
-  bool _loading  = true;
-  bool _saving   = false;
+  bool _editing = false;
+  bool _loading = true;
+  bool _saving = false;
   bool _uploadingPhoto = false;
   String? _error;
   String? _photoUrl; // base64 data URL or null
 
   Map<String, dynamic> _profile = {};
 
-  final _nameCtrl     = TextEditingController();
-  final _emailCtrl    = TextEditingController();
-  final _phoneCtrl    = TextEditingController();
+  final _nameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
   final _districtCtrl = TextEditingController();
   final _facilityCtrl = TextEditingController();
 
@@ -37,14 +38,23 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
   @override
   void dispose() {
-    for (final c in [_nameCtrl, _emailCtrl, _phoneCtrl, _districtCtrl, _facilityCtrl]) {
+    for (final c in [
+      _nameCtrl,
+      _emailCtrl,
+      _phoneCtrl,
+      _districtCtrl,
+      _facilityCtrl
+    ]) {
       c.dispose();
     }
     super.dispose();
   }
 
   Future<void> _loadProfile({bool forceRefresh = false}) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       if (!forceRefresh) {
         final cached = AuthServiceWeb.instance.currentUser;
@@ -56,25 +66,30 @@ class _MyProfilePageState extends State<MyProfilePage> {
       }
       await ApiService.instance.loadToken();
       final raw = await ApiService.instance.get('/auth/me');
-      final data = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+      final data =
+          raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
       if (data.isNotEmpty) {
         AuthServiceWeb.instance.updateCurrentUser(data);
         _applyProfile(data);
       }
       setState(() => _loading = false);
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   void _applyProfile(Map<String, dynamic> data) {
     _profile = data;
-    _nameCtrl.text     = (data['fullName']    ?? '').toString();
-    _emailCtrl.text    = (data['email']       ?? '').toString();
-    _phoneCtrl.text    = (data['phone']       ?? '').toString();
-    _districtCtrl.text = (data['district']    ?? '').toString();
-    _facilityCtrl.text = (data['facilityName'] ?? data['facility'] ?? '').toString();
-    _photoUrl          = data['profilePhotoUrl'] as String?;
+    _nameCtrl.text = (data['fullName'] ?? '').toString();
+    _emailCtrl.text = (data['email'] ?? '').toString();
+    _phoneCtrl.text = (data['phone'] ?? '').toString();
+    _districtCtrl.text = (data['district'] ?? '').toString();
+    _facilityCtrl.text =
+        (data['facilityName'] ?? data['facility'] ?? '').toString();
+    _photoUrl = data['profilePhotoUrl'] as String?;
   }
 
   /// DHO and clinician cannot change email (used for login), district, or
@@ -88,7 +103,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512, maxHeight: 512,
+      maxWidth: 512,
+      maxHeight: 512,
       imageQuality: 80,
     );
     if (picked == null) return;
@@ -100,9 +116,13 @@ class _MyProfilePageState extends State<MyProfilePage> {
       final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
       final base64Str = 'data:$mime;base64,${base64Encode(bytes)}';
       final url = await ApiService.uploadProfilePhoto(base64Str);
-      setState(() => _photoUrl = url);
+      setState(() {
+        _photoUrl = url;
+        _profile = {..._profile, 'profilePhotoUrl': url};
+      });
       // Update session cache
-      AuthServiceWeb.instance.updateCurrentUser({..._profile, 'profilePhotoUrl': url});
+      AuthServiceWeb.instance
+          .updateCurrentUser({..._profile, 'profilePhotoUrl': url});
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -119,8 +139,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
     setState(() => _uploadingPhoto = true);
     try {
       await ApiService.uploadProfilePhoto(null);
-      setState(() => _photoUrl = null);
-      AuthServiceWeb.instance.updateCurrentUser({..._profile, 'profilePhotoUrl': null});
+      setState(() {
+        _photoUrl = null;
+        _profile = {..._profile, 'profilePhotoUrl': null};
+      });
+      AuthServiceWeb.instance
+          .updateCurrentUser({..._profile, 'profilePhotoUrl': null});
     } catch (_) {
     } finally {
       if (mounted) setState(() => _uploadingPhoto = false);
@@ -144,7 +168,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
       ));
       return;
     }
-    final emailError = Validators.validateEmail(_emailCtrl.text.trim(), required: false);
+    final emailError =
+        Validators.validateEmail(_emailCtrl.text.trim(), required: false);
     if (emailError != null) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text(emailError),
@@ -159,9 +184,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
       // Never send district/healthCentre/email for dho/clinician — admin-assigned only
       final body = <String, dynamic>{
         'fullName': _nameCtrl.text.trim(),
-        'phone':    _phoneCtrl.text.trim(),
-        if (!_isAdminAssignedRole) 'email':        _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-        if (!_isAdminAssignedRole) 'district':     _districtCtrl.text.trim(),
+        'phone': _phoneCtrl.text.trim(),
+        if (!_isAdminAssignedRole)
+          'email':
+              _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+        if (!_isAdminAssignedRole) 'district': _districtCtrl.text.trim(),
         if (!_isAdminAssignedRole) 'facilityName': _facilityCtrl.text.trim(),
       };
 
@@ -178,7 +205,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
       // 4. Apply to local controllers
       _applyProfile(updated);
 
-      setState(() { _editing = false; _saving = false; });
+      setState(() {
+        _editing = false;
+        _saving = false;
+      });
       messenger.showSnackBar(SnackBar(
         content: const Row(children: [
           Icon(Icons.check, color: Colors.white, size: 16),
@@ -203,7 +233,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
   Widget build(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_error != null) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      return Center(
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
         const Icon(Icons.error_outline, color: AppColors.red, size: 40),
         const SizedBox(height: 12),
         Text(_error!, style: const TextStyle(color: AppColors.red)),
@@ -212,27 +243,37 @@ class _MyProfilePageState extends State<MyProfilePage> {
       ]));
     }
 
-    final role     = (_profile['role'] ?? 'clinician').toString();
+    final role = (_profile['role'] ?? 'clinician').toString();
     final initials = _nameCtrl.text.isNotEmpty
-        ? _nameCtrl.text.trim().split(' ')
-            .where((w) => w.isNotEmpty).take(2)
-            .map((w) => w[0]).join().toUpperCase()
+        ? _nameCtrl.text
+            .trim()
+            .split(' ')
+            .where((w) => w.isNotEmpty)
+            .take(2)
+            .map((w) => w[0])
+            .join()
+            .toUpperCase()
         : '?';
 
     return Column(children: [
       Expanded(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             if (widget.onClose != null) ...[
               Align(
                 alignment: Alignment.topLeft,
                 child: GestureDetector(
                   onTap: widget.onClose,
                   child: Container(
-                    width: 32, height: 32,
-                    decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(8)),
-                    child: const Icon(Icons.close, size: 18, color: Colors.white),
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                        color: AppColors.navy,
+                        borderRadius: BorderRadius.circular(8)),
+                    child:
+                        const Icon(Icons.close, size: 18, color: Colors.white),
                   ),
                 ),
               ),
@@ -243,7 +284,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(color: AppColors.navy, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(
+                  color: AppColors.navy,
+                  borderRadius: BorderRadius.circular(12)),
               child: Row(children: [
                 GestureDetector(
                   onTap: _pickPhoto,
@@ -251,54 +294,95 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     CircleAvatar(
                       radius: 36,
                       backgroundColor: Colors.white.withOpacity(0.15),
-                      backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
-                          ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
-                          : null,
+                      backgroundImage: buildProfilePhotoProvider(_photoUrl),
                       child: _uploadingPhoto
-                          ? const SizedBox(width: 24, height: 24,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                  strokeWidth: 2, color: Colors.white))
                           : _photoUrl == null
                               ? Text(initials,
-                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white))
+                                  style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white))
                               : null,
                     ),
                     Positioned(
-                      bottom: 0, right: 0,
+                      bottom: 0,
+                      right: 0,
                       child: Container(
-                        width: 22, height: 22,
-                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                        child: const Icon(Icons.camera_alt_rounded, size: 13, color: AppColors.navy),
+                        width: 22,
+                        height: 22,
+                        decoration: const BoxDecoration(
+                            color: Colors.white, shape: BoxShape.circle),
+                        child: const Icon(Icons.camera_alt_rounded,
+                            size: 13, color: AppColors.navy),
                       ),
                     ),
                   ]),
                 ),
                 const SizedBox(width: 16),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(_nameCtrl.text,
-                      style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 3),
-                  Text(role.toUpperCase(),
-                      style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.8)),
-                  if (_districtCtrl.text.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Row(children: [
-                      const Icon(Icons.location_on_rounded, size: 11, color: Colors.white54),
-                      const SizedBox(width: 4),
-                      Text(_districtCtrl.text,
-                          style: const TextStyle(color: Colors.white54, fontSize: 12)),
-                    ]),
-                  ],
-                  if (_facilityCtrl.text.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(_facilityCtrl.text,
-                        style: const TextStyle(color: Colors.white38, fontSize: 11)),
-                  ],
-                ])),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(_nameCtrl.text,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 3),
+                      Text(role.toUpperCase(),
+                          style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12,
+                              letterSpacing: 0.8)),
+                      if (_districtCtrl.text.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(children: [
+                          const Icon(Icons.location_on_rounded,
+                              size: 11, color: Colors.white54),
+                          const SizedBox(width: 4),
+                          Text(_districtCtrl.text,
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 12)),
+                        ]),
+                      ],
+                      if (_facilityCtrl.text.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(_facilityCtrl.text,
+                            style: const TextStyle(
+                                color: Colors.white38, fontSize: 11)),
+                      ],
+                    ])),
+                if (_photoUrl != null)
+                  TextButton.icon(
+                    onPressed: _uploadingPhoto ? null : _removePhoto,
+                    icon: const Icon(Icons.delete_outline,
+                        size: 16, color: Colors.white),
+                    label: const Text('Remove',
+                        style: TextStyle(color: Colors.white, fontSize: 10)),
+                    style: TextButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                  ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(color: AppColors.greenL, borderRadius: BorderRadius.circular(16)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                      color: AppColors.greenL,
+                      borderRadius: BorderRadius.circular(16)),
                   child: const Text('Active',
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.green)),
+                      style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.green)),
                 ),
               ]),
             ),
@@ -306,7 +390,8 @@ class _MyProfilePageState extends State<MyProfilePage> {
 
             // Personal Information
             _sectionHeader('Personal Information'),
-            _field('Full Name',     _nameCtrl,  Icons.person_outline, validator: Validators.validateFullName),
+            _field('Full Name', _nameCtrl, Icons.person_outline,
+                validator: Validators.validateFullName),
             // Email is the login credential for DHO/clinician — not editable
             if (_isAdminAssignedRole)
               _adminAssignedField(
@@ -316,9 +401,11 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 hint: 'Email is your login credential and cannot be changed',
               )
             else
-              _field('Email Address', _emailCtrl, Icons.email_outlined, 
-                     validator: (v) => Validators.validateEmail(v, required: false)),
-            _field('Phone Number',  _phoneCtrl, Icons.phone_outlined, validator: Validators.validatePhone),
+              _field('Email Address', _emailCtrl, Icons.email_outlined,
+                  validator: (v) =>
+                      Validators.validateEmail(v, required: false)),
+            _field('Phone Number', _phoneCtrl, Icons.phone_outlined,
+                validator: Validators.validatePhone),
             const SizedBox(height: 12),
 
             // Work Details
@@ -344,8 +431,9 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     : 'Assigned by your DHO / admin',
               ),
             ] else ...[
-              _field('Health Facility', _facilityCtrl, Icons.local_hospital_outlined),
-              _field('District',        _districtCtrl, Icons.location_on_outlined),
+              _field('Health Facility', _facilityCtrl,
+                  Icons.local_hospital_outlined),
+              _field('District', _districtCtrl, Icons.location_on_outlined),
             ],
 
             const SizedBox(height: 80),
@@ -359,16 +447,29 @@ class _MyProfilePageState extends State<MyProfilePage> {
         decoration: BoxDecoration(
           color: Colors.white,
           border: const Border(top: BorderSide(color: AppColors.g200)),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, -2))],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 8,
+                offset: const Offset(0, -2))
+          ],
         ),
         child: Row(children: [
           if (_editing) ...[
             OutlinedButton(
-              onPressed: _saving ? null : () => setState(() { _editing = false; _loadProfile(forceRefresh: true); }),
+              onPressed: _saving
+                  ? null
+                  : () => setState(() {
+                        _editing = false;
+                        _loadProfile(forceRefresh: true);
+                      }),
               style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.g600, side: const BorderSide(color: AppColors.g200),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                foregroundColor: AppColors.g600,
+                side: const BorderSide(color: AppColors.g200),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('Cancel'),
             ),
@@ -377,14 +478,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
               child: ElevatedButton.icon(
                 onPressed: _saving ? null : _save,
                 icon: _saving
-                    ? const SizedBox(width: 16, height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.save, size: 16),
                 label: Text(_saving ? 'Saving...' : 'Save Changes'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy, foregroundColor: Colors.white,
+                  backgroundColor: AppColors.navy,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
                 ),
               ),
             ),
@@ -395,9 +502,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 icon: const Icon(Icons.edit, size: 16),
                 label: const Text('Edit Profile'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navy, foregroundColor: Colors.white,
+                  backgroundColor: AppColors.navy,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
+                  elevation: 0,
                 ),
               ),
             ),
@@ -410,14 +520,23 @@ class _MyProfilePageState extends State<MyProfilePage> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(children: [
-        Container(width: 3, height: 14, color: AppColors.navy, margin: const EdgeInsets.only(right: 8)),
-        Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.g800)),
+        Container(
+            width: 3,
+            height: 14,
+            color: AppColors.navy,
+            margin: const EdgeInsets.only(right: 8)),
+        Text(title,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.bold,
+                color: AppColors.g800)),
       ]),
     );
   }
 
   /// Editable in edit mode, read-only in view mode.
-  Widget _field(String label, TextEditingController ctrl, IconData icon, {String? Function(String?)? validator}) {
+  Widget _field(String label, TextEditingController ctrl, IconData icon,
+      {String? Function(String?)? validator}) {
     if (!_editing) {
       return _viewRow(label, ctrl.text, icon);
     }
@@ -430,11 +549,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
             labelText: label,
             labelStyle: const TextStyle(fontSize: 12, color: AppColors.g600),
             prefixIcon: Icon(icon, size: 16, color: AppColors.navy),
-            filled: true, fillColor: AppColors.bg,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.g200)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.g200)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: AppColors.navy, width: 1.5)),
+            filled: true,
+            fillColor: AppColors.bg,
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.g200)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: const BorderSide(color: AppColors.g200)),
+            focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide:
+                    const BorderSide(color: AppColors.navy, width: 1.5)),
           ),
         ),
         if (validator != null)
@@ -445,7 +573,10 @@ class _MyProfilePageState extends State<MyProfilePage> {
                 final error = validator(ctrl.text);
                 if (error == null) return const SizedBox();
                 return Text(error,
-                    style: const TextStyle(fontSize: 10, color: AppColors.red, fontWeight: FontWeight.w500));
+                    style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.red,
+                        fontWeight: FontWeight.w500));
               },
             ),
           ),
@@ -471,16 +602,19 @@ class _MyProfilePageState extends State<MyProfilePage> {
       child: Row(children: [
         Icon(icon, size: 15, color: AppColors.g400),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppColors.g600)),
         const Spacer(),
         Text(
           value.isEmpty ? '—' : value,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800),
+          style: const TextStyle(
+              fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800),
         ),
         const SizedBox(width: 6),
         Tooltip(
           message: hint,
-          child: const Icon(Icons.lock_outline_rounded, size: 13, color: AppColors.g400),
+          child: const Icon(Icons.lock_outline_rounded,
+              size: 13, color: AppColors.g400),
         ),
       ]),
     );
@@ -491,16 +625,23 @@ class _MyProfilePageState extends State<MyProfilePage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+          color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
       child: Row(children: [
         Icon(icon, size: 15, color: AppColors.navy),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppColors.g600)),
         const Spacer(),
         Row(children: [
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.g800)),
           const SizedBox(width: 4),
-          const Icon(Icons.lock_outline_rounded, size: 11, color: AppColors.g400),
+          const Icon(Icons.lock_outline_rounded,
+              size: 11, color: AppColors.g400),
         ]),
       ]),
     );
@@ -510,16 +651,20 @@ class _MyProfilePageState extends State<MyProfilePage> {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+          color: AppColors.bg, borderRadius: BorderRadius.circular(8)),
       child: Row(children: [
         Icon(icon, size: 15, color: AppColors.navy),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontSize: 12, color: AppColors.g600)),
+        Text(label,
+            style: const TextStyle(fontSize: 12, color: AppColors.g600)),
         const Spacer(),
         Text(value.isEmpty ? '—' : value,
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.g800)),
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: AppColors.g800)),
       ]),
     );
   }
 }
-

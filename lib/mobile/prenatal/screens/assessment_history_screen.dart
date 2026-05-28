@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_handler.dart';
 import 'health_check_screen.dart';
 
 class PrenatalAssessmentHistoryScreen extends StatefulWidget {
@@ -38,7 +39,7 @@ class _PrenatalAssessmentHistoryScreenState extends State<PrenatalAssessmentHist
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load history: ${e.toString()}';
+          _error = ErrorHandler.getErrorMessage(e);
           _loading = false;
         });
       }

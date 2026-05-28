@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_handler.dart';
 
 class NeonatalNotificationsScreen extends StatefulWidget {
   const NeonatalNotificationsScreen({super.key});
@@ -29,7 +30,7 @@ class _NeonatalNotificationsScreenState
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() { _error = ErrorHandler.getErrorMessage(e); _loading = false; });
     }
   }
 

@@ -1,9 +1,36 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
 import '../../../services/reminder_service.dart';
+import '../../../widgets/clock_time_picker.dart';
+import '../../../utils/error_handler.dart';
 import '../../auth/services/auth_service.dart';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
+
+TimeOfDay _parseAppointmentTime(String? rawTime, {TimeOfDay? fallback}) {
+  final defaultTime = fallback ?? const TimeOfDay(hour: 9, minute: 0);
+  final match = RegExp(
+    r'^(\d{1,2})(?::(\d{1,2}))?\s*([ap]m)?$',
+    caseSensitive: false,
+  ).firstMatch(rawTime?.trim() ?? '');
+
+  if (match == null) return defaultTime;
+
+  var hour = int.tryParse(match.group(1) ?? '') ?? defaultTime.hour;
+  final minute = int.tryParse(match.group(2) ?? '0') ?? defaultTime.minute;
+  final period = match.group(3)?.toLowerCase();
+
+  if (period != null) {
+    if (hour == 12) hour = 0;
+    if (period == 'pm') hour += 12;
+  }
+
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+    return defaultTime;
+  }
+
+  return TimeOfDay(hour: hour, minute: minute);
+}
 
 DateTime _combineAppointmentDateTime(DateTime date, String? rawTime) {
   var hour = 9;
@@ -83,7 +110,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     } catch (e) {
       debugPrint('❌ Failed to load appointments: $e');
       setState(() { 
-        _error = e.toString().replaceAll('Exception: ', '');
+        _error = ErrorHandler.getErrorMessage(e);
         _loading = false; 
       });
     }
@@ -160,7 +187,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                 detailRow('Date', _fmtFull(date)),
                 detailRow('Time', time),
                 detailRow('Location', location),
-                detailRow('Doctor/Provider', doctor),
+                detailRow('Clinician', doctor),
                 detailRow('Status', status),
                 if (notes.isNotEmpty) detailRow('Notes', notes),
                 const SizedBox(height: 16),
@@ -250,6 +277,12 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final doctorCtrl = TextEditingController(text: appointment['doctor'] ?? '');
     final notesCtrl = TextEditingController(text: appointment['notes'] ?? '');
     DateTime? picked = DateTime.tryParse(appointment['date'] ?? '');
+    
+    TimeOfDay selectedTime = _parseAppointmentTime(
+      appointment['time']?.toString(),
+      fallback: TimeOfDay.now(),
+    );
+    
     final formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -271,15 +304,56 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     validator: _validateEventTitle,
                   ),
                   const SizedBox(height: 10),
-                  _DialogFieldWithValidation(
-                    hint: 'Time (e.g. 10:00 AM)',
-                    controller: timeCtrl,
-                    validator: _validateTime,
+                  // Time picker with clock widget
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => Dialog(
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: ClockTimePicker(
+                              initialTime: selectedTime,
+                              onTimeChanged: (newTime) {
+                                setS(() {
+                                  selectedTime = newTime;
+                                  timeCtrl.text = newTime.format(context);
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: const Color(0xFFE0E0E0)),
+                        borderRadius: BorderRadius.circular(8),
+                        color: const Color(0xFFF5F5F5),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
+                          const SizedBox(width: 8),
+                          Text(
+                            timeCtrl.text.isEmpty ? 'Select Time' : timeCtrl.text,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF212121),
+                            ),
+                          ),
+                          const Spacer(),
+                          const Icon(Icons.access_time_outlined, size: 16, color: Color(0xFF1A237E)),
+                        ],
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _DialogField(hint: 'Location', controller: locationCtrl),
                   const SizedBox(height: 10),
-                  _DialogField(hint: 'Doctor / Provider', controller: doctorCtrl),
+                  _DialogField(hint: 'Clinician', controller: doctorCtrl),
                   const SizedBox(height: 10),
                   _DialogField(hint: 'Notes (optional)', controller: notesCtrl),
                   const SizedBox(height: 10),
@@ -947,6 +1021,7 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
   late TextEditingController titleCtrl;
   late TextEditingController timeCtrl;
   late TextEditingController locationCtrl;
+  late TimeOfDay selectedTime;
   late DateTime pickedDate;
   
   List<Map<String, dynamic>> clinicians = [];
@@ -962,6 +1037,7 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
     timeCtrl = TextEditingController();
     locationCtrl = TextEditingController();
     pickedDate = widget.selectedDay;
+    selectedTime = TimeOfDay.now();
     _loadCliniciansAndPatient();
   }
 
@@ -1012,7 +1088,52 @@ class _AddAppointmentDialogState extends State<_AddAppointmentDialog> {
           children: [
             _DialogField(hint: 'Title', controller: titleCtrl),
             const SizedBox(height: 10),
-            _DialogField(hint: 'Time (e.g. 10:00 AM)', controller: timeCtrl),
+            // Time picker with clock widget
+            GestureDetector(
+              onTap: () {
+                showDialog(
+                  context: context,
+                  builder: (ctx) => Dialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: ClockTimePicker(
+                        initialTime: selectedTime,
+                        onTimeChanged: (newTime) {
+                          setState(() {
+                            selectedTime = newTime;
+                            timeCtrl.text = newTime.format(context);
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                );
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                decoration: BoxDecoration(
+                  border: Border.all(color: const Color(0xFFE0E0E0)),
+                  borderRadius: BorderRadius.circular(8),
+                  color: const Color(0xFFF5F5F5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.access_time, size: 16, color: Color(0xFF1A237E)),
+                    const SizedBox(width: 8),
+                    Text(
+                      timeCtrl.text.isEmpty ? 'Select Time' : timeCtrl.text,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        color: Color(0xFF212121),
+                      ),
+                    ),
+                    const Spacer(),
+                    const Icon(Icons.access_time_outlined, size: 16, color: Color(0xFF1A237E)),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 10),
             _DialogField(hint: 'Location', controller: locationCtrl),
             const SizedBox(height: 10),

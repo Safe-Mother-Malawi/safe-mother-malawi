@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_handler.dart';
 import '../../widgets/notification_icon.dart';
 import 'notifications_screen.dart';
 
@@ -40,7 +41,7 @@ class _NeonatalHealthCheckHistoryScreenState extends State<NeonatalHealthCheckHi
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = ErrorHandler.getErrorMessage(e);
         _loading = false;
       });
     }

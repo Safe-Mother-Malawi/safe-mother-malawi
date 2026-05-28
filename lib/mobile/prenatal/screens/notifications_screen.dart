@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/error_handler.dart';
 import '../../../services/notification_sound_service.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -28,7 +29,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() { _error = ErrorHandler.getErrorMessage(e); _loading = false; });
     }
   }
 
