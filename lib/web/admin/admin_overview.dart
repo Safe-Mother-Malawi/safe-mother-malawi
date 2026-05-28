@@ -6,6 +6,7 @@ import '../shared/app_shell.dart';
 import '../shared/sidebar.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
+import '../shared/utils/responsive_helper.dart';
 import 'system_users.dart';
 import 'reports_screen_export.dart';
 import 'audit_export_export.dart';
@@ -290,15 +291,18 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
     }
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(context.responsivePadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // KPI Cards
+          // KPI Cards - Responsive Grid
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: context.gridColumns,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            crossAxisSpacing: context.responsiveSpacing,
+            mainAxisSpacing: context.responsiveSpacing,
+            childAspectRatio: ResponsiveHelper.getGridAspectRatio(context),
             children: [
               KpiCard(title: 'Total Clinicians', value: _fmt(_totalClinicians),
                   icon: Icons.people_alt_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg),
@@ -312,13 +316,16 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
             ],
           ),
 
-          const SizedBox(height: 20),
+          SizedBox(height: context.responsiveSpacing),
 
-          // ANC Attendance KPI Cards
+          // ANC Attendance KPI Cards - Responsive Grid
           GridView.count(
-            crossAxisCount: 4, shrinkWrap: true,
+            crossAxisCount: context.gridColumns,
+            shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 16, mainAxisSpacing: 16, childAspectRatio: 1.1,
+            crossAxisSpacing: context.responsiveSpacing,
+            mainAxisSpacing: context.responsiveSpacing,
+            childAspectRatio: ResponsiveHelper.getGridAspectRatio(context),
             children: [
               KpiCard(title: 'ANC Appointments', value: _fmt(_totalANCAppointments),
                   icon: Icons.calendar_today_rounded, iconColor: AppColors.primary, iconBg: AppColors.infoBg,
@@ -335,126 +342,128 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
             ],
           ),
 
-          const SizedBox(height: 28),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
-          // Charts Row 1: Line Chart (Full Width)
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: ChartCard(
+          // Charts - Responsive Layout
+          if (context.shouldStackLayout)
+            // Mobile/Tablet: Stack vertically
+            Column(
+              children: [
+                ChartCard(
                   title: 'Monthly Registrations',
                   subtitle: 'Mothers registered over the last 6 months',
                   chart: SizedBox(
-                    height: 250, // Slightly taller since it's full width
-                    child: _registrationSpots.length < 2
-                        ? const Center(child: Text('No data yet'))
-                        : LineChart(LineChartData(
-                            gridData: const FlGridData(show: false),
-                            borderData: FlBorderData(show: false),
-                            titlesData: FlTitlesData(
-                              leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                              bottomTitles: AxisTitles(sideTitles: SideTitles(
-                                showTitles: true,
-                                getTitlesWidget: (val, meta) {
-                                  final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                                  final idx = val.toInt();
-                                  if (idx < 0 || idx >= months.length) return const SizedBox();
-                                  return Text(months[idx], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
-                                },
+                    height: context.chartHeight,
+                    child: _buildRegistrationChart(),
+                  ),
+                ),
+                SizedBox(height: context.responsiveSpacing * 1.5),
+                // Risk Distribution and Appointment Status - Stack on mobile
+                Column(
+                  children: [
+                    ChartCard(
+                      title: 'Risk Distribution',
+                      subtitle: 'Current case breakdown',
+                      chart: SizedBox(
+                        height: context.chartHeight,
+                        child: _riskDistribution.isEmpty
+                            ? const Center(child: Text('No data yet'))
+                            : PieChart(PieChartData(
+                                sectionsSpace: 3, centerSpaceRadius: 55,
+                                sections: _buildRiskSections(),
                               )),
-                            ),
-                            lineBarsData: [LineChartBarData(
-                              spots: _registrationSpots,
-                              isCurved: true, 
-                              curveSmoothness: 0.35,
-                              gradient: LinearGradient(
-                                colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
-                                begin: Alignment.centerLeft,
-                                end: Alignment.centerRight,
-                              ),
-                              barWidth: 4,
-                              isStrokeCapRound: true,
-                              dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(
-                                show: true, 
-                                gradient: LinearGradient(
-                                  colors: [
-                                    AppColors.primary.withValues(alpha: 0.25),
-                                    AppColors.primary.withValues(alpha: 0.02),
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ),
-                              ),
-                              shadow: Shadow(
-                                color: AppColors.primary.withValues(alpha: 0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            )],
-                          )),
-                  ),
+                      ),
+                    ),
+                    SizedBox(height: context.responsiveSpacing * 1.5),
+                    ChartCard(
+                      title: 'Appointment Statuses',
+                      subtitle: 'Overall breakdown',
+                      chart: SizedBox(
+                        height: context.chartHeight,
+                        child: _appointmentStatuses.isEmpty
+                            ? const Center(child: Text('No data yet'))
+                            : PieChart(PieChartData(
+                                sectionsSpace: 3, centerSpaceRadius: 55,
+                                sections: _buildAppointmentStatusSections(),
+                              )),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 28),
-
-          // Charts Row 2: Pie Charts
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                flex: 1,
-                child: ChartCard(
-                  title: 'Risk Distribution',
-                  subtitle: 'Current case breakdown',
+              ],
+            )
+          else
+            // Desktop: Side-by-side layout
+            Column(
+              children: [
+                ChartCard(
+                  title: 'Monthly Registrations',
+                  subtitle: 'Mothers registered over the last 6 months',
                   chart: SizedBox(
-                    height: 220,
-                    child: _riskDistribution.isEmpty
-                        ? const Center(child: Text('No data yet'))
-                        : PieChart(PieChartData(
-                            sectionsSpace: 3, centerSpaceRadius: 55,
-                            sections: _buildRiskSections(),
-                          )),
+                    height: context.chartHeight,
+                    child: _buildRegistrationChart(),
                   ),
                 ),
-              ),
-              const SizedBox(width: 28),
-              Expanded(
-                flex: 1,
-                child: ChartCard(
-                  title: 'Appointment Statuses',
-                  subtitle: 'Overall breakdown',
-                  chart: SizedBox(
-                    height: 220,
-                    child: _appointmentStatuses.isEmpty
-                        ? const Center(child: Text('No data yet'))
-                        : PieChart(PieChartData(
-                            sectionsSpace: 3, centerSpaceRadius: 55,
-                            sections: _buildAppointmentStatusSections(),
-                          )),
-                  ),
+                SizedBox(height: context.responsiveSpacing * 1.5),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ChartCard(
+                        title: 'Risk Distribution',
+                        subtitle: 'Current case breakdown',
+                        chart: SizedBox(
+                          height: context.chartHeight,
+                          child: _riskDistribution.isEmpty
+                              ? const Center(child: Text('No data yet'))
+                              : PieChart(PieChartData(
+                                  sectionsSpace: 3, centerSpaceRadius: 55,
+                                  sections: _buildRiskSections(),
+                                )),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: context.responsiveSpacing * 1.5),
+                    Expanded(
+                      child: ChartCard(
+                        title: 'Appointment Statuses',
+                        subtitle: 'Overall breakdown',
+                        chart: SizedBox(
+                          height: context.chartHeight,
+                          child: _appointmentStatuses.isEmpty
+                              ? const Center(child: Text('No data yet'))
+                              : PieChart(PieChartData(
+                                  sectionsSpace: 3, centerSpaceRadius: 55,
+                                  sections: _buildAppointmentStatusSections(),
+                                )),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
 
-          const SizedBox(height: 28),
+          SizedBox(height: context.responsiveSpacing * 1.5),
 
-          // Alerts + Activity Feed
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(child: _buildAlertsCard()),
-              const SizedBox(width: 20),
-              Expanded(child: _buildActivityCard()),
-            ],
-          ),
+          // Alerts + Activity Feed - Responsive Layout
+          if (context.shouldStackLayout)
+            Column(
+              children: [
+                _buildAlertsCard(),
+                SizedBox(height: context.responsiveSpacing * 1.5),
+                _buildActivityCard(),
+              ],
+            )
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildAlertsCard()),
+                SizedBox(width: context.responsiveSpacing * 1.5),
+                Expanded(child: _buildActivityCard()),
+              ],
+            ),
         ],
       ),
     );
@@ -506,6 +515,59 @@ class _OverviewBodyState extends State<_OverviewBody> with LiveDataMixin {
         radius: 55,
       );
     }).toList();
+  }
+
+  Widget _buildRegistrationChart() {
+    if (_registrationSpots.length < 2) {
+      return const Center(child: Text('No data yet'));
+    }
+    return LineChart(LineChartData(
+      gridData: const FlGridData(show: false),
+      borderData: FlBorderData(show: false),
+      titlesData: FlTitlesData(
+        leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        bottomTitles: AxisTitles(sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (val, meta) {
+            final months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            final idx = val.toInt();
+            if (idx < 0 || idx >= months.length) return const SizedBox();
+            return Text(months[idx], style: TextStyle(fontFamily: 'Roboto', fontSize: 11, color: AppColors.mutedText));
+          },
+        )),
+      ),
+      lineBarsData: [LineChartBarData(
+        spots: _registrationSpots,
+        isCurved: true, 
+        curveSmoothness: 0.35,
+        gradient: LinearGradient(
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.7)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        barWidth: 4,
+        isStrokeCapRound: true,
+        dotData: const FlDotData(show: false),
+        belowBarData: BarAreaData(
+          show: true, 
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primary.withValues(alpha: 0.25),
+              AppColors.primary.withValues(alpha: 0.02),
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        shadow: Shadow(
+          color: AppColors.primary.withValues(alpha: 0.2),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      )],
+    ));
   }
 
   Widget _buildAlertsCard() {
