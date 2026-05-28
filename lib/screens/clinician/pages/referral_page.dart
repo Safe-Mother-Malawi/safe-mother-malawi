@@ -1152,16 +1152,36 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     if (!_formKey.currentState!.validate()) return;
 
     try {
+      // Convert reason to enum format (e.g., "Premature Labor" -> "prematureLabor")
+      String? convertedReason;
+      if (_selectedReason != null) {
+        convertedReason = _selectedReason!
+            .replaceAll(' ', '')
+            .replaceFirst(_selectedReason![0], _selectedReason![0].toLowerCase());
+      }
+
+      // Convert transport mode to enum format (e.g., "Personal Vehicle" -> "personalVehicle")
+      String? convertedTransportMode;
+      if (_selectedTransportMode != null) {
+        final parts = _selectedTransportMode!.split(' ');
+        if (parts.length > 1) {
+          convertedTransportMode = parts[0].toLowerCase() + 
+              parts.sublist(1).map((p) => p[0].toUpperCase() + p.substring(1)).join();
+        } else {
+          convertedTransportMode = _selectedTransportMode!.toLowerCase();
+        }
+      }
+
       final request = CreateReferralRequest(
         patientName: _patientNameController.text,
         patientContact: _patientContactController.text.isEmpty ? null : _patientContactController.text,
         patientAge: _patientAgeController.text.isEmpty ? null : _patientAgeController.text,
-        reason: _selectedReason ?? '',
+        reason: convertedReason ?? '',
         clinicalSummary: _clinicalSummaryController.text,
         urgencyNotes: _urgencyNotesController.text.isEmpty ? null : _urgencyNotesController.text,
         referringFacilityId: _selectedReferringFacility ?? '',
         receivingFacilityId: _selectedReceivingFacility ?? '',
-        transportMode: _selectedTransportMode?.toLowerCase().replaceAll(' ', '_'),
+        transportMode: convertedTransportMode,
       );
 
       await ReferralService.instance.createReferral(request);
