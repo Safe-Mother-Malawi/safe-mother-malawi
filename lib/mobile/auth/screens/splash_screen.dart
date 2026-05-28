@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../providers/mobile_user_provider.dart';
+import '../../prenatal/prenatal_dashboard.dart';
+import '../../neonatal/neonatal_dashboard.dart';
+import '../../clinician/clinician_dashboard.dart';
 import 'login_screen.dart';
 import '../services/auth_service.dart';
 
@@ -32,8 +37,31 @@ class _SplashScreenState extends State<SplashScreen>
   Future<void> _navigate() async {
     await Future.delayed(const Duration(seconds: 3));
     if (!mounted) return;
-    await AuthService().seedDemoAccounts();
-    // Always start at login — let the user choose to sign in or sign up
+    final authService = AuthService();
+    final restoredUser = await authService.restoreSession();
+    await authService.seedDemoAccounts();
+
+    if (restoredUser != null) {
+      if (!mounted) return;
+      context.read<MobileUserProvider>().update(restoredUser);
+      final role = restoredUser.role.toLowerCase();
+      Widget destination;
+      if (role.contains('prenatal')) {
+        destination = const PrenatalDashboard();
+      } else if (role.contains('neonatal')) {
+        destination = const NeonatalDashboard();
+      } else {
+        destination = const ClinicianDashboard();
+      }
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => destination),
+      );
+      return;
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),

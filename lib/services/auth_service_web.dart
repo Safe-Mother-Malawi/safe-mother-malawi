@@ -1,11 +1,17 @@
+import 'dart:convert';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'api_service.dart';
 import '../state/user_store.dart';
-import 'package:flutter/foundation.dart';
 
 /// Web portal authentication — calls POST /auth/login
 class AuthServiceWeb {
   AuthServiceWeb._();
   static final AuthServiceWeb instance = AuthServiceWeb._();
+  static const String _sessionKey = 'offline_web_user_session';
 
   Map<String, dynamic>? _currentUser;
   Map<String, dynamic>? get currentUser => _currentUser;
@@ -18,14 +24,44 @@ class AuthServiceWeb {
   void updateCurrentUser(Map<String, dynamic> updated) {
     if (_currentUser == null) return;
     _currentUser = {..._currentUser!, ...updated};
+    persistSession(_currentUser!);
     // Notify UserStore listeners so any widget watching the name rebuilds
     UserStore.instance.refresh();
+  }
+
+  Future<Map<String, dynamic>?> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serialized = prefs.getString(_sessionKey);
+    if (serialized == null || serialized.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(serialized);
+      if (decoded is! Map<String, dynamic>) return null;
+      _currentUser = decoded;
+      UserStore.instance.refresh();
+      return decoded;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> persistSession(Map<String, dynamic> user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionKey, jsonEncode(user));
   }
 
   Future<String> login(String email, String password) async {
     debugPrint('🔐 AuthServiceWeb.login() called with email: $email');
     debugPrint('📡 API Base URL: ${ApiService.baseUrl}');
-    
+
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final isOffline = connectivityResult.contains(ConnectivityResult.none);
+    if (isOffline) {
+      final cachedUser = await restoreSession();
+      if (cachedUser != null) {
+        return cachedUser['role']?.toString() ?? '';
+      }
+    }
+
     try {
       final data = await ApiService.instance.post('/auth/login', {
         'identifier': email,
@@ -41,10 +77,15 @@ class AuthServiceWeb {
       );
 
       _currentUser = data['user'] as Map<String, dynamic>;
+      await persistSession(_currentUser!);
       debugPrint('✅ User role: ${_currentUser!['role']}');
       return _currentUser!['role'] as String;
     } catch (e) {
       debugPrint('❌ Login failed: $e');
+      final cachedUser = await restoreSession();
+      if (cachedUser != null) {
+        return cachedUser['role']?.toString() ?? '';
+      }
       rethrow;
     }
   }
@@ -54,7 +95,10 @@ class AuthServiceWeb {
       await ApiService.instance.post('/auth/logout', {});
     } catch (_) {}
     await ApiService.instance.clearToken();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionKey);
     _currentUser = null;
+    UserStore.instance.refresh();
   }
 
   Future<void> forgotPassword(String email) async {

@@ -5,6 +5,7 @@ import 'mobile/auth/services/auth_service.dart';
 import 'providers/theme_provider.dart';
 import 'providers/mobile_user_provider.dart';
 import 'services/reminder_service.dart';
+import 'services/offline_service.dart';
 
 // Global navigator key — used by logout to always reach the root navigator
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -16,6 +17,8 @@ void main() async {
   } catch (e) {
     debugPrint('Reminder service initialization failed: $e');
   }
+  await OfflineService().initialize();
+  await AuthService().restoreSession();
   await AuthService().seedDemoAccounts(); // always sync demo data before app starts
   runApp(const SafeMotherMobileApp());
 }
@@ -29,6 +32,7 @@ class SafeMotherMobileApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => MobileUserProvider()),
+        ChangeNotifierProvider.value(value: OfflineService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, _) {

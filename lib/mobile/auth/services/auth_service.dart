@@ -1,3 +1,8 @@
+import 'dart:convert';
+
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/user_model.dart';
 import '../../../services/api_service.dart';
 
@@ -17,15 +22,22 @@ class AuthService {
         'district': user.district,
         'facilityName': user.facilityName,
         'lmpDate': user.lmpDate.isNotEmpty ? user.lmpDate : null,
-        'pregnancyMonths': user.pregnancyMonths.isNotEmpty ? user.pregnancyMonths : null,
-        'pregnancyWeeks': user.pregnancyWeeks.isNotEmpty ? user.pregnancyWeeks : null,
-        'expectedDeliveryDate': user.expectedDeliveryDate.isNotEmpty ? user.expectedDeliveryDate : null,
+        'pregnancyMonths':
+            user.pregnancyMonths.isNotEmpty ? user.pregnancyMonths : null,
+        'pregnancyWeeks':
+            user.pregnancyWeeks.isNotEmpty ? user.pregnancyWeeks : null,
+        'expectedDeliveryDate': user.expectedDeliveryDate.isNotEmpty
+            ? user.expectedDeliveryDate
+            : null,
         'babyName': user.babyName.isNotEmpty ? user.babyName : null,
         'babyDob': user.babyDob.isNotEmpty ? user.babyDob : null,
         'babyGender': user.babyGender.isNotEmpty ? user.babyGender : null,
-        'babyBirthWeight': user.babyBirthWeight.isNotEmpty ? user.babyBirthWeight : null,
-        'securityQuestion': user.securityQuestion.isNotEmpty ? user.securityQuestion : null,
-        'securityAnswer': user.securityAnswer.isNotEmpty ? user.securityAnswer : null,
+        'babyBirthWeight':
+            user.babyBirthWeight.isNotEmpty ? user.babyBirthWeight : null,
+        'securityQuestion':
+            user.securityQuestion.isNotEmpty ? user.securityQuestion : null,
+        'securityAnswer':
+            user.securityAnswer.isNotEmpty ? user.securityAnswer : null,
       }..removeWhere((_, v) => v == null);
 
       final data = await ApiService.instance.register(payload);
@@ -37,6 +49,10 @@ class AuthService {
           tokens['refreshToken'] as String,
         );
       }
+      final userMap = data?['user'] as Map<String, dynamic>?;
+      if (userMap != null) {
+        await persistSession(_userFromMap(userMap));
+      }
       return true;
     } catch (_) {
       return false;
@@ -45,6 +61,16 @@ class AuthService {
 
   /// Login via the backend. Returns a [UserModel] on success, null on failure.
   Future<UserModel?> login(String emailOrPhone, String password) async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    final isOffline = connectivityResult.contains(ConnectivityResult.none);
+
+    if (isOffline) {
+      final cachedUser = await restoreSession();
+      if (cachedUser != null) {
+        return cachedUser;
+      }
+    }
+
     try {
       final data = await ApiService.instance.login(emailOrPhone, password);
       // Save tokens so subsequent API calls are authenticated
@@ -57,8 +83,14 @@ class AuthService {
       }
       final user = data['user'] as Map<String, dynamic>?;
       if (user == null) return null;
-      return _userFromMap(user);
+      final loggedInUser = _userFromMap(user);
+      await persistSession(loggedInUser);
+      return loggedInUser;
     } catch (_) {
+      final cachedUser = await restoreSession();
+      if (cachedUser != null) {
+        return cachedUser;
+      }
       return null;
     }
   }
@@ -67,18 +99,48 @@ class AuthService {
   Future<UserModel?> getCurrentUser() async {
     // Ensure token is loaded from storage before making the request
     await ApiService.instance.loadToken();
-    if (!ApiService.instance.isLoggedIn) return null;
+    if (!ApiService.instance.isLoggedIn) {
+      return restoreSession();
+    }
     final data = await ApiService.instance.currentUser();
-    if (data == null) return null;
-    return _userFromMap(data);
+    if (data == null) {
+      return restoreSession();
+    }
+    final user = _userFromMap(data);
+    await persistSession(user);
+    return user;
+  }
+
+  /// Restore the last authenticated mobile user from local storage.
+  Future<UserModel?> restoreSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    final serialized = prefs.getString(_sessionKey);
+    if (serialized == null || serialized.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(serialized);
+      if (decoded is! Map<String, dynamic>) return null;
+      return UserModel.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Persist the authenticated mobile user so login can recover offline.
+  Future<void> persistSession(UserModel user) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_sessionKey, jsonEncode(user.toJson()));
   }
 
   /// Logout — clears tokens and cached user data.
   Future<void> logout() async {
     await ApiService.instance.clearTokens();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_sessionKey);
   }
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
+
+  static const String _sessionKey = 'offline_mobile_user_session';
 
   UserModel _userFromMap(Map<String, dynamic> m) {
     return UserModel(
@@ -100,6 +162,7 @@ class AuthService {
       expectedDeliveryDate: (m['expectedDeliveryDate'] as String?) ?? '',
       babyGender: (m['babyGender'] as String?) ?? '',
       babyBirthWeight: (m['babyBirthWeight']?.toString()) ?? '',
+      profilePhotoUrl: (m['profilePhotoUrl'] as String?) ?? '',
       securityQuestion: (m['securityQuestion'] as String?) ?? '',
       securityAnswer: (m['securityAnswer'] as String?) ?? '',
     );
@@ -191,4 +254,3 @@ class AuthService {
   /// No-op: demo accounts are no longer needed with real backend.
   Future<void> seedDemoAccounts() async {}
 }
-

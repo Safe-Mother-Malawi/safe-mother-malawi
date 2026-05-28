@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
-import '../../auth/models/user_model.dart';
+import '../../../services/offline_api_service.dart';
 import '../../auth/services/auth_service.dart';
 import '../../../theme/app_colors.dart';
 
@@ -138,7 +137,7 @@ class _PregnancyRegistrationScreenState
         throw Exception('Parity cannot exceed gravida');
       }
 
-      await ApiService.instance.post('/patients/prenatal', {
+      final result = await OfflineApiService().post('/patients/prenatal', {
         'fullName': _fullNameCtrl.text,
         'age': _ageCtrl.text,
         'phone': _phoneCtrl.text,
@@ -157,10 +156,13 @@ class _PregnancyRegistrationScreenState
       });
 
       if (mounted) {
+        final queued = result is Map && result['queued'] == true;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Pregnancy registered successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: Text(queued
+                ? 'Pregnancy registration saved locally and will sync when online.'
+                : 'Pregnancy registered successfully!'),
+            backgroundColor: queued ? Colors.orange : Colors.green,
           ),
         );
         widget.onRegistrationComplete?.call();

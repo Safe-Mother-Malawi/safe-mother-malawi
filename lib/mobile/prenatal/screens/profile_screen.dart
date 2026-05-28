@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import '../../auth/services/auth_service.dart';
 import '../../auth/models/user_model.dart';
 import '../../../services/api_service.dart';
+import '../../../utils/profile_photo_utils.dart';
 import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -26,11 +26,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (mounted) {
       setState(() => _user = user);
     }
-    // Load photo separately from backend
     try {
       final raw = await ApiService.instance.currentUser();
       if (mounted && raw != null) {
-        setState(() => _photoUrl = raw['profilePhotoUrl'] as String?);
+        final photo = raw['profilePhotoUrl'] as String?;
+        setState(() => _photoUrl = photo ?? user?.profilePhotoUrl);
       }
     } catch (_) {}
   }
@@ -42,7 +42,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(builder: (_) => EditProfileScreen(user: _user!)),
     );
     if (result != null) {
-      setState(() => _user = result);
+      setState(() {
+        _user = result;
+        _photoUrl = result.profilePhotoUrl.isNotEmpty
+            ? result.profilePhotoUrl
+            : null;
+      });
+      _loadUser();
     }
   }
 
@@ -54,10 +60,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xFF1A237E),
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-        title: const Text('My Profile', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+        leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context)),
+        title: const Text('My Profile',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w700)),
         actions: [
-          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.white), onPressed: _editProfile),
+          IconButton(
+              icon: const Icon(Icons.edit_outlined, color: Colors.white),
+              onPressed: _editProfile),
         ],
       ),
       body: SingleChildScrollView(
@@ -67,7 +81,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                gradient: LinearGradient(colors: [Color(0xFF1A237E), Color(0xFF3949AB)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                gradient: LinearGradient(
+                    colors: [Color(0xFF1A237E), Color(0xFF3949AB)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight),
               ),
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
               child: Column(
@@ -77,11 +94,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       CircleAvatar(
                         radius: 44,
                         backgroundColor: Colors.white.withOpacity(0.3),
-                        backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
-                            ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
-                            : null,
+                        backgroundImage: buildProfilePhotoProvider(_photoUrl),
                         child: _photoUrl == null
-                            ? const Icon(Icons.person, size: 48, color: Colors.white)
+                            ? const Icon(Icons.person,
+                                size: 48, color: Colors.white)
                             : null,
                       ),
                       Positioned(
@@ -90,23 +106,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         child: Container(
                           width: 28,
                           height: 28,
-                          decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
-                          child: const Icon(Icons.camera_alt, size: 16, color: Color(0xFF1A237E)),
+                          decoration: const BoxDecoration(
+                              color: Colors.white, shape: BoxShape.circle),
+                          child: const Icon(Icons.camera_alt,
+                              size: 16, color: Color(0xFF1A237E)),
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  Text(u?.fullName ?? 'Loading...', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                  Text(u?.fullName ?? 'Loading...',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
-                  Text(u?.email ?? '', style: const TextStyle(color: Colors.white70, fontSize: 13)),
+                  Text(u?.email ?? '',
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-                    decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(20)),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(20)),
                     child: Text(
                       u?.role == 'prenatal' ? '🤰 Prenatal' : '👶 Neonatal',
-                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],
@@ -121,18 +151,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   const _SectionLabel('Personal Information'),
                   _InfoCard(items: [
-                    _InfoRow(icon: Icons.person_outline, label: 'Full Name', value: u?.fullName ?? '—'),
-                    _InfoRow(icon: Icons.email_outlined, label: 'Email', value: u?.email ?? '—'),
-                    _InfoRow(icon: Icons.phone_outlined, label: 'Phone', value: u?.phone ?? '—'),
+                    _InfoRow(
+                        icon: Icons.person_outline,
+                        label: 'Full Name',
+                        value: u?.fullName ?? '—'),
+                    _InfoRow(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: u?.email ?? '—'),
+                    _InfoRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Phone',
+                        value: u?.phone ?? '—'),
                   ]),
                   const SizedBox(height: 16),
                   const _SectionLabel('Pregnancy Information'),
                   _InfoCard(items: [
-                    _InfoRow(icon: Icons.pregnant_woman, label: 'Role', value: u?.role == 'prenatal' ? 'Prenatal' : 'Neonatal'),
+                    _InfoRow(
+                        icon: Icons.pregnant_woman,
+                        label: 'Role',
+                        value: u?.role == 'prenatal' ? 'Prenatal' : 'Neonatal'),
                     if (u?.lmpDate.isNotEmpty == true)
-                      _InfoRow(icon: Icons.calendar_today, label: 'LMP Date', value: _fmtDate(u!.lmpDate)),
+                      _InfoRow(
+                          icon: Icons.calendar_today,
+                          label: 'LMP Date',
+                          value: _fmtDate(u!.lmpDate)),
                     if (u?.babyName.isNotEmpty == true)
-                      _InfoRow(icon: Icons.child_care, label: "Baby's Name", value: u!.babyName),
+                      _InfoRow(
+                          icon: Icons.child_care,
+                          label: "Baby's Name",
+                          value: u!.babyName),
                   ]),
                   const SizedBox(height: 24),
                 ],
@@ -147,9 +195,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _fmtDate(String iso) {
     try {
       final d = DateTime.parse(iso);
-      const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      return '${d.day} ${m[d.month-1]} ${d.year}';
-    } catch (_) { return iso; }
+      const m = [
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
+      ];
+      return '${d.day} ${m[d.month - 1]} ${d.year}';
+    } catch (_) {
+      return iso;
+    }
   }
 }
 
@@ -158,9 +221,14 @@ class _SectionLabel extends StatelessWidget {
   const _SectionLabel(this.text);
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(left: 4, bottom: 8),
-    child: Text(text, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF9E9E9E), letterSpacing: 0.8)),
-  );
+        padding: const EdgeInsets.only(left: 4, bottom: 8),
+        child: Text(text,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF9E9E9E),
+                letterSpacing: 0.8)),
+      );
 }
 
 class _InfoCard extends StatelessWidget {
@@ -168,34 +236,55 @@ class _InfoCard extends StatelessWidget {
   const _InfoCard({required this.items});
   @override
   Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
-    child: Column(
-      children: items.asMap().entries.map((e) => Column(children: [
-        e.value,
-        if (e.key < items.length - 1) const Divider(height: 1, indent: 56),
-      ])).toList(),
-    ),
-  );
+        decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2))
+            ]),
+        child: Column(
+          children: items
+              .asMap()
+              .entries
+              .map((e) => Column(children: [
+                    e.value,
+                    if (e.key < items.length - 1)
+                      const Divider(height: 1, indent: 56),
+                  ]))
+              .toList(),
+        ),
+      );
 }
 
 class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow(
+      {required this.icon, required this.label, required this.value});
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    child: Row(children: [
-      Icon(icon, size: 20, color: const Color(0xFF1A237E)),
-      const SizedBox(width: 14),
-      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF9E9E9E))),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 14, color: Color(0xFF212121), fontWeight: FontWeight.w500)),
-      ])),
-    ]),
-  );
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(children: [
+          Icon(icon, size: 20, color: const Color(0xFF1A237E)),
+          const SizedBox(width: 14),
+          Expanded(
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 11, color: Color(0xFF9E9E9E))),
+                const SizedBox(height: 2),
+                Text(value,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF212121),
+                        fontWeight: FontWeight.w500)),
+              ])),
+        ]),
+      );
 }
-

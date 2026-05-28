@@ -15,6 +15,13 @@ class UserStore extends ChangeNotifier {
   /// Full name of the current user.
   String get fullName => AuthServiceWeb.instance.userName;
 
+  /// Profile photo URL/data URL of the current web user.
+  String? get profilePhotoUrl {
+    final value = AuthServiceWeb.instance.currentUser?['profilePhotoUrl'];
+    final photo = value?.toString();
+    return photo == null || photo.isEmpty ? null : photo;
+  }
+
   /// Role of the current user.
   String get role => AuthServiceWeb.instance.userRole;
 

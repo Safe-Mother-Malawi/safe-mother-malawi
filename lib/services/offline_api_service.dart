@@ -11,15 +11,23 @@ class OfflineApiService {
 
   final _offlineService = OfflineService();
   final _cacheService = LocalCacheService();
+  bool _initialized = false;
+
+  Future<void> _ensureInitialized() async {
+    if (_initialized) return;
+    await _offlineService.initialize();
+    await _cacheService.initialize();
+    _initialized = true;
+  }
 
   /// Initialize services
   Future<void> initialize() async {
-    await _offlineService.initialize();
-    await _cacheService.initialize();
+    await _ensureInitialized();
   }
 
   /// GET request with offline fallback
   Future<dynamic> get(String path, {bool useCache = true}) async {
+    await _ensureInitialized();
     try {
       if (_offlineService.isOnline) {
         final result = await ApiService.instance.get(path);
@@ -30,7 +38,7 @@ class OfflineApiService {
         return result;
       } else {
         // Try to return cached data
-        final cached = _cacheService.get(path);
+        final cached = await _cacheService.get(path);
         if (cached != null) {
           debugPrint('📦 Using cached data for: $path');
           return cached;
@@ -40,7 +48,7 @@ class OfflineApiService {
     } catch (e) {
       // Fallback to cache if online request fails
       if (useCache) {
-        final cached = _cacheService.get(path);
+        final cached = await _cacheService.get(path);
         if (cached != null) {
           debugPrint('📦 Using cached data (fallback) for: $path');
           return cached;
@@ -52,6 +60,7 @@ class OfflineApiService {
 
   /// POST request with offline queueing
   Future<dynamic> post(String path, Map<String, dynamic> body) async {
+    await _ensureInitialized();
     try {
       if (_offlineService.isOnline) {
         return await ApiService.instance.post(path, body);
@@ -80,6 +89,7 @@ class OfflineApiService {
 
   /// PUT request with offline queueing
   Future<dynamic> put(String path, Map<String, dynamic> body) async {
+    await _ensureInitialized();
     try {
       if (_offlineService.isOnline) {
         return await ApiService.instance.put(path, body);
@@ -108,6 +118,7 @@ class OfflineApiService {
 
   /// DELETE request with offline queueing
   Future<dynamic> delete(String path) async {
+    await _ensureInitialized();
     try {
       if (_offlineService.isOnline) {
         return await ApiService.instance.delete(path);

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
+import '../../../services/offline_api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kGreen  = Color(0xFF388E3C);
@@ -32,7 +32,7 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
     if (widget.patientId == null) return;
     setState(() => _loading = true);
     try {
-      final data = await ApiService.instance.get('/tracking/vaccines/${widget.patientId}');
+      final data = await OfflineApiService().get('/tracking/vaccines/${widget.patientId}');
       if (data is List) {
         final givenNames = data
             .where((v) => v['given'] == true)
@@ -78,7 +78,7 @@ class _VaccinesScreenState extends State<VaccinesScreen> {
     // Persist to backend if we have a patient ID
     if (widget.patientId != null) {
       try {
-        await ApiService.instance.patch(
+        await OfflineApiService().put(
           '/tracking/vaccines/${widget.patientId}',
           {'name': v.name, 'given': !wasGiven},
         );

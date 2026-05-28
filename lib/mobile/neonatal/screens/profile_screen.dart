@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../auth/services/auth_service.dart';
 import '../../auth/models/user_model.dart';
+import '../../../services/api_service.dart';
+import '../../../utils/profile_photo_utils.dart';
 import '../models/neonatal_data.dart';
 import 'edit_profile_screen.dart';
 
@@ -13,6 +15,7 @@ class NeonatalProfileScreen extends StatefulWidget {
 class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
   UserModel? _user;
   NeonatalData? _data;
+  String? _photoUrl;
 
   @override
   void initState() {
@@ -26,6 +29,13 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
     final dob = u.babyDob.isNotEmpty
         ? DateTime.tryParse(u.babyDob) ?? DateTime.now()
         : DateTime.now();
+    try {
+      final raw = await ApiService.instance.currentUser();
+      if (mounted && raw != null) {
+        final photo = raw['profilePhotoUrl'] as String?;
+        setState(() => _photoUrl = photo ?? u.profilePhotoUrl);
+      }
+    } catch (_) {}
     if (mounted) {
       setState(() {
         _user = u;
@@ -41,10 +51,16 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
     if (_user == null) return;
     final result = await Navigator.push<UserModel>(
       context,
-      MaterialPageRoute(builder: (_) => NeonatalEditProfileScreen(user: _user!)),
+      MaterialPageRoute(
+          builder: (_) => NeonatalEditProfileScreen(user: _user!)),
     );
     if (result != null) {
-      setState(() => _user = result);
+      setState(() {
+        _user = result;
+        _photoUrl = result.profilePhotoUrl.isNotEmpty
+            ? result.profilePhotoUrl
+            : null;
+      });
       _loadUser();
     }
   }
@@ -94,10 +110,12 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                     children: [
                       CircleAvatar(
                         radius: 44,
-                        backgroundColor:
-                            Colors.white.withOpacity(0.3),
-                        child: const Icon(Icons.person,
-                            size: 48, color: Colors.white),
+                        backgroundColor: Colors.white.withOpacity(0.3),
+                        backgroundImage: buildProfilePhotoProvider(_photoUrl),
+                        child: _photoUrl == null
+                            ? const Icon(Icons.person,
+                                size: 48, color: Colors.white)
+                            : null,
                       ),
                       Positioned(
                         bottom: 0,
@@ -106,8 +124,7 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                           width: 28,
                           height: 28,
                           decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle),
+                              color: Colors.white, shape: BoxShape.circle),
                           child: const Icon(Icons.camera_alt,
                               size: 16, color: Color(0xFF1A237E)),
                         ),
@@ -122,12 +139,12 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                           fontWeight: FontWeight.bold)),
                   const SizedBox(height: 4),
                   Text(u?.phone ?? '',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 13)),
+                      style:
+                          const TextStyle(color: Colors.white70, fontSize: 13)),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 5),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
@@ -178,9 +195,8 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
                     _InfoRow(
                         icon: Icons.child_care,
                         label: "Baby's Name",
-                        value: u?.babyName.isNotEmpty == true
-                            ? u!.babyName
-                            : '—'),
+                        value:
+                            u?.babyName.isNotEmpty == true ? u!.babyName : '—'),
                     _InfoRow(
                         icon: Icons.cake_outlined,
                         label: 'Date of Birth',
@@ -219,8 +235,18 @@ class _NeonatalProfileScreenState extends State<NeonatalProfileScreen> {
     try {
       final dt = DateTime.parse(iso);
       const m = [
-        'Jan','Feb','Mar','Apr','May','Jun',
-        'Jul','Aug','Sep','Oct','Nov','Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${dt.day} ${m[dt.month - 1]} ${dt.year}';
     } catch (_) {
@@ -262,11 +288,15 @@ class _InfoCard extends StatelessWidget {
           ],
         ),
         child: Column(
-          children: items.asMap().entries.map((e) => Column(children: [
-                e.value,
-                if (e.key < items.length - 1)
-                  const Divider(height: 1, indent: 56),
-              ])).toList(),
+          children: items
+              .asMap()
+              .entries
+              .map((e) => Column(children: [
+                    e.value,
+                    if (e.key < items.length - 1)
+                      const Divider(height: 1, indent: 56),
+                  ]))
+              .toList(),
         ),
       );
 }
@@ -301,4 +331,3 @@ class _InfoRow extends StatelessWidget {
         ]),
       );
 }
-

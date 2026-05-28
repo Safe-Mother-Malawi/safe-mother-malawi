@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:image_picker/image_picker.dart';
 import '../../auth/models/user_model.dart';
+import '../../auth/services/auth_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/offline_api_service.dart';
+import '../../../utils/profile_photo_utils.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -36,15 +39,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _facilityController = TextEditingController(text: widget.user.facilityName);
     _lmpDateController = TextEditingController(text: widget.user.lmpDate);
     _babyNameController = TextEditingController(text: widget.user.babyName);
-    // Load existing photo from backend
+    _photoUrl = widget.user.profilePhotoUrl.isNotEmpty
+        ? widget.user.profilePhotoUrl
+        : null;
     _loadPhoto();
   }
 
   Future<void> _loadPhoto() async {
+    if (_photoUrl != null && _photoUrl!.isNotEmpty) return;
     try {
       final user = await ApiService.instance.currentUser();
       if (mounted && user != null) {
-        setState(() => _photoUrl = user['profilePhotoUrl'] as String?);
+        final photo = user['profilePhotoUrl'] as String?;
+        setState(() => _photoUrl = photo);
       }
     } catch (_) {}
   }
@@ -53,7 +60,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 512, maxHeight: 512,
+      maxWidth: 512,
+      maxHeight: 512,
       imageQuality: 80,
     );
     if (picked == null || !mounted) return;
@@ -65,11 +73,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final mime = ext == 'png' ? 'image/png' : 'image/jpeg';
       final base64Str = 'data:$mime;base64,${base64Encode(bytes)}';
       final url = await ApiService.uploadProfilePhoto(base64Str);
+      final updatedUser = widget.user.copyWith(profilePhotoUrl: url ?? '');
+      await AuthService().persistSession(updatedUser);
       if (mounted) setState(() => _photoUrl = url);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Photo upload failed: $e'), backgroundColor: Colors.red),
+          SnackBar(
+              content: Text('Photo upload failed: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
+  Future<void> _removePhoto() async {
+    setState(() => _uploadingPhoto = true);
+    try {
+      await ApiService.uploadProfilePhoto(null);
+      final updatedUser = widget.user.copyWith(profilePhotoUrl: '');
+      await AuthService().persistSession(updatedUser);
+      if (mounted) setState(() => _photoUrl = null);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Photo removal failed: $e'),
+              backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -106,7 +138,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     });
 
     try {
-      await ApiService.instance.patch('/auth/me', {
+      final result = await OfflineApiService().put('/auth/me', {
         'fullName': _fullNameController.text,
         'email': _emailController.text,
         'phone': _phoneController.text,
@@ -115,31 +147,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       });
 
       // Update user in auth service
-      final updatedUser = UserModel(
+      final updatedUser = widget.user.copyWith(
         email: _emailController.text,
-        password: '',
-        role: widget.user.role,
         fullName: _fullNameController.text,
         phone: _phoneController.text,
         lmpDate: _lmpDateController.text,
         babyName: _babyNameController.text,
-        babyDob: widget.user.babyDob,
-        age: widget.user.age,
-        nationality: widget.user.nationality,
         district: _districtController.text,
         facilityName: _facilityController.text,
-        pregnancyMonths: widget.user.pregnancyMonths,
-        pregnancyWeeks: widget.user.pregnancyWeeks,
-        expectedDeliveryDate: widget.user.expectedDeliveryDate,
-        babyGender: widget.user.babyGender,
-        babyBirthWeight: widget.user.babyBirthWeight,
-        securityQuestion: widget.user.securityQuestion,
-        securityAnswer: widget.user.securityAnswer,
+        profilePhotoUrl: _photoUrl ?? '',
       );
+      await AuthService().persistSession(updatedUser);
 
       if (mounted) {
+        final queued = result is Map && result['queued'] == true;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully')),
+          SnackBar(
+            content: Text(queued
+                ? 'Profile update saved locally and will sync when online.'
+                : 'Profile updated successfully'),
+            backgroundColor: queued ? Colors.orange : Colors.green,
+          ),
         );
         Navigator.pop(context, updatedUser);
       }
@@ -162,7 +190,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       lastDate: DateTime.now(),
     );
     if (picked != null) {
-      setState(() => _lmpDateController.text = picked.toIso8601String().split('T')[0]);
+      setState(() =>
+          _lmpDateController.text = picked.toIso8601String().split('T')[0]);
     }
   }
 
@@ -179,7 +208,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         title: const Text(
           'Edit Profile',
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
+          style: TextStyle(
+              color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700),
         ),
       ),
       body: SingleChildScrollView(
@@ -195,29 +225,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   CircleAvatar(
                     radius: 52,
                     backgroundColor: const Color(0xFFE8EAF6),
-                    backgroundImage: _photoUrl != null && _photoUrl!.startsWith('data:')
-                        ? MemoryImage(base64Decode(_photoUrl!.split(',').last))
-                        : null,
+                    backgroundImage: buildProfilePhotoProvider(_photoUrl),
                     child: _uploadingPhoto
-                        ? const CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF1A237E))
+                        ? const CircularProgressIndicator(
+                            strokeWidth: 2, color: Color(0xFF1A237E))
                         : _photoUrl == null
-                            ? const Icon(Icons.person, size: 52, color: Color(0xFF9E9E9E))
+                            ? const Icon(Icons.person,
+                                size: 52, color: Color(0xFF9E9E9E))
                             : null,
                   ),
                   Positioned(
-                    bottom: 2, right: 2,
+                    bottom: 2,
+                    right: 2,
                     child: Container(
-                      width: 30, height: 30,
-                      decoration: const BoxDecoration(color: Color(0xFF1A237E), shape: BoxShape.circle),
-                      child: const Icon(Icons.camera_alt_rounded, size: 16, color: Colors.white),
+                      width: 30,
+                      height: 30,
+                      decoration: const BoxDecoration(
+                          color: Color(0xFF1A237E), shape: BoxShape.circle),
+                      child: const Icon(Icons.camera_alt_rounded,
+                          size: 16, color: Colors.white),
                     ),
                   ),
                 ]),
               ),
             ),
             const SizedBox(height: 6),
-            const Center(child: Text('Tap to change photo',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)))),
+            Center(
+              child: Text(
+                _photoUrl == null
+                    ? 'Tap to upload a photo'
+                    : 'Tap photo to change it',
+                style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E)),
+              ),
+            ),
+            if (_photoUrl != null) ...[
+              const SizedBox(height: 10),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _uploadingPhoto ? null : _removePhoto,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Remove photo'),
+                  style:
+                      TextButton.styleFrom(foregroundColor: Colors.redAccent),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             if (_errorMessage != null)
               Container(
@@ -235,7 +287,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             if (_errorMessage != null) const SizedBox(height: 16),
             const Text(
               'Personal Information',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A237E)),
             ),
             const SizedBox(height: 12),
             _buildTextField('Full Name', _fullNameController, Icons.person),
@@ -246,16 +301,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             const SizedBox(height: 20),
             const Text(
               'Location Information',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A237E)),
             ),
             const SizedBox(height: 12),
             _buildTextField('District', _districtController, Icons.location_on),
             const SizedBox(height: 12),
-            _buildTextField('Health Facility', _facilityController, Icons.local_hospital),
+            _buildTextField(
+                'Health Facility', _facilityController, Icons.local_hospital),
             const SizedBox(height: 20),
             const Text(
               'Pregnancy Information',
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A237E)),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1A237E)),
             ),
             const SizedBox(height: 12),
             _buildDateField('LMP Date', _lmpDateController, _selectDate),
@@ -268,18 +330,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1A237E),
                   padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: _isLoading ? null : _saveProfile,
                 child: _isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white)),
                       )
                     : const Text(
                         'Save Changes',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                        style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white),
                       ),
               ),
             ),
@@ -289,7 +358,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon) {
+  Widget _buildTextField(
+      String label, TextEditingController controller, IconData icon) {
     return TextField(
       controller: controller,
       decoration: InputDecoration(
@@ -308,7 +378,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildDateField(String label, TextEditingController controller, VoidCallback onTap) {
+  Widget _buildDateField(
+      String label, TextEditingController controller, VoidCallback onTap) {
     return TextField(
       controller: controller,
       readOnly: true,
@@ -329,4 +400,3 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 }
-

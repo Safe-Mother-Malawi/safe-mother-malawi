@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../services/api_service.dart';
+import '../../../services/offline_api_service.dart';
 import '../models/neonatal_data.dart';
 
 const _kAccent = Color(0xFF1A237E);
@@ -29,9 +29,7 @@ class _SleepScreenState extends State<SleepScreen> {
   Future<void> _loadLogs() async {
     setState(() => _loadingLogs = true);
     try {
-      await ApiService.instance.loadToken();
-      // Try to load sleep logs from backend
-      final data = await ApiService.instance.get('/tracking/sleep') as List<dynamic>?;
+      final data = await OfflineApiService().get('/tracking/sleep') as List<dynamic>?;
       if (data != null) {
         setState(() {
           _logs = data.map((e) {
@@ -95,7 +93,7 @@ class _SleepScreenState extends State<SleepScreen> {
 
     // Persist to backend
     try {
-      await ApiService.instance.post('/tracking/sleep', {
+      await OfflineApiService().post('/tracking/sleep', {
         'startTime': start.toIso8601String(),
         'endTime': end.toIso8601String(),
         'type': _selectedType == SleepType.nightSleep ? 'nightSleep' : 'dayNap',

@@ -65,8 +65,16 @@ class OfflineService extends ChangeNotifier {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     await _loadSyncQueue();
+    final initialConnection = await Connectivity().checkConnectivity();
+    _isOnline = initialConnection.contains(ConnectivityResult.mobile) ||
+        initialConnection.contains(ConnectivityResult.wifi) ||
+        initialConnection.contains(ConnectivityResult.ethernet);
     _setupConnectivityListener();
     _startPeriodicSync();
+    notifyListeners();
+    if (_isOnline && pendingActionsCount > 0) {
+      await _syncOfflineActions();
+    }
   }
 
   /// Setup connectivity listener

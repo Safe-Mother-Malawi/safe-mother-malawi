@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../services/api_service.dart';
 import '../services/offline_api_service.dart';
 
 enum ReminderType {
@@ -295,7 +294,7 @@ class RemindersStore extends ChangeNotifier {
     _notify();
 
     try {
-      final remindersData = await ApiService.instance.get('/reminders') as List<dynamic>;
+      final remindersData = await OfflineApiService().get('/reminders') as List<dynamic>;
       _reminders.clear();
       _reminders.addAll(
         remindersData.cast<Map<String, dynamic>>().map(Reminder.fromJson),
@@ -317,7 +316,7 @@ class RemindersStore extends ChangeNotifier {
     _notify();
 
     try {
-      final remindersData = await ApiService.instance.get('/reminders/pending') as List<dynamic>;
+      final remindersData = await OfflineApiService().get('/reminders/pending') as List<dynamic>;
       final pending = remindersData.cast<Map<String, dynamic>>().map(Reminder.fromJson).toList();
       
       // Update existing reminders with pending status
@@ -362,7 +361,29 @@ class RemindersStore extends ChangeNotifier {
         if (metadata != null) 'metadata': metadata,
       };
 
-      final result = await ApiService.instance.post('/reminders', body_data);
+      final result = await OfflineApiService().post('/reminders', body_data);
+      if (result is Map && result['queued'] == true) {
+        final now = DateTime.now();
+        final reminder = Reminder(
+          id: 'offline-${now.millisecondsSinceEpoch}',
+          title: title,
+          body: body,
+          type: type,
+          status: ReminderStatus.pending,
+          frequency: frequency,
+          scheduledFor: scheduledFor,
+          acknowledged: false,
+          metadata: metadata,
+          appointmentId: appointmentId,
+          patientId: patientId,
+          createdAt: now,
+          updatedAt: now,
+        );
+        _reminders.add(reminder);
+        _applyFilters();
+        _notify();
+        return;
+      }
       final reminder = Reminder.fromJson(result as Map<String, dynamic>);
       _reminders.add(reminder);
       _applyFilters();
@@ -377,10 +398,32 @@ class RemindersStore extends ChangeNotifier {
   /// Acknowledge a reminder
   Future<void> acknowledgeReminder(String reminderId) async {
     try {
-      await ApiService.instance.put('/reminders/$reminderId/acknowledge', {});
+      final result = await OfflineApiService().put('/reminders/$reminderId/acknowledge', {});
       final index = _reminders.indexWhere((r) => r.id == reminderId);
       if (index >= 0) {
         final reminder = _reminders[index];
+        if (result is Map && result['queued'] == true) {
+          _reminders[index] = Reminder(
+            id: reminder.id,
+            title: reminder.title,
+            body: reminder.body,
+            type: reminder.type,
+            status: reminder.status,
+            frequency: reminder.frequency,
+            scheduledFor: reminder.scheduledFor,
+            sentAt: reminder.sentAt,
+            nextReminderAt: reminder.nextReminderAt,
+            acknowledged: true,
+            metadata: reminder.metadata,
+            appointmentId: reminder.appointmentId,
+            patientId: reminder.patientId,
+            createdAt: reminder.createdAt,
+            updatedAt: DateTime.now(),
+          );
+          _applyFilters();
+          _notify();
+          return;
+        }
         _reminders[index] = Reminder(
           id: reminder.id,
           title: reminder.title,
@@ -411,10 +454,32 @@ class RemindersStore extends ChangeNotifier {
   /// Cancel a reminder
   Future<void> cancelReminder(String reminderId) async {
     try {
-      await ApiService.instance.put('/reminders/$reminderId/cancel', {});
+      final result = await OfflineApiService().put('/reminders/$reminderId/cancel', {});
       final index = _reminders.indexWhere((r) => r.id == reminderId);
       if (index >= 0) {
         final reminder = _reminders[index];
+        if (result is Map && result['queued'] == true) {
+          _reminders[index] = Reminder(
+            id: reminder.id,
+            title: reminder.title,
+            body: reminder.body,
+            type: reminder.type,
+            status: ReminderStatus.cancelled,
+            frequency: reminder.frequency,
+            scheduledFor: reminder.scheduledFor,
+            sentAt: reminder.sentAt,
+            nextReminderAt: reminder.nextReminderAt,
+            acknowledged: reminder.acknowledged,
+            metadata: reminder.metadata,
+            appointmentId: reminder.appointmentId,
+            patientId: reminder.patientId,
+            createdAt: reminder.createdAt,
+            updatedAt: DateTime.now(),
+          );
+          _applyFilters();
+          _notify();
+          return;
+        }
         _reminders[index] = Reminder(
           id: reminder.id,
           title: reminder.title,
@@ -445,9 +510,33 @@ class RemindersStore extends ChangeNotifier {
   /// Reschedule a reminder
   Future<void> rescheduleReminder(String reminderId, DateTime newScheduledFor) async {
     try {
-      await ApiService.instance.put('/reminders/$reminderId/reschedule', {
+      final result = await OfflineApiService().put('/reminders/$reminderId/reschedule', {
         'scheduledFor': newScheduledFor.toIso8601String(),
       });
+      final index = _reminders.indexWhere((r) => r.id == reminderId);
+      if (index >= 0) {
+        final reminder = _reminders[index];
+        _reminders[index] = Reminder(
+          id: reminder.id,
+          title: reminder.title,
+          body: reminder.body,
+          type: reminder.type,
+          status: reminder.status,
+          frequency: reminder.frequency,
+          scheduledFor: newScheduledFor,
+          sentAt: reminder.sentAt,
+          nextReminderAt: reminder.nextReminderAt,
+          acknowledged: reminder.acknowledged,
+          metadata: reminder.metadata,
+          appointmentId: reminder.appointmentId,
+          patientId: reminder.patientId,
+          createdAt: reminder.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        _applyFilters();
+        _notify();
+        if (result is Map && result['queued'] == true) return;
+      }
       await load();
     } catch (e) {
       _error = e.toString();
@@ -459,7 +548,13 @@ class RemindersStore extends ChangeNotifier {
   /// Delete a reminder
   Future<void> deleteReminder(String reminderId) async {
     try {
-      await ApiService.instance.delete('/reminders/$reminderId');
+      final result = await OfflineApiService().delete('/reminders/$reminderId');
+      if (result is Map && result['queued'] == true) {
+        _reminders.removeWhere((r) => r.id == reminderId);
+        _applyFilters();
+        _notify();
+        return;
+      }
       _reminders.removeWhere((r) => r.id == reminderId);
       _applyFilters();
       _notify();

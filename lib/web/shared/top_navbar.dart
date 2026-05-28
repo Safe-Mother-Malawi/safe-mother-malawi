@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../../state/notification_store.dart';
+import '../../state/user_store.dart';
 import '../../screens/clinician/pages/profile_page.dart';
+import '../../utils/profile_photo_utils.dart';
 import 'sidebar.dart';
 
 class TopNavbar extends StatefulWidget implements PreferredSizeWidget {
@@ -34,15 +36,18 @@ class _TopNavbarState extends State<TopNavbar> {
     super.initState();
     NotificationStore.instance.addListener(_onNotif);
     NotificationStore.instance.load();
+    UserStore.instance.addListener(_onUser);
   }
 
   @override
   void dispose() {
     NotificationStore.instance.removeListener(_onNotif);
+    UserStore.instance.removeListener(_onUser);
     super.dispose();
   }
 
   void _onNotif() => setState(() {});
+  void _onUser() => setState(() {});
 
   void _showNotifications() {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -176,6 +181,7 @@ class _TopNavbarState extends State<TopNavbar> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 768;
     final isSmallMobile = screenWidth < 480;
+    final photoProvider = buildProfilePhotoProvider(UserStore.instance.profilePhotoUrl);
 
     return Container(
       height: 64,
@@ -242,10 +248,13 @@ class _TopNavbarState extends State<TopNavbar> {
                   CircleAvatar(
                     radius: 16,
                     backgroundColor: AppColors.primaryContainer,
-                    child: Text(
-                      widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                      style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
-                    ),
+                    backgroundImage: photoProvider,
+                    child: photoProvider == null
+                        ? Text(
+                            widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                            style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                          )
+                        : null,
                   ),
                   const SizedBox(width: 8),
                   Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -268,10 +277,13 @@ class _TopNavbarState extends State<TopNavbar> {
               icon: CircleAvatar(
                 radius: 16,
                 backgroundColor: AppColors.primaryContainer,
-                child: Text(
-                  widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                  style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
-                ),
+                backgroundImage: photoProvider,
+                child: photoProvider == null
+                    ? Text(
+                        widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                        style: TextStyle(fontFamily: 'Roboto', fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+                      )
+                    : null,
               ),
               onPressed: _showProfile,
               tooltip: 'Profile',
@@ -285,10 +297,13 @@ class _TopNavbarState extends State<TopNavbar> {
             icon: CircleAvatar(
               radius: 14,
               backgroundColor: AppColors.primaryContainer,
-              child: Text(
-                widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
-                style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
-              ),
+              backgroundImage: photoProvider,
+              child: photoProvider == null
+                  ? Text(
+                      widget.userName.isNotEmpty ? widget.userName[0].toUpperCase() : 'U',
+                      style: TextStyle(fontFamily: 'Roboto', fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white),
+                    )
+                  : null,
             ),
             onPressed: _showProfile,
             tooltip: 'Profile',
