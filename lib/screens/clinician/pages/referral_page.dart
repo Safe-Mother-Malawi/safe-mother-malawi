@@ -4,6 +4,33 @@ import '../../../services/referral_service.dart';
 import '../../../services/api_service.dart';
 import '../../../theme/app_colors.dart';
 
+// Patient model for autocomplete
+class PatientOption {
+  final String id;
+  final String fullName;
+  final String? contact;
+  final String? age;
+  final String? type; // 'prenatal' or 'neonatal'
+
+  PatientOption({
+    required this.id,
+    required this.fullName,
+    this.contact,
+    this.age,
+    this.type,
+  });
+
+  factory PatientOption.fromJson(Map<String, dynamic> json) {
+    return PatientOption(
+      id: json['id'] as String,
+      fullName: json['fullName'] as String? ?? json['name'] as String? ?? 'Unknown',
+      contact: json['contact'] as String? ?? json['phoneNumber'] as String?,
+      age: json['age']?.toString(),
+      type: json['type'] as String?,
+    );
+  }
+}
+
 class ReferralPage extends StatefulWidget {
   const ReferralPage({Key? key}) : super(key: key);
 
@@ -779,9 +806,13 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
   String? _selectedReferringFacility;
   String? _selectedReceivingFacility;
   String? _selectedTransportMode;
+  String? _selectedPatientId;
   
   List<Map<String, dynamic>> _facilities = [];
+  List<PatientOption> _patientSuggestions = [];
   bool _loadingFacilities = true;
+  bool _loadingPatients = false;
+  bool _showPatientSuggestions = false;
 
   final List<String> _referralReasons = [
     'Hypertension',
@@ -814,6 +845,8 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     _patientAgeController = TextEditingController();
     _clinicalSummaryController = TextEditingController();
     _urgencyNotesController = TextEditingController();
+    
+    _patientNameController.addListener(_onPatientNameChanged);
     _loadFacilities();
   }
 
@@ -832,8 +865,79 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     }
   }
 
+  Future<void> _searchPatients(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        _patientSuggestions = [];
+        _showPatientSuggestions = false;
+      });
+      return;
+    }
+
+    setState(() => _loadingPatients = true);
+
+    try {
+      // Search both prenatal and neonatal patients
+      final prenatalResults = await ApiService.instance.get('/patients/prenatal?search=$query').catchError((_) => []);
+      final neonatalResults = await ApiService.instance.get('/patients/neonatal?search=$query').catchError((_) => []);
+
+      List<PatientOption> suggestions = [];
+
+      if (prenatalResults is List) {
+        suggestions.addAll(
+          prenatalResults
+              .cast<Map<String, dynamic>>()
+              .map((p) => PatientOption.fromJson({...p, 'type': 'prenatal'}))
+              .toList(),
+        );
+      }
+
+      if (neonatalResults is List) {
+        suggestions.addAll(
+          neonatalResults
+              .cast<Map<String, dynamic>>()
+              .map((p) => PatientOption.fromJson({...p, 'type': 'neonatal'}))
+              .toList(),
+        );
+      }
+
+      setState(() {
+        _patientSuggestions = suggestions;
+        _showPatientSuggestions = true;
+        _loadingPatients = false;
+      });
+    } catch (e) {
+      debugPrint('Error searching patients: $e');
+      setState(() => _loadingPatients = false);
+    }
+  }
+
+  void _onPatientNameChanged() {
+    final query = _patientNameController.text;
+    if (query.length > 1) {
+      _searchPatients(query);
+    } else {
+      setState(() {
+        _patientSuggestions = [];
+        _showPatientSuggestions = false;
+      });
+    }
+  }
+
+  void _selectPatient(PatientOption patient) {
+    setState(() {
+      _selectedPatientId = patient.id;
+      _patientNameController.text = patient.fullName;
+      _patientContactController.text = patient.contact ?? '';
+      _patientAgeController.text = patient.age ?? '';
+      _showPatientSuggestions = false;
+      _patientSuggestions = [];
+    });
+  }
+
   @override
   void dispose() {
+    _patientNameController.removeListener(_onPatientNameChanged);
     _patientNameController.dispose();
     _patientContactController.dispose();
     _patientAgeController.dispose();
@@ -855,15 +959,60 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
               // Patient Information
               Text('Patient Information', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.navy)),
               const SizedBox(height: 12),
-              TextFormField(
-                controller: _patientNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Patient Name *',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+              
+              // Patient Name with Autocomplete
+              Stack(
+                children: [
+                  TextFormField(
+                    controller: _patientNameController,
+                    decoration: InputDecoration(
+                      labelText: 'Patient Name *',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _loadingPatients
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: Padding(
+                                padding: EdgeInsets.all(12),
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : null,
+                    ),
+                    validator: (value) => value?.isEmpty ?? true ? 'Required' : null,
+                  ),
+                  // Patient suggestions dropdown
+                  if (_showPatientSuggestions && _patientSuggestions.isNotEmpty)
+                    Positioned(
+                      top: 56,
+                      left: 0,
+                      right: 0,
+                      child: Material(
+                        elevation: 4,
+                        child: Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: _patientSuggestions.length,
+                            itemBuilder: (context, index) {
+                              final patient = _patientSuggestions[index];
+                              return ListTile(
+                                title: Text(patient.fullName),
+                                subtitle: Text(
+                                  '${patient.type?.toUpperCase() ?? 'PATIENT'} • Age: ${patient.age ?? 'N/A'} • ${patient.contact ?? 'No contact'}',
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                onTap: () => _selectPatient(patient),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 12),
+              
               TextFormField(
                 controller: _patientContactController,
                 decoration: const InputDecoration(
