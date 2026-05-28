@@ -824,6 +824,9 @@ class ApiService {
   /// Pass null to remove the photo.
   /// Returns the new photo URL/data URL or null if removed.
   static Future<String?> uploadProfilePhoto(String? photoDataUrl) async {
+    // Ensure token is loaded from storage before making the request
+    await instance.loadToken();
+    
     final token = await instance.getToken();
     if (token == null) throw ApiException(401, 'Not authenticated');
 
