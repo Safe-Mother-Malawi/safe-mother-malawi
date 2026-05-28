@@ -8,7 +8,7 @@ enum ReferralReason {
   bleeding,
   infection,
   fetalDistress,
-  prematureLab or,
+  prematureLabor,
   placentalIssues,
   neonatalEmergency,
   neonatalInfection,
