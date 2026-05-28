@@ -70,7 +70,7 @@ class _LoginDialogState extends State<LoginDialog> {
       } else if (role == 'dho') {
         dest = const DhoOverview();
       } else if (role == 'clinician') {
-        dest = const ClinicianOverview();
+        dest = ClinicianOverview();
       } else {
         // Unknown role
         await AuthServiceWeb.instance.logout();
