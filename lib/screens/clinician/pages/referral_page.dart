@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../services/referral_service.dart';
+import '../../../theme/app_colors.dart';
 
 class ReferralPage extends StatefulWidget {
   const ReferralPage({Key? key}) : super(key: key);
@@ -55,9 +56,9 @@ class _ReferralPageState extends State<ReferralPage> {
       case 'pending':
         return Colors.orange;
       case 'accepted':
-        return Colors.blue;
+        return AppColors.navy;
       case 'rejected':
-        return Colors.red;
+        return AppColors.red;
       case 'in_transit':
         return Colors.purple;
       case 'arrived':
@@ -73,23 +74,36 @@ class _ReferralPageState extends State<ReferralPage> {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isTablet = screenWidth >= 600 && screenWidth < 900;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Referrals'),
-        elevation: 0,
-        backgroundColor: const Color(0xFF1976D2),
-        foregroundColor: Colors.white,
-      ),
-      body: Column(
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Referrals',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.navy,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Manage patient referrals',
+                  style: TextStyle(fontSize: 13, color: AppColors.g600),
+                ),
+              ],
+            ),
+          ),
           // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Row(
               children: [
                 _buildFilterChip('all', 'All'),
@@ -104,8 +118,10 @@ class _ReferralPageState extends State<ReferralPage> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
           // Referrals list
-          Expanded(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: FutureBuilder<List<Referral>>(
               future: _referralsFuture,
               builder: (context, snapshot) {
@@ -118,12 +134,15 @@ class _ReferralPageState extends State<ReferralPage> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        const Icon(Icons.error_outline, size: 48, color: AppColors.red),
                         const SizedBox(height: 16),
                         Text('Error: ${snapshot.error}'),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: _loadReferrals,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.navy,
+                          ),
                           child: const Text('Retry'),
                         ),
                       ],
@@ -146,23 +165,20 @@ class _ReferralPageState extends State<ReferralPage> {
                   );
                 }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: referrals.length,
-                  itemBuilder: (context, index) {
-                    final referral = referrals[index];
-                    return _buildReferralCard(referral, isMobile, isTablet);
-                  },
+                return Column(
+                  children: List.generate(
+                    referrals.length,
+                    (index) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildReferralCard(referrals[index]),
+                    ),
+                  ),
                 );
               },
             ),
           ),
+          const SizedBox(height: 24),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showCreateReferralDialog(context),
-        backgroundColor: const Color(0xFF1976D2),
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -178,7 +194,7 @@ class _ReferralPageState extends State<ReferralPage> {
         });
       },
       backgroundColor: Colors.grey[200],
-      selectedColor: const Color(0xFF1976D2),
+      selectedColor: AppColors.navy,
       labelStyle: TextStyle(
         color: isSelected ? Colors.white : Colors.black,
         fontWeight: FontWeight.w500,
@@ -186,11 +202,13 @@ class _ReferralPageState extends State<ReferralPage> {
     );
   }
 
-  Widget _buildReferralCard(Referral referral, bool isMobile, bool isTablet) {
+  Widget _buildReferralCard(Referral referral) {
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         onTap: () => _showReferralDetails(referral),
+        borderRadius: BorderRadius.circular(8),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -288,7 +306,7 @@ class _ReferralPageState extends State<ReferralPage> {
                       if (referral.status == 'pending')
                         TextButton(
                           onPressed: () => _handleRejectReferral(referral),
-                          child: const Text('Reject', style: TextStyle(color: Colors.red)),
+                          child: const Text('Reject', style: TextStyle(color: AppColors.red)),
                         ),
                       const SizedBox(width: 8),
                       if (referral.status == 'pending')
@@ -303,7 +321,7 @@ class _ReferralPageState extends State<ReferralPage> {
                         ElevatedButton(
                           onPressed: () => _showTransportStatusDialog(referral),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: AppColors.navy,
                           ),
                           child: const Text('Update Status'),
                         ),
@@ -378,13 +396,6 @@ class _ReferralPageState extends State<ReferralPage> {
     );
   }
 
-  void _showCreateReferralDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => const _CreateReferralDialog(),
-    ).then((_) => _loadReferrals());
-  }
-
   void _handleAcceptReferral(Referral referral) async {
     try {
       await ReferralService.instance.acceptReferral(referral.id);
@@ -408,13 +419,12 @@ class _ReferralPageState extends State<ReferralPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reject Referral'),
-        content: TextField(
-          decoration: const InputDecoration(
+        content: const TextField(
+          decoration: InputDecoration(
             hintText: 'Enter rejection reason',
             border: OutlineInputBorder(),
           ),
           maxLines: 3,
-          onChanged: (value) {},
         ),
         actions: [
           TextButton(
@@ -423,7 +433,7 @@ class _ReferralPageState extends State<ReferralPage> {
           ),
           ElevatedButton(
             onPressed: () async {
-              final reason = 'Rejected'; // In real app, get from TextField
+              final reason = 'Rejected';
               try {
                 await ReferralService.instance.rejectReferral(referral.id, reason);
                 _loadReferrals();
@@ -441,7 +451,7 @@ class _ReferralPageState extends State<ReferralPage> {
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.red),
             child: const Text('Reject'),
           ),
         ],
@@ -519,147 +529,5 @@ class _ReferralPageState extends State<ReferralPage> {
 
   String _formatDate(DateTime date) {
     return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
-  }
-}
-
-class _CreateReferralDialog extends StatefulWidget {
-  const _CreateReferralDialog({Key? key}) : super(key: key);
-
-  @override
-  State<_CreateReferralDialog> createState() => _CreateReferralDialogState();
-}
-
-class _CreateReferralDialogState extends State<_CreateReferralDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _patientNameController;
-  late TextEditingController _reasonController;
-  late TextEditingController _clinicalSummaryController;
-  late TextEditingController _referringFacilityController;
-  late TextEditingController _receivingFacilityController;
-
-  @override
-  void initState() {
-    super.initState();
-    _patientNameController = TextEditingController();
-    _reasonController = TextEditingController();
-    _clinicalSummaryController = TextEditingController();
-    _referringFacilityController = TextEditingController();
-    _receivingFacilityController = TextEditingController();
-  }
-
-  @override
-  void dispose() {
-    _patientNameController.dispose();
-    _reasonController.dispose();
-    _clinicalSummaryController.dispose();
-    _referringFacilityController.dispose();
-    _receivingFacilityController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create New Referral'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: _patientNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Patient Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _reasonController,
-                decoration: const InputDecoration(
-                  labelText: 'Reason for Referral',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _clinicalSummaryController,
-                decoration: const InputDecoration(
-                  labelText: 'Clinical Summary',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _referringFacilityController,
-                decoration: const InputDecoration(
-                  labelText: 'Referring Facility ID',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _receivingFacilityController,
-                decoration: const InputDecoration(
-                  labelText: 'Receiving Facility ID',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Required' : null,
-              ),
-            ],
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: _submitForm,
-          child: const Text('Create'),
-        ),
-      ],
-    );
-  }
-
-  void _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    try {
-      final request = CreateReferralRequest(
-        patientName: _patientNameController.text,
-        reason: _reasonController.text,
-        clinicalSummary: _clinicalSummaryController.text,
-        referringFacilityId: _referringFacilityController.text,
-        receivingFacilityId: _receivingFacilityController.text,
-      );
-
-      await ReferralService.instance.createReferral(request);
-
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Referral created successfully')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
   }
 }
