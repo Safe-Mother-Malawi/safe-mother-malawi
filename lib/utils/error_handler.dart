@@ -13,7 +13,7 @@ class ErrorHandler {
     // Handle ApiException format: ApiException(statusCode): message
     if (errorStr.contains('ApiException')) {
       if (errorStr.contains('401')) {
-        return 'Session expired. Please login again.';
+        return 'Your session has expired. Please log in again.';
       }
       if (errorStr.contains('403')) {
         return 'You do not have permission to perform this action.';
@@ -100,5 +100,13 @@ class ErrorHandler {
     }
 
     return true; // Default to retryable
+  }
+
+  /// Check if error is a session/auth error
+  static bool isSessionError(dynamic error) {
+    final errorStr = error.toString();
+    return errorStr.contains('401') || 
+           errorStr.contains('Unauthorized') ||
+           errorStr.contains('Not authenticated');
   }
 }
