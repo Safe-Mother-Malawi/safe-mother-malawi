@@ -879,30 +879,39 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
     try {
       // Search both prenatal and neonatal patients
       List<PatientOption> suggestions = [];
+      final lowerQuery = query.toLowerCase();
 
       try {
-        final prenatalResults = await ApiService.instance.get('/patients/prenatal?search=$query');
+        final prenatalResults = await ApiService.instance.get('/patients/prenatal');
         if (prenatalResults is List) {
-          suggestions.addAll(
-            prenatalResults
-                .whereType<Map<String, dynamic>>()
-                .map((p) => PatientOption.fromJson({...p, 'type': 'prenatal'}))
-                .toList(),
-          );
+          final filtered = prenatalResults
+              .whereType<Map<String, dynamic>>()
+              .where((p) {
+                final fullName = (p['fullName'] as String? ?? p['name'] as String? ?? '').toLowerCase();
+                final contact = (p['contact'] as String? ?? p['phoneNumber'] as String? ?? '').toLowerCase();
+                return fullName.contains(lowerQuery) || contact.contains(lowerQuery);
+              })
+              .map((p) => PatientOption.fromJson({...p, 'type': 'prenatal'}))
+              .toList();
+          suggestions.addAll(filtered);
         }
       } catch (e) {
         debugPrint('Error searching prenatal patients: $e');
       }
 
       try {
-        final neonatalResults = await ApiService.instance.get('/patients/neonatal?search=$query');
+        final neonatalResults = await ApiService.instance.get('/patients/neonatal');
         if (neonatalResults is List) {
-          suggestions.addAll(
-            neonatalResults
-                .whereType<Map<String, dynamic>>()
-                .map((p) => PatientOption.fromJson({...p, 'type': 'neonatal'}))
-                .toList(),
-          );
+          final filtered = neonatalResults
+              .whereType<Map<String, dynamic>>()
+              .where((p) {
+                final fullName = (p['fullName'] as String? ?? p['name'] as String? ?? '').toLowerCase();
+                final contact = (p['contact'] as String? ?? p['phoneNumber'] as String? ?? '').toLowerCase();
+                return fullName.contains(lowerQuery) || contact.contains(lowerQuery);
+              })
+              .map((p) => PatientOption.fromJson({...p, 'type': 'neonatal'}))
+              .toList();
+          suggestions.addAll(filtered);
         }
       } catch (e) {
         debugPrint('Error searching neonatal patients: $e');
@@ -944,6 +953,8 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
       _showPatientSuggestions = false;
       _patientSuggestions = [];
     });
+    
+    debugPrint('✅ Patient selected: ${patient.fullName} (${patient.type}) - Age: ${patient.age}, Contact: ${patient.contact}');
   }
 
   @override
@@ -1001,19 +1012,38 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
                       child: Material(
                         elevation: 4,
                         child: Container(
-                          constraints: const BoxConstraints(maxHeight: 200),
+                          constraints: const BoxConstraints(maxHeight: 250),
                           child: ListView.builder(
                             shrinkWrap: true,
                             itemCount: _patientSuggestions.length,
                             itemBuilder: (context, index) {
                               final patient = _patientSuggestions[index];
                               return ListTile(
-                                title: Text(patient.fullName),
-                                subtitle: Text(
-                                  '${patient.type?.toUpperCase() ?? 'PATIENT'} • Age: ${patient.age ?? 'N/A'} • ${patient.contact ?? 'No contact'}',
-                                  style: const TextStyle(fontSize: 11),
+                                title: Text(
+                                  patient.fullName,
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${patient.type?.toUpperCase() ?? 'PATIENT'} • Age: ${patient.age ?? 'N/A'}',
+                                      style: const TextStyle(fontSize: 11),
+                                    ),
+                                    if (patient.contact != null)
+                                      Text(
+                                        'Contact: ${patient.contact}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                  ],
                                 ),
                                 onTap: () => _selectPatient(patient),
+                                trailing: Icon(
+                                  Icons.check_circle_outline,
+                                  color: AppColors.navy,
+                                  size: 20,
+                                ),
                               );
                             },
                           ),
