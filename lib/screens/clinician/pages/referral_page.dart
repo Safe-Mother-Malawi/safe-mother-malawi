@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../../../services/referral_service.dart';
 import '../../../services/api_service.dart';
+import '../../../services/auth_service_web.dart';
 import '../../../theme/app_colors.dart';
 
 // Patient model for autocomplete
@@ -41,12 +42,15 @@ class ReferralPage extends StatefulWidget {
 class _ReferralPageState extends State<ReferralPage> {
   late Future<List<Referral>> _referralsFuture;
   String _filterStatus = 'all';
+  String _referralType = 'received'; // 'sent' or 'received'
   IO.Socket? _socket;
   List<Referral> _referrals = [];
+  String? _currentFacilityId;
 
   @override
   void initState() {
     super.initState();
+    _getCurrentFacility();
     _loadReferrals();
     _initializeWebSocket();
   }
@@ -55,6 +59,16 @@ class _ReferralPageState extends State<ReferralPage> {
   void dispose() {
     _socket?.disconnect();
     super.dispose();
+  }
+
+  void _getCurrentFacility() {
+    try {
+      final user = AuthServiceWeb.instance.currentUser;
+      _currentFacilityId = user?['facilityId'] as String?;
+      debugPrint('📍 Current facility: $_currentFacilityId');
+    } catch (e) {
+      debugPrint('Error getting current facility: $e');
+    }
   }
 
   void _initializeWebSocket() {
@@ -115,7 +129,22 @@ class _ReferralPageState extends State<ReferralPage> {
 
   void _loadReferrals() {
     setState(() {
-      _referralsFuture = ReferralService.instance.getAllReferrals();
+      if (_referralType == 'received' && _currentFacilityId != null) {
+        // Load referrals received at this facility
+        _referralsFuture = ReferralService.instance.getReferralsByFacility(
+          _currentFacilityId!,
+          type: 'receiving',
+        );
+      } else if (_referralType == 'sent' && _currentFacilityId != null) {
+        // Load referrals sent from this facility
+        _referralsFuture = ReferralService.instance.getReferralsByFacility(
+          _currentFacilityId!,
+          type: 'referring',
+        );
+      } else {
+        // Fallback to all referrals
+        _referralsFuture = ReferralService.instance.getAllReferrals();
+      }
     });
   }
 
@@ -191,7 +220,9 @@ class _ReferralPageState extends State<ReferralPage> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Manage patient referrals',
+                      _referralType == 'received' 
+                        ? 'Referrals received from other clinicians'
+                        : 'Referrals sent to other facilities',
                       style: TextStyle(fontSize: 13, color: AppColors.g600),
                     ),
                   ],
@@ -213,6 +244,79 @@ class _ReferralPageState extends State<ReferralPage> {
               ],
             ),
           ),
+          
+          // Referral Type Tabs
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _referralType = 'received';
+                        _filterStatus = 'all';
+                      });
+                      _loadReferrals();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _referralType == 'received' ? AppColors.navy : Colors.grey[300]!,
+                            width: _referralType == 'received' ? 3 : 1,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Received',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: _referralType == 'received' ? FontWeight.bold : FontWeight.normal,
+                          color: _referralType == 'received' ? AppColors.navy : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _referralType = 'sent';
+                        _filterStatus = 'all';
+                      });
+                      _loadReferrals();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _referralType == 'sent' ? AppColors.navy : Colors.grey[300]!,
+                            width: _referralType == 'sent' ? 3 : 1,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        'Sent',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: _referralType == 'sent' ? FontWeight.bold : FontWeight.normal,
+                          color: _referralType == 'sent' ? AppColors.navy : Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          
           // Filter chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
