@@ -878,37 +878,48 @@ class _CreateReferralDialogState extends State<_CreateReferralDialog> {
 
     try {
       // Search both prenatal and neonatal patients
-      final prenatalResults = await ApiService.instance.get('/patients/prenatal?search=$query').catchError((_) => []);
-      final neonatalResults = await ApiService.instance.get('/patients/neonatal?search=$query').catchError((_) => []);
-
       List<PatientOption> suggestions = [];
 
-      if (prenatalResults is List) {
-        suggestions.addAll(
-          prenatalResults
-              .cast<Map<String, dynamic>>()
-              .map((p) => PatientOption.fromJson({...p, 'type': 'prenatal'}))
-              .toList(),
-        );
+      try {
+        final prenatalResults = await ApiService.instance.get('/patients/prenatal?search=$query');
+        if (prenatalResults is List) {
+          suggestions.addAll(
+            prenatalResults
+                .whereType<Map<String, dynamic>>()
+                .map((p) => PatientOption.fromJson({...p, 'type': 'prenatal'}))
+                .toList(),
+          );
+        }
+      } catch (e) {
+        debugPrint('Error searching prenatal patients: $e');
       }
 
-      if (neonatalResults is List) {
-        suggestions.addAll(
-          neonatalResults
-              .cast<Map<String, dynamic>>()
-              .map((p) => PatientOption.fromJson({...p, 'type': 'neonatal'}))
-              .toList(),
-        );
+      try {
+        final neonatalResults = await ApiService.instance.get('/patients/neonatal?search=$query');
+        if (neonatalResults is List) {
+          suggestions.addAll(
+            neonatalResults
+                .whereType<Map<String, dynamic>>()
+                .map((p) => PatientOption.fromJson({...p, 'type': 'neonatal'}))
+                .toList(),
+          );
+        }
+      } catch (e) {
+        debugPrint('Error searching neonatal patients: $e');
       }
 
-      setState(() {
-        _patientSuggestions = suggestions;
-        _showPatientSuggestions = true;
-        _loadingPatients = false;
-      });
+      if (mounted) {
+        setState(() {
+          _patientSuggestions = suggestions;
+          _showPatientSuggestions = suggestions.isNotEmpty;
+          _loadingPatients = false;
+        });
+      }
     } catch (e) {
       debugPrint('Error searching patients: $e');
-      setState(() => _loadingPatients = false);
+      if (mounted) {
+        setState(() => _loadingPatients = false);
+      }
     }
   }
 
