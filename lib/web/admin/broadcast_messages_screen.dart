@@ -350,7 +350,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                     setState(() {
                       _targetType = v!;
                       if (v == 'role') _targetRole = 'prenatal';
-                      if (v == 'district') _targetDistrict = null;
+                      if (v == 'district') _selectedDistricts = [];
                     });
                   },
                 ),
