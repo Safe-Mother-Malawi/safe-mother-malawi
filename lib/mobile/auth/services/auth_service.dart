@@ -62,7 +62,7 @@ class AuthService {
   /// Login via the backend. Returns a [UserModel] on success, null on failure.
   Future<UserModel?> login(String emailOrPhone, String password) async {
     final connectivityResult = await Connectivity().checkConnectivity();
-    final isOffline = connectivityResult.contains(ConnectivityResult.none);
+    final isOffline = connectivityResult == ConnectivityResult.none;
 
     if (isOffline) {
       final cachedUser = await restoreSession();

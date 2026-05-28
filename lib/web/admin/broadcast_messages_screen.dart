@@ -476,6 +476,7 @@ class _CreateBroadcastDialogState extends State<_CreateBroadcastDialog> {
                         ],
                       ),
                   ],
+                ],
                 const SizedBox(height: 16),
                 const Text('Delivery Channels', style: TextStyle(fontWeight: FontWeight.bold)),
                 Row(

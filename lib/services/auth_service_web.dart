@@ -54,7 +54,7 @@ class AuthServiceWeb {
     debugPrint('📡 API Base URL: ${ApiService.baseUrl}');
 
     final connectivityResult = await Connectivity().checkConnectivity();
-    final isOffline = connectivityResult.contains(ConnectivityResult.none);
+    final isOffline = connectivityResult == ConnectivityResult.none;
     if (isOffline) {
       final cachedUser = await restoreSession();
       if (cachedUser != null) {
