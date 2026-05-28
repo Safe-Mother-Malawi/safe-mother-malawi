@@ -12,6 +12,7 @@ import 'pages/register_page.dart';
 import 'pages/risk_scoring_page.dart';
 import 'pages/calendar_page.dart';
 import 'pages/profile_page.dart';
+import 'pages/referral_page.dart';
 import '../splash_screen.dart';
 
 class ClinicianDashboard extends StatefulWidget {
@@ -205,7 +206,8 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
       case 3: return ClinicianRegisterPage(onPatientRegistered: _onPatientRegistered);
       case 4: return const RiskScoringPage();
       case 5: return const CalendarPage();
-      case 6: return MyProfilePage(onClose: () => setState(() => _selectedIndex = 0));
+      case 6: return const ReferralPage();
+      case 7: return MyProfilePage(onClose: () => setState(() => _selectedIndex = 0));
       default: return ClinicianDashboardPage(onRegisterPatient: () => setState(() => _selectedIndex = 3));
     }
   }
@@ -318,6 +320,7 @@ class _ClinicianDashboardState extends State<ClinicianDashboard> {
                 _sidebarItem(3, Icons.person_add_rounded,     'Register Patient'),
                 _sidebarItem(4, Icons.assessment_rounded,     'Risk Monitoring'),
                 _sidebarItem(5, Icons.calendar_today_rounded, 'Calendar'),
+                _sidebarItem(6, Icons.send_rounded,           'Referrals'),
               ],
             ),
           ),
