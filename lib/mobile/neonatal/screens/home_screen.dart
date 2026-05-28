@@ -31,7 +31,7 @@ class NeonatalHomeScreen extends StatefulWidget {
   State<NeonatalHomeScreen> createState() => _NeonatalHomeScreenState();
 }
 
-class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
+class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> with WidgetsBindingObserver {
   NeonatalData? _data;
   String _firstName = 'Mama';
   bool _loading = true;
@@ -40,7 +40,22 @@ class _NeonatalHomeScreenState extends State<NeonatalHomeScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _load();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Refresh data when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _load();
+    }
   }
 
   Future<void> _load() async {
