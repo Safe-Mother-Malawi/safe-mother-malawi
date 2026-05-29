@@ -109,7 +109,7 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
 
       return AnalyticsPieChartData(
         label: e.value['riskLevel'] ?? 'Unknown',
-        value: percentage,
+        value: percentage.toDouble(),
         color: colors[e.key % colors.length],
       );
     }).toList();

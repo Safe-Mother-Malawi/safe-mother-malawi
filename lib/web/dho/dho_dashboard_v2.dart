@@ -163,7 +163,7 @@ class _DhoDashboardV2State extends State<DhoDashboardV2> with LiveDataMixin {
 
       return AnalyticsPieChartData(
         label: e.value['riskLevel'] ?? 'Unknown',
-        value: percentage,
+        value: percentage.toDouble(),
         color: colors[e.key % colors.length],
       );
     }).toList();
