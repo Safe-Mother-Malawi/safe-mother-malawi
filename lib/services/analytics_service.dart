@@ -11,7 +11,7 @@ class AnalyticsDataService {
       '/analytics/overview',
       _getDefaultOverview(),
     );
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultOverview();
   }
 
   /// Get risk distribution with automatic retry and fallback
@@ -44,7 +44,7 @@ class AnalyticsDataService {
       '/analytics/neonatal-analytics',
       _getDefaultNeonatal(),
     );
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultNeonatal();
   }
 
   /// Get system alerts with automatic retry and fallback
@@ -53,7 +53,7 @@ class AnalyticsDataService {
       '/analytics/system-alerts',
       _getDefaultSystemAlerts(),
     );
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultSystemAlerts();
   }
 
   /// Get ANC analytics with automatic retry and fallback
@@ -62,7 +62,7 @@ class AnalyticsDataService {
       ? '/analytics/anc-analytics?district=$district'
       : '/analytics/anc-analytics';
     final result = await _fetchWithRetry(path, _getDefaultANCAnalytics());
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultANCAnalytics();
   }
 
   /// Get ANC compliance with automatic retry and fallback
@@ -71,7 +71,7 @@ class AnalyticsDataService {
       ? '/analytics/anc-compliance?district=$district'
       : '/analytics/anc-compliance';
     final result = await _fetchWithRetry(path, _getDefaultANCCompliance());
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultANCCompliance();
   }
 
   /// Get task analytics with automatic retry and fallback
@@ -80,7 +80,7 @@ class AnalyticsDataService {
       '/analytics/task-analytics',
       _getDefaultTaskAnalytics(),
     );
-    return _asMap(result);
+    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultTaskAnalytics();
   }
 
   /// Get clinician activity with automatic retry and fallback
@@ -219,10 +219,4 @@ class AnalyticsDataService {
     {'name': 'Dr. Chikwanda', 'count': 98},
   ];
 
-  // ============ HELPER METHODS ============
-
-  static Map<String, dynamic> _asMap(dynamic d) =>
-      (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
-
-  static List<dynamic> _asList(dynamic d) => (d is List) ? d : <dynamic>[];
 }
