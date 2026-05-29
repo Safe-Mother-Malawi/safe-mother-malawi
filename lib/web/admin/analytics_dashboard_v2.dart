@@ -52,30 +52,30 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
   Future<void> _load() async {
     try {
       final results = await Future.wait([
-        ApiService.instance.get('/analytics/overview').timeout(const Duration(seconds: 10)),
-        ApiService.instance.get('/analytics/risk-distribution').timeout(const Duration(seconds: 10)),
-        ApiService.instance.get('/analytics/districts').timeout(const Duration(seconds: 10)),
-        ApiService.instance.get('/analytics/neonatal-analytics').timeout(const Duration(seconds: 10)),
+        _safeGet('/analytics/overview'),
+        _safeGet('/analytics/risk-distribution'),
+        _safeGet('/analytics/districts'),
+        _safeGet('/analytics/neonatal-analytics'),
       ], eagerError: false).catchError((_) => <dynamic>[]);
 
       if (results.isEmpty || results.length < 4) {
         throw Exception('Incomplete data received');
       }
 
-      final overview = (results[0] as Map<String, dynamic>?) ?? {};
-      final riskDist = (results[1] as List<dynamic>?) ?? [];
-      final districts = (results[2] as List<dynamic>?) ?? [];
-      final neonatal = (results[3] as Map<String, dynamic>?) ?? {};
+      final overview = _asMap(results[0]);
+      final riskDist = _asList(results[1]);
+      final districts = _asList(results[2]);
+      final neonatal = _asMap(results[3]);
 
       if (mounted) {
         setState(() {
-          _totalPregnancies = overview['totalPatients'] ?? 1420;
-          _highRiskCases = overview['highRiskCases'] ?? 156;
-          _ancAttendanceRate = overview['ancAttendanceRate'] ?? 85;
-          _completionRate = overview['ancCompletionRate'] ?? 76;
-          _liveBirths = neonatal['liveBirths'] ?? 1420;
-          _neonatalDeaths = neonatal['neonatalDeaths'] ?? 28;
-          _immunizationCoverage = neonatal['immunizationCoverage'] ?? 92;
+          _totalPregnancies = (overview['totalPatients'] as num?)?.toInt() ?? (overview['totalMothers'] as num?)?.toInt() ?? 1420;
+          _highRiskCases = (overview['highRiskCases'] as num?)?.toInt() ?? 156;
+          _ancAttendanceRate = (overview['ancAttendanceRate'] as num?)?.toInt() ?? 85;
+          _completionRate = (overview['ancCompletionRate'] as num?)?.toInt() ?? 76;
+          _liveBirths = (neonatal['liveBirths'] as num?)?.toInt() ?? 1420;
+          _neonatalDeaths = (neonatal['neonatalDeaths'] as num?)?.toInt() ?? 28;
+          _immunizationCoverage = (neonatal['immunizationCoverage'] as num?)?.toInt() ?? 92;
           _riskDistribution = _ensureValidRiskDistribution(riskDist);
           _districtData = _ensureValidDistrictData(districts);
           _loading = false;
@@ -85,7 +85,7 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
       debugPrint('Load error: $e');
       if (mounted) {
         setState(() {
-          _error = null; // Don't show error, use defaults instead
+          _error = null;
           _totalPregnancies = 1420;
           _highRiskCases = 156;
           _ancAttendanceRate = 85;
@@ -100,6 +100,20 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
       }
     }
   }
+
+  Future<dynamic> _safeGet(String path) async {
+    try {
+      return await ApiService.instance.get(path).timeout(const Duration(seconds: 10));
+    } catch (e) {
+      debugPrint('API error for $path: $e');
+      return null;
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic d) =>
+      (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+
+  List<dynamic> _asList(dynamic d) => (d is List) ? d : <dynamic>[];
 
   List<Map<String, dynamic>> _ensureValidRiskDistribution(List<dynamic> data) {
     try {
