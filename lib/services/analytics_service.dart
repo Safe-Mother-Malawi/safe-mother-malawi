@@ -7,10 +7,11 @@ class AnalyticsDataService {
 
   /// Get overview data with automatic retry and fallback
   static Future<Map<String, dynamic>> getOverview() async {
-    return _fetchWithRetry(
+    final result = await _fetchWithRetry(
       '/analytics/overview',
       _getDefaultOverview(),
     );
+    return _asMap(result);
   }
 
   /// Get risk distribution with automatic retry and fallback
@@ -39,18 +40,20 @@ class AnalyticsDataService {
 
   /// Get neonatal analytics with automatic retry and fallback
   static Future<Map<String, dynamic>> getNeonatalAnalytics() async {
-    return _fetchWithRetry(
+    final result = await _fetchWithRetry(
       '/analytics/neonatal-analytics',
       _getDefaultNeonatal(),
     );
+    return _asMap(result);
   }
 
   /// Get system alerts with automatic retry and fallback
   static Future<Map<String, dynamic>> getSystemAlerts() async {
-    return _fetchWithRetry(
+    final result = await _fetchWithRetry(
       '/analytics/system-alerts',
       _getDefaultSystemAlerts(),
     );
+    return _asMap(result);
   }
 
   /// Get ANC analytics with automatic retry and fallback
@@ -58,7 +61,8 @@ class AnalyticsDataService {
     final path = district != null 
       ? '/analytics/anc-analytics?district=$district'
       : '/analytics/anc-analytics';
-    return _fetchWithRetry(path, _getDefaultANCAnalytics());
+    final result = await _fetchWithRetry(path, _getDefaultANCAnalytics());
+    return _asMap(result);
   }
 
   /// Get ANC compliance with automatic retry and fallback
@@ -66,15 +70,17 @@ class AnalyticsDataService {
     final path = district != null
       ? '/analytics/anc-compliance?district=$district'
       : '/analytics/anc-compliance';
-    return _fetchWithRetry(path, _getDefaultANCCompliance());
+    final result = await _fetchWithRetry(path, _getDefaultANCCompliance());
+    return _asMap(result);
   }
 
   /// Get task analytics with automatic retry and fallback
   static Future<Map<String, dynamic>> getTaskAnalytics() async {
-    return _fetchWithRetry(
+    final result = await _fetchWithRetry(
       '/analytics/task-analytics',
       _getDefaultTaskAnalytics(),
     );
+    return _asMap(result);
   }
 
   /// Get clinician activity with automatic retry and fallback
@@ -212,4 +218,11 @@ class AnalyticsDataService {
     {'name': 'Dr. Nkomo', 'count': 115},
     {'name': 'Dr. Chikwanda', 'count': 98},
   ];
+
+  // ============ HELPER METHODS ============
+
+  static Map<String, dynamic> _asMap(dynamic d) =>
+      (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
+
+  static List<dynamic> _asList(dynamic d) => (d is List) ? d : <dynamic>[];
 }

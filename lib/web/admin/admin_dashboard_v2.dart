@@ -56,15 +56,6 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
     }
   }
 
-  Future<dynamic> _safeGet(String path) async {
-    try {
-      return await ApiService.instance.get(path).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      debugPrint('API error for $path: $e');
-      return null;
-    }
-  }
-
   Map<String, dynamic> _asMap(dynamic d) =>
       (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
 
