@@ -20,6 +20,7 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
   // Cache for async data
   List<String> _facilityTypes = [];
   List<String> _managedBy = [];
+  List<String> _urbanRural = [];
 
   @override
   void initState() {
@@ -38,11 +39,13 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
     try {
       final types = await store.getAvailableFacilityTypes();
       final authorities = await store.getAvailableManagedBy();
+      final urbanRural = await store.getAvailableUrbanRural();
       
       if (mounted) {
         setState(() {
           _facilityTypes = types;
           _managedBy = authorities;
+          _urbanRural = urbanRural;
         });
       }
     } catch (e) {
@@ -74,6 +77,7 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
                   store.selectedDistrict != null ||
                   store.selectedFacilityType != null ||
                   store.selectedManagedBy != null ||
+                  store.selectedUrbanRural != null ||
                   store.searchQuery != null)
                 TextButton(
                   onPressed: () {
@@ -162,6 +166,15 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
                   widget.onFilterChanged();
                 },
               ),
+              _buildDropdown(
+                label: 'Urban/Rural',
+                value: store.selectedUrbanRural,
+                items: _urbanRural,
+                onChanged: (value) {
+                  store.setUrbanRural(value);
+                  widget.onFilterChanged();
+                },
+              ),
             ],
           ),
         ],
@@ -197,10 +210,12 @@ class _FacilitiesFilterWidgetState extends State<FacilitiesFilterWidget> {
       );
     }
 
+    final safeValue = value != null && items.contains(value) ? value : null;
+
     return SizedBox(
       width: 180,
       child: DropdownButtonFormField<String>(
-        value: value,
+        value: safeValue,
         decoration: InputDecoration(
           labelText: label,
           border: OutlineInputBorder(

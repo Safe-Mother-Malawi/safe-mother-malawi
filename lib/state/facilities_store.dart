@@ -1,5 +1,6 @@
-import '../services/api_service.dart';
 import 'package:flutter/foundation.dart';
+
+import '../services/api_service.dart';
 
 class HealthFacility {
   final String id;
@@ -36,15 +37,15 @@ class HealthFacility {
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'region': region,
-    'zone': zone,
-    'district': district,
-    'facilityName': facilityName,
-    'facilityType': facilityType,
-    'managingAuthority': managingAuthority,
-    'urbanRural': urbanRural,
-  };
+        'id': id,
+        'region': region,
+        'zone': zone,
+        'district': district,
+        'facilityName': facilityName,
+        'facilityType': facilityType,
+        'managingAuthority': managingAuthority,
+        'urbanRural': urbanRural,
+      };
 }
 
 class FacilitiesStore {
@@ -58,24 +59,19 @@ class FacilitiesStore {
   final List<String> _districts = [];
   final List<String> _facilityTypes = [];
   final List<String> _managingAuthorities = [];
-  
-  // Cache for all zones and districts (extracted from facilities)
-  List<String> _allZonesCache = [];
-  List<String> _allDistrictsCache = [];
 
   bool _loaded = false;
   bool _loading = false;
   String? _error;
 
-  // Filters
   String? _selectedRegion;
   String? _selectedZone;
   String? _selectedDistrict;
   String? _selectedFacilityType;
   String? _selectedManagedBy;
+  String? _selectedUrbanRural;
   String? _searchQuery;
 
-  // Getters
   List<HealthFacility> get facilities => List.from(_filteredFacilities);
   List<HealthFacility> get allFacilities => List.from(_allFacilities);
   List<String> get regions => List.from(_regions);
@@ -92,12 +88,12 @@ class FacilitiesStore {
   String? get selectedDistrict => _selectedDistrict;
   String? get selectedFacilityType => _selectedFacilityType;
   String? get selectedManagedBy => _selectedManagedBy;
+  String? get selectedUrbanRural => _selectedUrbanRural;
   String? get searchQuery => _searchQuery;
 
   int get totalCount => _allFacilities.length;
   int get filteredCount => _filteredFacilities.length;
 
-  /// Load all facilities and regions
   Future<void> load() async {
     if (_loaded && _allFacilities.isNotEmpty) return;
     _loading = true;
@@ -105,63 +101,49 @@ class FacilitiesStore {
     _notify();
 
     try {
-      // Load regions
       final regionsData = await ApiService.getRegions();
-      _regions.clear();
-      _regions.addAll(regionsData);
-      debugPrint('✅ Loaded ${_regions.length} regions');
+      _regions
+        ..clear()
+        ..addAll(_uniqueSorted(regionsData));
+      debugPrint('Loaded ${_regions.length} regions');
 
-      // Load facility types
       final typesData = await ApiService.getFacilityTypes();
-      _facilityTypes.clear();
-      _facilityTypes.addAll(typesData);
-      debugPrint('✅ Loaded ${_facilityTypes.length} facility types');
+      _facilityTypes
+        ..clear()
+        ..addAll(_uniqueSorted(typesData));
+      debugPrint('Loaded ${_facilityTypes.length} facility types');
 
-      // Load managing authorities
       final authoritiesData = await ApiService.getManagingAuthorities();
-      _managingAuthorities.clear();
-      _managingAuthorities.addAll(authoritiesData);
-      debugPrint('✅ Loaded ${_managingAuthorities.length} managing authorities');
+      _managingAuthorities
+        ..clear()
+        ..addAll(_uniqueSorted(authoritiesData));
+      debugPrint('Loaded ${_managingAuthorities.length} managing authorities');
 
-      // Load all facilities (with high limit to get all records)
-      final facilitiesData = await ApiService.getHealthFacilities() as List<dynamic>;
-      _allFacilities.clear();
-      _allFacilities.addAll(
-        facilitiesData.cast<Map<String, dynamic>>().map(HealthFacility.fromJson),
-      );
-      debugPrint('✅ Loaded ${_allFacilities.length} facilities');
-
-      // Extract all unique zones and districts from facilities
-      final allZones = <String>{};
-      final allDistricts = <String>{};
-      for (final facility in _allFacilities) {
-        allZones.add(facility.zone);
-        allDistricts.add(facility.district);
-      }
-      
-      // Store them for reference (not filtered by region/zone yet)
-      _allZonesCache = allZones.toList()..sort();
-      _allDistrictsCache = allDistricts.toList()..sort();
-      
-      debugPrint('✅ Extracted ${_allZonesCache.length} zones and ${_allDistrictsCache.length} districts');
+      final facilitiesData = await ApiService.getHealthFacilities();
+      _allFacilities
+        ..clear()
+        ..addAll(facilitiesData
+            .whereType<Map<String, dynamic>>()
+            .map(HealthFacility.fromJson));
+      debugPrint('Loaded ${_allFacilities.length} facilities');
 
       _loaded = true;
       _applyFilters();
     } catch (e) {
       _error = e.toString();
-      debugPrint('❌ Error loading facilities: $e');
+      debugPrint('Error loading facilities: $e');
     } finally {
       _loading = false;
       _notify();
     }
   }
 
-  /// Load zones for a region
   Future<void> loadZones(String region) async {
     try {
       final zonesData = await ApiService.getZones(region);
-      _zones.clear();
-      _zones.addAll(zonesData);
+      _zones
+        ..clear()
+        ..addAll(_uniqueSorted(zonesData));
       _notify();
     } catch (e) {
       _error = e.toString();
@@ -169,12 +151,12 @@ class FacilitiesStore {
     }
   }
 
-  /// Load districts for a zone
   Future<void> loadDistricts(String zone) async {
     try {
       final districtsData = await ApiService.getDistricts(zone, _selectedRegion);
-      _districts.clear();
-      _districts.addAll(districtsData);
+      _districts
+        ..clear()
+        ..addAll(_uniqueSorted(districtsData));
       _notify();
     } catch (e) {
       _error = e.toString();
@@ -182,253 +164,114 @@ class FacilitiesStore {
     }
   }
 
-  /// Set region filter and load zones from backend
   Future<void> setRegion(String? region) async {
-    _selectedRegion = region;
+    _selectedRegion = _emptyToNull(region);
     _selectedZone = null;
     _selectedDistrict = null;
     _zones.clear();
     _districts.clear();
 
-    if (region != null) {
+    if (_selectedRegion != null) {
       try {
-        // Load zones from backend API for this region
-        final zonesData = await ApiService.getZones(region);
-        _zones.clear();
-        _zones.addAll(zonesData);
-      } catch (e) {
-        // Fallback to local filtering if API fails
-        final zonesForRegion = <String>{};
-        for (final facility in _allFacilities) {
-          if (facility.region == region) {
-            zonesForRegion.add(facility.zone);
-          }
-        }
-        _zones.addAll(zonesForRegion.toList()..sort());
+        final zonesData = await ApiService.getZones(_selectedRegion!);
+        _zones.addAll(_uniqueSorted(zonesData));
+      } catch (_) {
+        _zones.addAll(_uniqueSorted(_allFacilities
+            .where((f) => f.region == _selectedRegion)
+            .map((f) => f.zone)));
       }
     }
+
+    _clearUnavailableAttributeFilters();
     _applyFilters();
   }
 
-  /// Set zone filter and load districts from backend
   Future<void> setZone(String? zone) async {
-    _selectedZone = zone;
+    _selectedZone = _emptyToNull(zone);
     _selectedDistrict = null;
     _districts.clear();
 
-    if (zone != null && _selectedRegion != null) {
+    if (_selectedZone != null) {
       try {
-        // Load districts from backend API for this zone AND region
-        final districtsData = await ApiService.getDistricts(zone, _selectedRegion);
-        _districts.clear();
-        _districts.addAll(districtsData);
-      } catch (e) {
-        // Fallback to local filtering if API fails
-        final districtsForZone = <String>{};
-        for (final facility in _allFacilities) {
-          if (facility.zone == zone && facility.region == _selectedRegion) {
-            districtsForZone.add(facility.district);
-          }
-        }
-        _districts.addAll(districtsForZone.toList()..sort());
-      }
-    } else if (zone != null) {
-      try {
-        // If no region selected, load all districts for the zone
-        final districtsData = await ApiService.getDistricts(zone);
-        _districts.clear();
-        _districts.addAll(districtsData);
-      } catch (e) {
-        // Fallback to local filtering if API fails
-        final districtsForZone = <String>{};
-        for (final facility in _allFacilities) {
-          if (facility.zone == zone) {
-            districtsForZone.add(facility.district);
-          }
-        }
-        _districts.addAll(districtsForZone.toList()..sort());
+        final districtsData =
+            await ApiService.getDistricts(_selectedZone!, _selectedRegion);
+        _districts.addAll(_uniqueSorted(districtsData));
+      } catch (_) {
+        _districts.addAll(_uniqueSorted(_geographyFilteredFacilities()
+            .where((f) => f.zone == _selectedZone)
+            .map((f) => f.district)));
       }
     }
+
+    _clearUnavailableAttributeFilters();
     _applyFilters();
   }
 
-  /// Set district filter
   void setDistrict(String? district) {
-    _selectedDistrict = district;
+    _selectedDistrict = _emptyToNull(district);
+    _clearUnavailableAttributeFilters();
     _applyFilters();
   }
 
-  /// Set facility type filter
   void setFacilityType(String? type) {
-    _selectedFacilityType = type;
+    _selectedFacilityType = _emptyToNull(type);
     _applyFilters();
   }
 
-  /// Set managing authority filter
   void setManagedBy(String? authority) {
-    _selectedManagedBy = authority;
+    _selectedManagedBy = _emptyToNull(authority);
     _applyFilters();
   }
 
-  /// Set search query
+  void setUrbanRural(String? value) {
+    _selectedUrbanRural = _emptyToNull(value);
+    _applyFilters();
+  }
+
   void setSearchQuery(String? query) {
-    _searchQuery = query?.isEmpty ?? true ? null : query;
+    _searchQuery = _emptyToNull(query);
     _applyFilters();
   }
 
-  /// Clear all filters
   void clearFilters() {
     _selectedRegion = null;
     _selectedZone = null;
     _selectedDistrict = null;
     _selectedFacilityType = null;
     _selectedManagedBy = null;
+    _selectedUrbanRural = null;
     _searchQuery = null;
     _zones.clear();
     _districts.clear();
     _applyFilters();
   }
 
-  /// Apply all active filters
-  void _applyFilters() {
-    _filteredFacilities.clear();
-
-    var results = _allFacilities;
-
-    if (_selectedRegion != null) {
-      results = results.where((f) => f.region == _selectedRegion).toList();
-    }
-
-    if (_selectedZone != null) {
-      results = results.where((f) => f.zone == _selectedZone).toList();
-    }
-
-    if (_selectedDistrict != null) {
-      results = results.where((f) => f.district == _selectedDistrict).toList();
-    }
-
-    if (_selectedFacilityType != null) {
-      results = results.where((f) => f.facilityType == _selectedFacilityType).toList();
-    }
-
-    if (_selectedManagedBy != null) {
-      results = results.where((f) => f.managingAuthority == _selectedManagedBy).toList();
-    }
-
-    if (_searchQuery != null && _searchQuery!.isNotEmpty) {
-      final query = _searchQuery!.toLowerCase();
-      results = results.where((f) =>
-        f.facilityName.toLowerCase().contains(query) ||
-        f.district.toLowerCase().contains(query)
-      ).toList();
-    }
-
-    _filteredFacilities.addAll(results);
-    _notify();
-  }
-
-  /// Get unique facility types from filtered facilities (based on region/zone/district)
   Future<List<String>> getAvailableFacilityTypes() async {
-    try {
-      if (_selectedDistrict != null) {
-        final types = await ApiService.getFacilityTypesByDistrict(_selectedDistrict!);
-        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
-      } else if (_selectedZone != null) {
-        final types = await ApiService.getFacilityTypesByZone(_selectedZone!);
-        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
-      } else if (_selectedRegion != null) {
-        final types = await ApiService.getFacilityTypesByRegion(_selectedRegion!);
-        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
-      } else {
-        final types = await ApiService.getFacilityTypes();
-        return types.where((t) => t.toUpperCase() != 'CLINIC' && t.toUpperCase() != 'GOVERNMENT').toList();
-      }
-    } catch (e) {
-      // Fallback to local filtering
-      var facilities = _allFacilities;
-      
-      if (_selectedRegion != null) {
-        facilities = facilities.where((f) => f.region == _selectedRegion).toList();
-      }
-      
-      if (_selectedZone != null) {
-        facilities = facilities.where((f) => f.zone == _selectedZone).toList();
-      }
-      
-      if (_selectedDistrict != null) {
-        facilities = facilities.where((f) => f.district == _selectedDistrict).toList();
-      }
-      
-      final types = <String>{};
-      for (final f in facilities) {
-        types.add(f.facilityType);
-      }
-      return types.toList()
-        ..sort()
-        ..removeWhere((t) => t.toUpperCase() == 'CLINIC' || t.toUpperCase() == 'GOVERNMENT');
-    }
+    return _uniqueSorted(
+      _geographyFilteredFacilities().map((f) => f.facilityType),
+    );
   }
 
-  /// Get unique managing authorities from filtered facilities (based on region/zone/district)
   Future<List<String>> getAvailableManagedBy() async {
-    try {
-      List<String> authorities;
-      if (_selectedDistrict != null) {
-        authorities = await ApiService.getManagingAuthoritiesByDistrict(_selectedDistrict!);
-      } else if (_selectedZone != null) {
-        authorities = await ApiService.getManagingAuthoritiesByZone(_selectedZone!);
-      } else if (_selectedRegion != null) {
-        authorities = await ApiService.getManagingAuthoritiesByRegion(_selectedRegion!);
-      } else {
-        authorities = await ApiService.getManagingAuthorities();
-      }
-      // Filter out GOVERNMENT and CLINIC
-      return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList();
-    } catch (e) {
-      // Fallback to local filtering
-      var facilities = _allFacilities;
-      
-      if (_selectedRegion != null) {
-        facilities = facilities.where((f) => f.region == _selectedRegion).toList();
-      }
-      
-      if (_selectedZone != null) {
-        facilities = facilities.where((f) => f.zone == _selectedZone).toList();
-      }
-      
-      if (_selectedDistrict != null) {
-        facilities = facilities.where((f) => f.district == _selectedDistrict).toList();
-      }
-      
-      final authorities = <String>{};
-      for (final f in facilities) {
-        authorities.add(f.managingAuthority);
-      }
-      // Filter out GOVERNMENT and CLINIC
-      return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList()..sort();
-    }
+    return _uniqueSorted(
+      _geographyFilteredFacilities().map((f) => f.managingAuthority),
+    );
   }
 
-  /// Get unique facility types from all facilities (legacy method)
+  Future<List<String>> getAvailableUrbanRural() async {
+    return _uniqueSorted(
+      _geographyFilteredFacilities().map((f) => f.urbanRural),
+    );
+  }
+
   List<String> getUniqueFacilityTypes() {
-    final types = <String>{};
-    for (final f in _allFacilities) {
-      types.add(f.facilityType);
-    }
-    return types.toList()..sort();
+    return _uniqueSorted(_allFacilities.map((f) => f.facilityType));
   }
 
-  /// Get unique managing authorities from all facilities (legacy method)
   List<String> getUniqueManagedBy() {
-    final authorities = <String>{};
-    for (final f in _allFacilities) {
-      authorities.add(f.managingAuthority);
-    }
-    // Filter out GOVERNMENT and CLINIC
-    return authorities.where((a) => a != 'GOVERNMENT' && a != 'CLINIC').toList()..sort();
+    return _uniqueSorted(_allFacilities.map((f) => f.managingAuthority));
   }
 
-  /// Get facility by name
   HealthFacility? getFacilityByName(String name) {
     try {
       return _allFacilities.firstWhere((f) => f.facilityName == name);
@@ -437,7 +280,6 @@ class FacilitiesStore {
     }
   }
 
-  /// Reload data (force fresh load from backend)
   Future<void> reload() async {
     _loaded = false;
     _allFacilities.clear();
@@ -445,40 +287,117 @@ class FacilitiesStore {
     _regions.clear();
     _zones.clear();
     _districts.clear();
-    _selectedRegion = null;
-    _selectedZone = null;
-    _selectedDistrict = null;
-    _selectedFacilityType = null;
-    _selectedManagedBy = null;
-    _searchQuery = null;
+    clearFilters();
     await load();
   }
 
-  /// Create a new facility
   Future<void> addFacility(Map<String, dynamic> data) async {
     await ApiService.createFacility(data);
     await reload();
   }
 
-  /// Edit an existing facility
   Future<void> editFacility(String id, Map<String, dynamic> data) async {
     await ApiService.updateHealthFacility(id, data);
     await reload();
   }
 
-  /// Delete a facility
   Future<void> deleteFacility(String id) async {
     await ApiService.deleteHealthFacility(id);
     await reload();
   }
 
+  void _applyFilters() {
+    Iterable<HealthFacility> results = _allFacilities;
+
+    if (_selectedRegion != null) {
+      results = results.where((f) => f.region == _selectedRegion);
+    }
+    if (_selectedZone != null) {
+      results = results.where((f) => f.zone == _selectedZone);
+    }
+    if (_selectedDistrict != null) {
+      results = results.where((f) => f.district == _selectedDistrict);
+    }
+    if (_selectedFacilityType != null) {
+      results = results.where((f) => f.facilityType == _selectedFacilityType);
+    }
+    if (_selectedManagedBy != null) {
+      results = results.where((f) => f.managingAuthority == _selectedManagedBy);
+    }
+    if (_selectedUrbanRural != null) {
+      results = results.where((f) => f.urbanRural == _selectedUrbanRural);
+    }
+    if (_searchQuery != null) {
+      final query = _searchQuery!.toLowerCase();
+      results = results.where(
+        (f) =>
+            f.facilityName.toLowerCase().contains(query) ||
+            f.district.toLowerCase().contains(query) ||
+            f.zone.toLowerCase().contains(query) ||
+            f.region.toLowerCase().contains(query),
+      );
+    }
+
+    _filteredFacilities
+      ..clear()
+      ..addAll(results);
+    _notify();
+  }
+
+  List<HealthFacility> _geographyFilteredFacilities() {
+    Iterable<HealthFacility> facilities = _allFacilities;
+    if (_selectedRegion != null) {
+      facilities = facilities.where((f) => f.region == _selectedRegion);
+    }
+    if (_selectedZone != null) {
+      facilities = facilities.where((f) => f.zone == _selectedZone);
+    }
+    if (_selectedDistrict != null) {
+      facilities = facilities.where((f) => f.district == _selectedDistrict);
+    }
+    return facilities.toList();
+  }
+
+  void _clearUnavailableAttributeFilters() {
+    final scoped = _geographyFilteredFacilities();
+    final types = _uniqueSorted(scoped.map((f) => f.facilityType));
+    final authorities = _uniqueSorted(scoped.map((f) => f.managingAuthority));
+    final urbanRural = _uniqueSorted(scoped.map((f) => f.urbanRural));
+
+    if (_selectedFacilityType != null &&
+        !types.contains(_selectedFacilityType)) {
+      _selectedFacilityType = null;
+    }
+    if (_selectedManagedBy != null && !authorities.contains(_selectedManagedBy)) {
+      _selectedManagedBy = null;
+    }
+    if (_selectedUrbanRural != null &&
+        !urbanRural.contains(_selectedUrbanRural)) {
+      _selectedUrbanRural = null;
+    }
+  }
+
+  List<String> _uniqueSorted(Iterable<String> values) {
+    return values
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort();
+  }
+
+  String? _emptyToNull(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
   final List<void Function()> _listeners = [];
   void addListener(void Function() l) => _listeners.add(l);
   void removeListener(void Function() l) => _listeners.remove(l);
+
   void _notify() {
-    for (final l in _listeners) {
+    for (final l in List<void Function()>.from(_listeners)) {
       l();
     }
   }
 }
-

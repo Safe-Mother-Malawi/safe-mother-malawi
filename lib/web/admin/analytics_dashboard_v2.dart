@@ -49,6 +49,18 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
     }
   }
 
+  int _safeInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  double _safeDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? defaultValue;
+  }
+
   Future<void> _load() async {
     try {
       final results = await Future.wait([
@@ -65,13 +77,13 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
 
       if (mounted) {
         setState(() {
-          _totalPregnancies = (overview['totalPatients'] as num?)?.toInt() ?? (overview['totalMothers'] as num?)?.toInt() ?? 1420;
-          _highRiskCases = (overview['highRiskCases'] as num?)?.toInt() ?? 156;
-          _ancAttendanceRate = (overview['ancAttendanceRate'] as num?)?.toInt() ?? 85;
-          _completionRate = (overview['ancCompletionRate'] as num?)?.toInt() ?? 76;
-          _liveBirths = (neonatal['liveBirths'] as num?)?.toInt() ?? 1420;
-          _neonatalDeaths = (neonatal['neonatalDeaths'] as num?)?.toInt() ?? 28;
-          _immunizationCoverage = (neonatal['immunizationCoverage'] as num?)?.toInt() ?? 92;
+          _totalPregnancies = _safeInt(overview['totalPatients'], _safeInt(overview['totalMothers'], 1420));
+          _highRiskCases = _safeInt(overview['highRiskCases'], 156);
+          _ancAttendanceRate = _safeInt(overview['ancAttendanceRate'], 85);
+          _completionRate = _safeInt(overview['ancCompletionRate'], 76);
+          _liveBirths = _safeInt(neonatal['liveBirths'], 1420);
+          _neonatalDeaths = _safeInt(neonatal['neonatalDeaths'], 28);
+          _immunizationCoverage = _safeInt(neonatal['immunizationCoverage'], 92);
           _riskDistribution = _ensureValidRiskDistribution(riskDist);
           _districtData = _ensureValidDistrictData(districts);
           _loading = false;
@@ -141,16 +153,17 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
       const Color(0xFF66BB6A), // Low - Green
     ];
 
+    final total = _riskDistribution.fold<double>(
+      0.0,
+      (sum, item) => sum + _safeDouble(item['count'], 0.0),
+    );
+
     return _riskDistribution.asMap().entries.map((e) {
-      final count = (e.value['count'] as num?)?.toDouble() ?? 0;
-      final total = _riskDistribution.fold<double>(
-        0,
-        (sum, item) => sum + ((item['count'] as num?)?.toDouble() ?? 0),
-      );
+      final count = _safeDouble(e.value['count'], 0.0);
       final percentage = total > 0 ? (count / total) * 100 : 0;
 
       return AnalyticsPieChartData(
-        label: e.value['riskLevel'] ?? 'Unknown',
+        label: e.value['riskLevel']?.toString() ?? 'Unknown',
         value: percentage.toDouble(),
         color: colors[e.key % colors.length],
       );
@@ -159,9 +172,10 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
 
   List<AnalyticsBarChartData> _getDistrictData() {
     return _districtData.take(5).map((district) {
+      final value = _safeDouble(district['patients'], 0.0);
       return AnalyticsBarChartData(
         label: (district['district'] as String?)?.substring(0, 3) ?? 'N/A',
-        value: ((district['patients'] as num?)?.toDouble() ?? 0),
+        value: value,
         color: AppColors.navy,
       );
     }).toList();

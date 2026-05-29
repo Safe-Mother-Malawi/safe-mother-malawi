@@ -448,6 +448,12 @@ class ApiService {
   static Future<void> markNotificationRead(String id) =>
       instance.patch('/notifications/$id/read', {});
 
+  static Future<void> markAllNotificationsRead() =>
+      instance.patch('/notifications/mark-all-read', {});
+
+  static Future<void> deleteNotification(String id) =>
+      instance.delete('/notifications/$id');
+
   // ── Health facilities ─────────────────────────────────────────────────────
 
   static Future<List<dynamic>> getHealthFacilities() =>

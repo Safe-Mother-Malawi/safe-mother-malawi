@@ -53,6 +53,18 @@ class _DhoDashboardV2State extends State<DhoDashboardV2> with LiveDataMixin {
     }
   }
 
+  int _safeInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  double _safeDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? defaultValue;
+  }
+
   Map<String, dynamic> _asMap(dynamic d) =>
       (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
 
@@ -92,10 +104,10 @@ class _DhoDashboardV2State extends State<DhoDashboardV2> with LiveDataMixin {
 
       if (mounted) {
         setState(() {
-          _totalMothers = (overview['totalMothers'] as num?)?.toInt() ?? 1420;
-          _highRiskCases = (overview['highRiskCases'] as num?)?.toInt() ?? 156;
-          _ancAttendanceRate = (overview['ancAttendanceRate'] as num?)?.toInt() ?? 85;
-          _ancComplianceRate = (overview['ancCompletionRate'] as num?)?.toInt() ?? 78;
+          _totalMothers = _safeInt(overview['totalMothers'], 1420);
+          _highRiskCases = _safeInt(overview['highRiskCases'], 156);
+          _ancAttendanceRate = _safeInt(overview['ancAttendanceRate'], 85);
+          _ancComplianceRate = _safeInt(overview['ancCompletionRate'], 78);
           _poorCompliancePatients = 45;
           _ivrCalls = 320;
           _registrationTrends = spots;
@@ -140,16 +152,17 @@ class _DhoDashboardV2State extends State<DhoDashboardV2> with LiveDataMixin {
       const Color(0xFF66BB6A), // Low - Green
     ];
 
+    final total = _riskDistribution.fold<double>(
+      0.0,
+      (sum, item) => sum + _safeDouble(item['count'], 0.0),
+    );
+
     return _riskDistribution.asMap().entries.map((e) {
-      final count = (e.value['count'] as num?)?.toDouble() ?? 0;
-      final total = _riskDistribution.fold<double>(
-        0,
-        (sum, item) => sum + ((item['count'] as num?)?.toDouble() ?? 0),
-      );
+      final count = _safeDouble(e.value['count'], 0.0);
       final percentage = total > 0 ? (count / total) * 100 : 0;
 
       return AnalyticsPieChartData(
-        label: e.value['riskLevel'] ?? 'Unknown',
+        label: e.value['riskLevel']?.toString() ?? 'Unknown',
         value: percentage.toDouble(),
         color: colors[e.key % colors.length],
       );

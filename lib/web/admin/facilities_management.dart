@@ -330,10 +330,7 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Facility Type'),
                     value: _type,
-                    items: store.facilityTypes
-                        .where((e) => e.toUpperCase() != 'CLINIC' && e.toUpperCase() != 'GOVERNMENT')
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
+                    items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     validator: (v) => v == null ? 'Required' : null,
                     onChanged: (v) => setState(() => _type = v),
                   ),
@@ -341,10 +338,7 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Managing Authority'),
                     value: _authority,
-                    items: store.managingAuthorities
-                        .where((e) => e != 'GOVERNMENT' && e != 'CLINIC')
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
+                    items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                     validator: (v) => v == null ? 'Required' : null,
                     onChanged: (v) => setState(() => _authority = v),
                   ),
@@ -434,7 +428,7 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
           if (_dialogDistricts.isEmpty && _zone != null) {
             final districtsForZone = <String>{};
             for (final f in store.allFacilities) {
-              if (f.zone == _zone) {
+              if (f.zone == _zone && f.region == _region) {
                 districtsForZone.add(f.district);
               }
             }
@@ -518,10 +512,7 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Facility Type'),
                       value: _type,
-                      items: store.facilityTypes
-                          .where((e) => e.toUpperCase() != 'CLINIC' && e.toUpperCase() != 'GOVERNMENT')
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
+                      items: store.facilityTypes.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                       validator: (v) => v == null ? 'Required' : null,
                       onChanged: (v) => setState(() => _type = v),
                     ),
@@ -529,10 +520,7 @@ class _FacilitiesManagementScreenState extends State<FacilitiesManagementScreen>
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(labelText: 'Managing Authority'),
                       value: _authority,
-                      items: store.managingAuthorities
-                          .where((e) => e != 'GOVERNMENT' && e != 'CLINIC')
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                          .toList(),
+                      items: store.managingAuthorities.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                       validator: (v) => v == null ? 'Required' : null,
                       onChanged: (v) => setState(() => _authority = v),
                     ),

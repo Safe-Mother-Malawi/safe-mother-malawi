@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:safe_mother_malawi/services/notification_sound_service.dart';
+import 'package:safemothermalawi_frontend/services/notification_sound_service.dart';
 
 /// Notification popup widget with sound playback
 /// Displays notifications with animation and auto-dismiss

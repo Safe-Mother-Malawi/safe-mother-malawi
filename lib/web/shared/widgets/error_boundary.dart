@@ -88,6 +88,23 @@ class _ErrorCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(fontFamily: 'Roboto', fontSize: 13, color: AppColors.mutedText, height: 1.5),
           ),
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey[100],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            constraints: const BoxConstraints(maxHeight: 100),
+            width: double.infinity,
+            child: SingleChildScrollView(
+              child: SelectableText(
+                error.toString(),
+                style: TextStyle(fontFamily: 'monospace', fontSize: 11, color: Colors.red[800]),
+              ),
+            ),
+          ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: onRetry,

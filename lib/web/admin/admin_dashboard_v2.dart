@@ -61,6 +61,18 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
 
   List<dynamic> _asList(dynamic d) => (d is List) ? d : <dynamic>[];
 
+  int _safeInt(dynamic value, int defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toInt();
+    return int.tryParse(value.toString()) ?? defaultValue;
+  }
+
+  double _safeDouble(dynamic value, double defaultValue) {
+    if (value == null) return defaultValue;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString()) ?? defaultValue;
+  }
+
   Future<void> _load() async {
     try {
       final results = await Future.wait([
@@ -80,13 +92,13 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
 
       if (mounted) {
         setState(() {
-          _totalFacilities = (overview['totalClinicians'] as num?)?.toInt() ?? 6;
-          _totalClinicians = (overview['totalClinicians'] as num?)?.toInt() ?? 24;
-          _totalPatients = (overview['totalPatients'] as num?)?.toInt() ?? 1420;
-          _systemAlerts = (sysAlerts['activeAlerts'] as num?)?.toInt() ?? 3;
+          _totalFacilities = _safeInt(overview['totalClinicians'], 6);
+          _totalClinicians = _safeInt(overview['totalClinicians'], 24);
+          _totalPatients = _safeInt(overview['totalPatients'], 1420);
+          _systemAlerts = _safeInt(sysAlerts['activeAlerts'], 3);
           _dataCompleteness = 94;
           _systemUptime = 99;
-          _activeUsers = (overview['totalClinicians'] as num?)?.toInt() ?? 18;
+          _activeUsers = _safeInt(overview['totalClinicians'], 18);
           _failedSyncs = 2;
           _facilityPerformance = facilityPerfMaps.isEmpty ? _getDefaultFacilityData() : facilityPerfMaps;
           _userActivityTrends = [];
@@ -144,9 +156,10 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
 
   List<AnalyticsBarChartData> _getFacilityPerformanceData() {
     return _facilityPerformance.take(5).map((facility) {
+      final value = _safeDouble(facility['score'], 0.0);
       return AnalyticsBarChartData(
         label: (facility['name'] as String?)?.substring(0, 3) ?? 'N/A',
-        value: ((facility['score'] as num?)?.toDouble() ?? 0),
+        value: value,
         color: AppColors.navy,
       );
     }).toList();

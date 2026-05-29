@@ -47,29 +47,37 @@ class _LoginDialogState extends State<LoginDialog> {
 
     try {
       final role = await AuthServiceWeb.instance.login(email, password);
+      debugPrint('🔐 Login successful. Role returned: "$role"');
 
       if (!mounted) return;
 
+      // Normalize role to lowercase for comparison
+      final normalizedRole = role.toLowerCase().trim();
+      debugPrint('🔐 Normalized role: "$normalizedRole"');
+
       // Web portal only allows CLINICIAN, DHO, and ADMIN
       // Block PRENATAL and NEONATAL users
-      if (role == 'prenatal' || role == 'neonatal') {
+      if (normalizedRole == 'prenatal' || normalizedRole == 'neonatal') {
         // Logout the user immediately
         await AuthServiceWeb.instance.logout();
         
         setState(() {
           _loading = false;
           _error = 'This web portal is for healthcare workers only. '
-                   '${role.toUpperCase()} users should use the mobile app.';
+                   '${normalizedRole.toUpperCase()} users should use the mobile app.';
         });
         return;
       }
 
       Widget dest;
-      if (role == 'admin') {
+      if (normalizedRole == 'admin') {
+        debugPrint('🔐 Routing to AdminOverview');
         dest = const AdminOverview();
-      } else if (role == 'dho') {
+      } else if (normalizedRole == 'dho') {
+        debugPrint('🔐 Routing to DhoOverview');
         dest = const DhoOverview();
-      } else if (role == 'clinician') {
+      } else if (normalizedRole == 'clinician') {
+        debugPrint('🔐 Routing to ClinicianOverview');
         dest = ClinicianOverview();
       } else {
         // Unknown role
