@@ -16,10 +16,10 @@ import 'facilities_management.dart';
 import 'system_logs.dart';
 import 'broadcast_messages_screen.dart';
 import 'admin_dashboard_v2.dart';
-import '../../../services/api_service.dart';
-import '../../../services/auth_service_web.dart';
-import '../../../state/user_store.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../services/api_service.dart';
+import '../../services/auth_service_web.dart';
+import '../../state/user_store.dart';
+import '../../utils/live_data_mixin.dart';
 
 class AdminOverview extends StatefulWidget {
   const AdminOverview({super.key});

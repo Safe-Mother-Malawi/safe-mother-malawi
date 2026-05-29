@@ -5,8 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../theme/app_colors.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
-import '../../../services/api_service.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../services/api_service.dart';
+import '../../utils/live_data_mixin.dart';
 
 class AnalyticsDashboard extends StatefulWidget {
   const AnalyticsDashboard({super.key});

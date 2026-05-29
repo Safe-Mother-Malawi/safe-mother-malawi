@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
-import '../../../services/analytics_service.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../services/analytics_service.dart';
+import '../../utils/live_data_mixin.dart';
 import 'components/analytics_charts.dart';
 
 class AnalyticsDashboardV2 extends StatefulWidget {

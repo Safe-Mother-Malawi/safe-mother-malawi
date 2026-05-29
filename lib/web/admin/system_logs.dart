@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
-import '../../../services/api_service.dart';
+import '../../services/api_service.dart';
 
 class SystemLogs extends StatefulWidget {
   const SystemLogs({super.key});

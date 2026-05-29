@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../theme/app_colors.dart';
 import '../shared/widgets/status_badge.dart';
-import '../../../services/api_service.dart';
-import '../../../utils/validators.dart';
+import '../../services/api_service.dart';
+import '../../utils/validators.dart';
 import 'widgets/password_management_dialog.dart';
 
 class SystemUsers extends StatefulWidget {

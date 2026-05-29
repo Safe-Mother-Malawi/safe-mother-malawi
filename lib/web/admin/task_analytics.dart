@@ -5,7 +5,7 @@ import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../utils/live_data_mixin.dart';
 
 class TaskAnalytics extends StatefulWidget {
   const TaskAnalytics({super.key});

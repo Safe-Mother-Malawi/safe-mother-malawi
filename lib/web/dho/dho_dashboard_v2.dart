@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import '../admin/components/analytics_charts.dart';
-import '../../../services/analytics_service.dart';
-import '../../../services/auth_service_web.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../services/analytics_service.dart';
+import '../../services/auth_service_web.dart';
+import '../../utils/live_data_mixin.dart';
 
 class DhoDashboardV2 extends StatefulWidget {
   const DhoDashboardV2({super.key});
@@ -152,12 +152,22 @@ class _DhoDashboardV2State extends State<DhoDashboardV2> with LiveDataMixin {
       const Color(0xFF66BB6A), // Low - Green
     ];
 
-    final total = _riskDistribution.fold<double>(
+    final chartRows = _riskDistribution
+        .map((item) => {
+              'riskLevel': (item['riskLevel'] ?? item['level'] ?? item['label'] ?? 'Unknown').toString(),
+              'count': item['count'] ?? item['value'] ?? item['total'] ?? 0,
+            })
+        .where((item) => _safeDouble(item['count'], 0.0) > 0)
+        .toList();
+
+    final source = chartRows.isEmpty ? _getDefaultRiskDistribution() : chartRows;
+
+    final total = source.fold<double>(
       0.0,
       (sum, item) => sum + _safeDouble(item['count'], 0.0),
     );
 
-    return _riskDistribution.asMap().entries.map((e) {
+    return source.asMap().entries.map((e) {
       final count = _safeDouble(e.value['count'], 0.0);
       final percentage = total > 0 ? (count / total) * 100 : 0;
 

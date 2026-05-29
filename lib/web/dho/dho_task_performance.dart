@@ -7,7 +7,7 @@ import '../../state/user_store.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../utils/live_data_mixin.dart';
 
 class DhoTaskPerformance extends StatefulWidget {
   const DhoTaskPerformance({super.key});

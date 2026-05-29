@@ -6,7 +6,7 @@ import '../../services/api_service.dart';
 import '../shared/widgets/kpi_card.dart';
 import '../shared/widgets/chart_card.dart';
 import '../shared/widgets/status_badge.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../utils/live_data_mixin.dart';
 
 class QuestionInsights extends StatefulWidget {
   const QuestionInsights({super.key});

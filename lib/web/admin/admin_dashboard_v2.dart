@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import 'components/analytics_charts.dart';
-import '../../../services/analytics_service.dart';
-import '../../../services/auth_service_web.dart';
-import '../../../utils/live_data_mixin.dart';
+import '../../services/analytics_service.dart';
+import '../../services/auth_service_web.dart';
+import '../../utils/live_data_mixin.dart';
 
 class AdminDashboardV2 extends StatefulWidget {
   const AdminDashboardV2({super.key});

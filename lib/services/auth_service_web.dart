@@ -53,15 +53,6 @@ class AuthServiceWeb {
     debugPrint('🔐 AuthServiceWeb.login() called with email: $email');
     debugPrint('📡 API Base URL: ${ApiService.baseUrl}');
 
-    final connectivityResult = await Connectivity().checkConnectivity();
-    final isOffline = connectivityResult == ConnectivityResult.none;
-    if (isOffline) {
-      final cachedUser = await restoreSession();
-      if (cachedUser != null) {
-        return cachedUser['role']?.toString() ?? '';
-      }
-    }
-
     try {
       final data = await ApiService.instance.post('/auth/login', {
         'identifier': email,
@@ -82,10 +73,10 @@ class AuthServiceWeb {
       return _currentUser!['role'] as String;
     } catch (e) {
       debugPrint('❌ Login failed: $e');
-      final cachedUser = await restoreSession();
-      if (cachedUser != null) {
-        return cachedUser['role']?.toString() ?? '';
-      }
+      // Clear cached session on login failure - don't allow fallback to cached user
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_sessionKey);
+      _currentUser = null;
       rethrow;
     }
   }

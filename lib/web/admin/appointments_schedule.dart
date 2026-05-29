@@ -3,7 +3,7 @@ import 'dart:async';
 
 import '../../theme/app_colors.dart';
 import '../../services/api_service.dart';
-import '../../../services/auth_service_web.dart';
+import '../../services/auth_service_web.dart';
 import '../shared/widgets/status_badge.dart';
 
 class AppointmentsSchedule extends StatefulWidget {
