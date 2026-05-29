@@ -82,11 +82,16 @@ class OfflineService extends ChangeNotifier {
       
       // Handle both old (ConnectivityResult) and new (List<ConnectivityResult>) versions
       bool isConnected = false;
-      if (result is List) {
-        isConnected = (result as List).isNotEmpty && 
-                     (result.first as ConnectivityResult) != ConnectivityResult.none;
-      } else if (result is ConnectivityResult) {
-        isConnected = result != ConnectivityResult.none;
+      try {
+        if (result is List && (result as List).isNotEmpty) {
+          final firstResult = (result as List).first;
+          isConnected = firstResult != ConnectivityResult.none;
+        } else if (result is ConnectivityResult) {
+          isConnected = result != ConnectivityResult.none;
+        }
+      } catch (e) {
+        debugPrint('Error checking connectivity: $e');
+        isConnected = false;
       }
       
       _isOnline = isConnected;
