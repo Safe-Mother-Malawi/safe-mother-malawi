@@ -116,11 +116,11 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
   Future<void> _load() async {
     try {
       // Load all endpoints with individual timeouts
-      final overviewFuture = ApiService.instance.get('/analytics/overview').timeout(const Duration(seconds: 10));
-      final riskDistFuture = ApiService.instance.get('/analytics/risk-distribution').timeout(const Duration(seconds: 10));
-      final districtsFuture = ApiService.instance.get('/analytics/districts').timeout(const Duration(seconds: 10));
-      final tasksFuture = ApiService.instance.get('/analytics/task-analytics').timeout(const Duration(seconds: 10));
-      final neonatalFuture = ApiService.instance.get('/analytics/neonatal-analytics').timeout(const Duration(seconds: 10));
+      final overviewFuture = ApiService.instance.get('/analytics/overview').timeout(const Duration(seconds: 10)).catchError((_) => <String, dynamic>{});
+      final riskDistFuture = ApiService.instance.get('/analytics/risk-distribution').timeout(const Duration(seconds: 10)).catchError((_) => <dynamic>[]);
+      final districtsFuture = ApiService.instance.get('/analytics/districts').timeout(const Duration(seconds: 10)).catchError((_) => <dynamic>[]);
+      final tasksFuture = ApiService.instance.get('/analytics/task-analytics').timeout(const Duration(seconds: 10)).catchError((_) => <String, dynamic>{});
+      final neonatalFuture = ApiService.instance.get('/analytics/neonatal-analytics').timeout(const Duration(seconds: 10)).catchError((_) => <String, dynamic>{});
 
       final results = await Future.wait([
         overviewFuture,
@@ -128,26 +128,14 @@ class _AnalyticsDashboardState extends State<AnalyticsDashboard> with LiveDataMi
         districtsFuture,
         tasksFuture,
         neonatalFuture,
-      ], eagerError: false).catchError((e) {
-        debugPrint('❌ Analytics load error: $e');
-        final errorMsg = e.toString();
-        if (errorMsg.contains('Connection refused') || errorMsg.contains('Failed host lookup')) {
-          throw Exception('Backend server is not responding. Please ensure the backend is running.');
-        } else if (errorMsg.contains('TimeoutException')) {
-          throw Exception('Request timeout. Backend is taking too long to respond.');
-        } else if (errorMsg.contains('401') || errorMsg.contains('Unauthorized')) {
-          throw Exception('Unauthorized. Please log in again.');
-        } else if (errorMsg.contains('403') || errorMsg.contains('Forbidden')) {
-          throw Exception('You do not have permission to view analytics.');
-        }
-        throw Exception('Failed to load analytics data: $errorMsg');
-      });
+      ]);
 
       // Validate results
       final overview  = results[0] as Map<String, dynamic>?;
       final riskDist  = results[1] as List<dynamic>?;
       final districts = results[2] as List<dynamic>?;
       final tasks     = results[3] as Map<String, dynamic>?;
+      final neonatal  = results[4] as Map<String, dynamic>?;
       final neonatal  = results[4] as Map<String, dynamic>?;
 
       if (overview == null || riskDist == null || districts == null || tasks == null || neonatal == null) {

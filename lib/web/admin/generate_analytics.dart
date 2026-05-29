@@ -275,6 +275,12 @@ class _GenerateAnalyticsState extends State<GenerateAnalytics> {
                                     color: AppColors.successText),
                               ),
                             ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context, rootNavigator: true).pushNamed('/analytics');
+                              },
+                              child: const Text('Go to Dashboard'),
+                            ),
                           ],
                         ),
                       ),
