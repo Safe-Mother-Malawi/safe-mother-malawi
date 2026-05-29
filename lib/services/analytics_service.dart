@@ -74,27 +74,6 @@ class AnalyticsDataService {
     return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultANCCompliance();
   }
 
-  /// Get task analytics with automatic retry and fallback
-  static Future<Map<String, dynamic>> getTaskAnalytics() async {
-    final result = await _fetchWithRetry(
-      '/analytics/task-analytics',
-      _getDefaultTaskAnalytics(),
-    );
-    return result is Map ? Map<String, dynamic>.from(result as Map) : _getDefaultTaskAnalytics();
-  }
-
-  /// Get clinician activity with automatic retry and fallback
-  static Future<List<Map<String, dynamic>>> getClinicianActivity() async {
-    final result = await _fetchWithRetry(
-      '/analytics/clinician-activity',
-      _getDefaultClinicianActivity(),
-    );
-    if (result is List) {
-      return result.whereType<Map<String, dynamic>>().toList();
-    }
-    return _getDefaultClinicianActivity();
-  }
-
   /// Fetch with retry logic and fallback
   static Future<dynamic> _fetchWithRetry(
     String endpoint,
