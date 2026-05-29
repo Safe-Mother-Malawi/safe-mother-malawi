@@ -141,20 +141,6 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
     }
   }
 
-  Future<dynamic> _safeGet(String path) async {
-    try {
-      return await ApiService.instance.get(path).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      debugPrint('API error for $path: $e');
-      return null;
-    }
-  }
-
-  Map<String, dynamic> _asMap(dynamic d) =>
-      (d is Map) ? Map<String, dynamic>.from(d) : <String, dynamic>{};
-
-  List<dynamic> _asList(dynamic d) => (d is List) ? d : <dynamic>[];
-
   List<Map<String, dynamic>> _getDefaultFacilityData() => [
     {'name': 'Central Hospital', 'clinicians': 8, 'patients': 450, 'score': 92},
     {'name': 'District Clinic', 'clinicians': 4, 'patients': 280, 'score': 85},
