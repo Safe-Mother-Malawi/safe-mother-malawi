@@ -10,7 +10,7 @@ import '../shared/widgets/status_badge.dart';
 import '../shared/utils/responsive_helper.dart';
 import '../admin/clinician_management.dart';
 import '../admin/generate_analytics.dart';
-import '../admin/analytics_dashboard.dart';
+import '../admin/analytics_dashboard_v2.dart';
 import '../admin/task_analytics.dart';
 import '../admin/question_insights.dart';
 import '../admin/reports_screen_export.dart';
@@ -50,7 +50,7 @@ class _DhoOverviewState extends State<DhoOverview> {
     switch (_currentRoute) {
       case '/clinicians':         return const ClinicianManagement();
       case '/generate-analytics': return const GenerateAnalytics();
-      case '/analytics':          return const AnalyticsDashboard();
+      case '/analytics':          return const AnalyticsDashboardV2();
       case '/task-analytics':     return const TaskAnalytics();
       case '/question-insights':  return const QuestionInsights();
       case '/reports':            return const ReportsScreen();

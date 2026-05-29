@@ -86,7 +86,7 @@ class KPICard extends StatelessWidget {
 /// Professional Pie Chart Component
 class PieChartWidget extends StatelessWidget {
   final String title;
-  final List<PieChartData> data;
+  final List<AnalyticsPieChartData> data;
   final bool showLegend;
 
   const PieChartWidget({
@@ -181,7 +181,7 @@ class PieChartWidget extends StatelessWidget {
 /// Professional Bar Chart Component
 class BarChartWidget extends StatelessWidget {
   final String title;
-  final List<BarChartData> data;
+  final List<AnalyticsBarChartData> data;
   final String xAxisLabel;
   final String yAxisLabel;
 
@@ -285,7 +285,7 @@ class BarChartWidget extends StatelessWidget {
 /// Professional Line Chart Component
 class LineChartWidget extends StatelessWidget {
   final String title;
-  final List<LineChartData> data;
+  final List<AnalyticsLineChartData> data;
   final String xAxisLabel;
   final String yAxisLabel;
 
@@ -376,36 +376,36 @@ class LineChartWidget extends StatelessWidget {
 }
 
 // Data Models
-class PieChartData {
+class AnalyticsPieChartData {
   final String label;
   final double value;
   final Color color;
 
-  PieChartData({
+  AnalyticsPieChartData({
     required this.label,
     required this.value,
     required this.color,
   });
 }
 
-class BarChartData {
+class AnalyticsBarChartData {
   final String label;
   final double value;
   final Color color;
 
-  BarChartData({
+  AnalyticsBarChartData({
     required this.label,
     required this.value,
     required this.color,
   });
 }
 
-class LineChartData {
+class AnalyticsLineChartData {
   final String label;
   final List<FlSpot> points;
   final Color color;
 
-  LineChartData({
+  AnalyticsLineChartData({
     required this.label,
     required this.points,
     required this.color,
