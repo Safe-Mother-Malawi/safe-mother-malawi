@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
 import 'components/analytics_charts.dart';
-import '../../../services/api_service.dart';
+import '../../../services/analytics_service.dart';
 import '../../../services/auth_service_web.dart';
 import '../../../utils/live_data_mixin.dart';
 
@@ -73,16 +73,12 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
   Future<void> _load() async {
     try {
       final results = await Future.wait([
-        _safeGet('/analytics/overview'),
-        _safeGet('/analytics/districts'),
-        _safeGet('/analytics/system-alerts'),
-        _safeGet('/analytics/task-analytics'),
-        _safeGet('/analytics/clinician-activity'),
-      ], eagerError: false).catchError((_) => <dynamic>[]);
-
-      if (results.isEmpty || results.length < 5) {
-        throw Exception('Incomplete data received');
-      }
+        AnalyticsDataService.getOverview(),
+        AnalyticsDataService.getDistricts(),
+        AnalyticsDataService.getSystemAlerts(),
+        AnalyticsDataService.getTaskAnalytics(),
+        AnalyticsDataService.getClinicianActivity(),
+      ], eagerError: false);
 
       final overview = _asMap(results[0]);
       final districts = _asList(results[1]);
@@ -116,6 +112,7 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
           _systemHealth = [];
           _uptimeTrends = uptimeSpots;
           _loading = false;
+          _error = null;
         });
       }
     } catch (e) {

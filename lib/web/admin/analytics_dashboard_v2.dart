@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../theme/app_colors.dart';
-import '../../../services/api_service.dart';
+import '../../../services/analytics_service.dart';
 import '../../../utils/live_data_mixin.dart';
 import 'components/analytics_charts.dart';
 
@@ -52,15 +52,11 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
   Future<void> _load() async {
     try {
       final results = await Future.wait([
-        _safeGet('/analytics/overview'),
-        _safeGet('/analytics/risk-distribution'),
-        _safeGet('/analytics/districts'),
-        _safeGet('/analytics/neonatal-analytics'),
-      ], eagerError: false).catchError((_) => <dynamic>[]);
-
-      if (results.isEmpty || results.length < 4) {
-        throw Exception('Incomplete data received');
-      }
+        AnalyticsDataService.getOverview(),
+        AnalyticsDataService.getRiskDistribution(),
+        AnalyticsDataService.getDistricts(),
+        AnalyticsDataService.getNeonatalAnalytics(),
+      ], eagerError: false);
 
       final overview = _asMap(results[0]);
       final riskDist = _asList(results[1]);
@@ -79,6 +75,7 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
           _riskDistribution = _ensureValidRiskDistribution(riskDist);
           _districtData = _ensureValidDistrictData(districts);
           _loading = false;
+          _error = null;
         });
       }
     } catch (e) {
@@ -98,15 +95,6 @@ class _AnalyticsDashboardV2State extends State<AnalyticsDashboardV2> with LiveDa
           _loading = false;
         });
       }
-    }
-  }
-
-  Future<dynamic> _safeGet(String path) async {
-    try {
-      return await ApiService.instance.get(path).timeout(const Duration(seconds: 10));
-    } catch (e) {
-      debugPrint('API error for $path: $e');
-      return null;
     }
   }
 
