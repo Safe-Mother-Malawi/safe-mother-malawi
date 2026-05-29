@@ -67,26 +67,16 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
         AnalyticsDataService.getOverview(),
         AnalyticsDataService.getDistricts(),
         AnalyticsDataService.getSystemAlerts(),
-        AnalyticsDataService.getTaskAnalytics(),
-        AnalyticsDataService.getClinicianActivity(),
       ], eagerError: false);
 
       final overview = _asMap(results[0]);
       final districts = _asList(results[1]);
       final sysAlerts = _asMap(results[2]);
-      final taskAnalytics = _asMap(results[3]);
-      final clinicianActivity = _asList(results[4]);
 
       final facilityPerfMaps = districts
           .whereType<Map>()
           .map((e) => Map<String, dynamic>.from(e))
           .toList();
-
-      // Build uptime trend spots (simulated)
-      final uptimeSpots = <FlSpot>[];
-      for (int i = 0; i < 12; i++) {
-        uptimeSpots.add(FlSpot(i.toDouble(), 99.0 + (i % 2 == 0 ? 0.8 : 0.9)));
-      }
 
       if (mounted) {
         setState(() {
@@ -99,9 +89,9 @@ class _AdminDashboardV2State extends State<AdminDashboardV2> with LiveDataMixin 
           _activeUsers = (overview['totalClinicians'] as num?)?.toInt() ?? 18;
           _failedSyncs = 2;
           _facilityPerformance = facilityPerfMaps.isEmpty ? _getDefaultFacilityData() : facilityPerfMaps;
-          _userActivityTrends = clinicianActivity.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+          _userActivityTrends = [];
           _systemHealth = [];
-          _uptimeTrends = uptimeSpots;
+          _uptimeTrends = _getDefaultUptimeTrends();
           _loading = false;
           _error = null;
         });
